@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, Globe, Video, Clock } from "lucide-react";
+import { Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, Video, Clock, MessageCircle } from "lucide-react";
 
 interface CallRecord {
   id: string;
@@ -9,16 +9,9 @@ interface CallRecord {
   isVideo: boolean;
   time: string;
   duration?: string;
-  language?: string;
 }
 
-const callHistory: CallRecord[] = [
-  { id: "1", name: "Sarah Chen", avatar: "SC", type: "incoming", isVideo: true, time: "Today, 10:30 AM", duration: "12:34", language: "中文" },
-  { id: "2", name: "Marco Rossi", avatar: "MR", type: "outgoing", isVideo: false, time: "Today, 9:15 AM", duration: "5:21", language: "Italiano" },
-  { id: "3", name: "Yuki Tanaka", avatar: "YT", type: "missed", isVideo: true, time: "Yesterday, 6:00 PM", language: "日本語" },
-  { id: "4", name: "Ana García", avatar: "AG", type: "outgoing", isVideo: true, time: "Yesterday, 2:30 PM", duration: "23:45", language: "Español" },
-  { id: "5", name: "Pierre Dubois", avatar: "PD", type: "incoming", isVideo: false, time: "2 days ago", duration: "8:12", language: "Français" },
-];
+const callHistory: CallRecord[] = [];
 
 const typeIcon = {
   incoming: PhoneIncoming,
@@ -35,50 +28,50 @@ const typeColor = {
 export default function CallsPage() {
   return (
     <div className="flex-1 p-6 max-w-2xl mx-auto">
-      <h2 className="text-2xl font-bold mb-6">Call History</h2>
-      <div className="space-y-2">
-        {callHistory.map((call, i) => {
-          const TypeIcon = typeIcon[call.type];
-          return (
-            <motion.div
-              key={call.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="glass-card-hover p-4 flex items-center gap-4 cursor-pointer"
-            >
-              <div className="relative">
-                <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center font-semibold text-foreground">
-                  {call.avatar}
+      <h2 className="text-2xl font-bold mb-6">Calls</h2>
+      {callHistory.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center mb-4">
+            <Phone className="w-8 h-8 text-muted-foreground" />
+          </div>
+          <p className="text-sm text-muted-foreground">No calls yet</p>
+        </div>
+      ) : (
+        <div className="space-y-1">
+          {callHistory.map((call, i) => {
+            const TypeIcon = typeIcon[call.type];
+            return (
+              <motion.div
+                key={call.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.04 }}
+                className="p-3 flex items-center gap-3 rounded-lg hover:bg-accent transition-colors cursor-pointer"
+              >
+                <div className="relative">
+                  <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center font-semibold text-foreground">
+                    {call.avatar}
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-card flex items-center justify-center">
+                    <TypeIcon className={`w-3 h-3 ${typeColor[call.type]}`} />
+                  </div>
                 </div>
-                <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-card flex items-center justify-center`}>
-                  <TypeIcon className={`w-3 h-3 ${typeColor[call.type]}`} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-[15px]">{call.name}</p>
+                  <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
+                    {call.isVideo && <Video className="w-3 h-3" />}
+                    <span>{call.time}</span>
+                    {call.duration && <span>· {call.duration}</span>}
+                  </div>
                 </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-medium text-sm">{call.name}</p>
-                  {call.isVideo && <Video className="w-3.5 h-3.5 text-muted-foreground" />}
-                </div>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" /> {call.time}
-                  </span>
-                  {call.duration && <span>{call.duration}</span>}
-                  {call.language && (
-                    <span className="flex items-center gap-1">
-                      <Globe className="w-3 h-3 text-primary" /> {call.language}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <button className="p-2.5 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-success">
-                <Phone className="w-4 h-4" />
-              </button>
-            </motion.div>
-          );
-        })}
-      </div>
+                <button className="w-9 h-9 rounded-full hover:bg-secondary transition-colors flex items-center justify-center text-primary">
+                  <Phone className="w-5 h-5" />
+                </button>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
