@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Search, Phone, Video, MoreVertical, Globe } from "lucide-react";
+import { FriendRequestBar } from "@/components/FriendRequestBar";
 
 interface Contact {
   id: string;
@@ -45,8 +46,11 @@ export default function ChatsPage() {
     <div className="flex h-screen">
       {/* Contact List */}
       <div className="w-80 border-r border-border flex flex-col bg-card/30">
-        <div className="p-4 border-b border-border">
-          <h2 className="text-xl font-bold mb-3">Messages</h2>
+        <div className="p-4 border-b border-border space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold">Messages</h2>
+            <FriendRequestBar />
+          </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
