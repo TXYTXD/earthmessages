@@ -27,16 +27,16 @@ export default function SettingsPage() {
     <div className="flex-1 p-6 max-w-2xl mx-auto overflow-y-auto">
       <h2 className="text-2xl font-bold mb-6">Translation Settings</h2>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Primary Language */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-5">
+        <div className="bg-card rounded-xl border border-border p-5">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center">
               <Globe className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h3 className="font-semibold text-sm">Your Language</h3>
-              <p className="text-xs text-muted-foreground">Messages will be translated to this language</p>
+              <h3 className="font-semibold text-[15px]">Your Language</h3>
+              <p className="text-[13px] text-muted-foreground">Messages will be translated to this language</p>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2">
@@ -47,7 +47,7 @@ export default function SettingsPage() {
                 className={`p-2.5 rounded-lg text-sm flex items-center gap-2 transition-all ${
                   primaryLang === lang.code
                     ? "bg-primary/15 text-primary ring-1 ring-primary/30"
-                    : "bg-secondary/50 text-foreground hover:bg-secondary"
+                    : "bg-accent text-foreground hover:bg-accent/80"
                 }`}
               >
                 <span>{lang.flag}</span>
@@ -56,10 +56,10 @@ export default function SettingsPage() {
               </button>
             ))}
           </div>
-        </motion.div>
+        </div>
 
         {/* Toggles */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-card p-5 space-y-4">
+        <div className="bg-card rounded-xl border border-border p-5 space-y-4">
           <ToggleRow
             icon={<Zap className="w-5 h-5 text-warning" />}
             title="Auto-translate messages"
@@ -69,7 +69,7 @@ export default function SettingsPage() {
           />
           <div className="border-t border-border" />
           <ToggleRow
-            icon={<Languages className="w-5 h-5 text-accent" />}
+            icon={<Languages className="w-5 h-5 text-primary" />}
             title="Show original text"
             desc="Display the original message alongside the translation"
             value={showOriginal}
@@ -83,7 +83,7 @@ export default function SettingsPage() {
             value={voiceTranslation}
             onChange={setVoiceTranslation}
           />
-        </motion.div>
+        </div>
       </div>
     </div>
   );
@@ -93,10 +93,10 @@ function ToggleRow({ icon, title, desc, value, onChange }: { icon: React.ReactNo
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">{icon}</div>
+        <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center">{icon}</div>
         <div>
-          <p className="text-sm font-medium">{title}</p>
-          <p className="text-xs text-muted-foreground">{desc}</p>
+          <p className="text-[15px] font-medium">{title}</p>
+          <p className="text-[13px] text-muted-foreground">{desc}</p>
         </div>
       </div>
       <button
@@ -105,7 +105,7 @@ function ToggleRow({ icon, title, desc, value, onChange }: { icon: React.ReactNo
       >
         <motion.div
           animate={{ x: value ? 20 : 2 }}
-          className="absolute top-1 w-4 h-4 rounded-full bg-foreground"
+          className="absolute top-1 w-4 h-4 rounded-full bg-white"
           transition={{ type: "spring", stiffness: 500, damping: 30 }}
         />
       </button>
