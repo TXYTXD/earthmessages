@@ -14,13 +14,7 @@ interface Contact {
   language?: string;
 }
 
-const mockContacts: Contact[] = [
-  { id: "1", name: "Sarah Chen", lastMessage: "See you on the call! 🎥", time: "2m", avatar: "SC", online: true, unread: 2, language: "中文" },
-  { id: "2", name: "Marco Rossi", lastMessage: "Translation was perfect!", time: "15m", avatar: "MR", online: true, language: "Italiano" },
-  { id: "3", name: "Yuki Tanaka", lastMessage: "ありがとう！", time: "1h", avatar: "YT", online: false, language: "日本語" },
-  { id: "4", name: "Ana García", lastMessage: "¡Hola! ¿Cómo estás?", time: "3h", avatar: "AG", online: true, unread: 1, language: "Español" },
-  { id: "5", name: "Pierre Dubois", lastMessage: "Merci beaucoup!", time: "1d", avatar: "PD", online: false, language: "Français" },
-];
+const contacts: Contact[] = [];
 
 interface Message {
   id: string;
@@ -30,16 +24,10 @@ interface Message {
   time: string;
 }
 
-const mockMessages: Message[] = [
-  { id: "1", text: "Hey Sarah! Ready for our meeting?", sender: "me", time: "10:30 AM" },
-  { id: "2", text: "你好！是的，我准备好了", translated: "Hi! Yes, I'm ready", sender: "them", time: "10:31 AM" },
-  { id: "3", text: "Great! Let me start the video call", sender: "me", time: "10:32 AM" },
-  { id: "4", text: "好的，我在等你的视频通话邀请 🎥", translated: "Okay, I'm waiting for your video call invite 🎥", sender: "them", time: "10:32 AM" },
-  { id: "5", text: "See you on the call! 🎥", sender: "them", time: "10:33 AM" },
-];
+const messages: Message[] = [];
 
 export default function ChatsPage() {
-  const [selectedContact, setSelectedContact] = useState<Contact>(mockContacts[0]);
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [message, setMessage] = useState("");
 
   return (
@@ -60,7 +48,7 @@ export default function ChatsPage() {
           </div>
         </div>
         <div className="flex-1 overflow-y-auto">
-          {mockContacts.map((contact) => (
+          {contacts.map((contact) => (
             <motion.button
               key={contact.id}
               onClick={() => setSelectedContact(contact)}
@@ -101,46 +89,48 @@ export default function ChatsPage() {
 
       {/* Chat Area */}
       <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <div className="h-16 px-5 flex items-center justify-between border-b border-border bg-card/30">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center text-sm font-semibold">
-                {selectedContact.avatar}
+        {selectedContact ? (
+          <>
+            {/* Header */}
+            <div className="h-16 px-5 flex items-center justify-between border-b border-border bg-card/30">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center text-sm font-semibold">
+                    {selectedContact.avatar}
+                  </div>
+                  {selectedContact.online && (
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-success rounded-full border-2 border-card" />
+                  )}
+                </div>
+                <div>
+                  <h3 className="font-semibold text-sm">{selectedContact.name}</h3>
+                  <div className="flex items-center gap-1.5">
+                    <Globe className="w-3 h-3 text-primary" />
+                    <span className="text-xs text-muted-foreground">{selectedContact.language} → English</span>
+                  </div>
+                </div>
               </div>
-              {selectedContact.online && (
-                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-success rounded-full border-2 border-card" />
-              )}
-            </div>
-            <div>
-              <h3 className="font-semibold text-sm">{selectedContact.name}</h3>
-              <div className="flex items-center gap-1.5">
-                <Globe className="w-3 h-3 text-primary" />
-                <span className="text-xs text-muted-foreground">{selectedContact.language} → English</span>
+              <div className="flex items-center gap-1">
+                <button className="p-2.5 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground">
+                  <Phone className="w-4 h-4" />
+                </button>
+                <button className="p-2.5 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground">
+                  <Video className="w-4 h-4" />
+                </button>
+                <button className="p-2.5 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground">
+                  <MoreVertical className="w-4 h-4" />
+                </button>
               </div>
             </div>
-          </div>
-          <div className="flex items-center gap-1">
-            <button className="p-2.5 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground">
-              <Phone className="w-4 h-4" />
-            </button>
-            <button className="p-2.5 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground">
-              <Video className="w-4 h-4" />
-            </button>
-            <button className="p-2.5 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground">
-              <MoreVertical className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
-          <div className="flex justify-center">
-            <span className="text-xs text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full">
-              🌐 Auto-translating {selectedContact.language} ↔ English
-            </span>
-          </div>
-          {mockMessages.map((msg, i) => (
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              <div className="flex justify-center">
+                <span className="text-xs text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full">
+                  🌐 Auto-translating {selectedContact.language} ↔ English
+                </span>
+              </div>
+          {messages.map((msg, i) => (
             <motion.div
               key={msg.id}
               initial={{ opacity: 0, y: 10 }}
@@ -168,26 +158,32 @@ export default function ChatsPage() {
               </div>
             </motion.div>
           ))}
-        </div>
+            </div>
 
-        {/* Input */}
-        <div className="p-4 border-t border-border bg-card/30">
-          <div className="flex items-center gap-3">
-            <input
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Type a message..."
-              className="flex-1 px-4 py-2.5 bg-secondary rounded-xl text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/40 transition-all"
-            />
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:brightness-110 transition-all"
-            >
-              Send
-            </motion.button>
+            {/* Input */}
+            <div className="p-4 border-t border-border bg-card/30">
+              <div className="flex items-center gap-3">
+                <input
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Type a message..."
+                  className="flex-1 px-4 py-2.5 bg-secondary rounded-xl text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/40 transition-all"
+                />
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:brightness-110 transition-all"
+                >
+                  Send
+                </motion.button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-muted-foreground">
+            <p className="text-sm">Select a conversation or add friends to start chatting</p>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
