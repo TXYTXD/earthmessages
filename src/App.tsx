@@ -13,6 +13,7 @@ import ChatsPage from "@/pages/ChatsPage";
 import VideoCallPage from "@/pages/VideoCallPage";
 import CallsPage from "@/pages/CallsPage";
 import SettingsPage from "@/pages/SettingsPage";
+import StoriesPage from "@/pages/StoriesPage";
 import AccountPage from "@/pages/AccountPage";
 import AuthPage from "@/pages/AuthPage";
 import NotFound from "./pages/NotFound";
@@ -42,6 +43,7 @@ function ProtectedLayout() {
         <main className="flex-1 overflow-hidden flex">
           <Routes>
             <Route path="/" element={<ChatsPage />} />
+            <Route path="/stories" element={<StoriesPage />} />
             <Route path="/video" element={<VideoCallPage />} />
             <Route path="/calls" element={<CallsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
