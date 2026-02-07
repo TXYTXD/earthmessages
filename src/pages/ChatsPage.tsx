@@ -4,6 +4,7 @@ import { FriendRequestBar } from "@/components/FriendRequestBar";
 import { ContactList } from "@/components/chat/ContactList";
 import { ChatArea } from "@/components/chat/ChatArea";
 import { StoriesBar } from "@/components/chat/StoriesBar";
+import { FriendsList } from "@/components/chat/FriendsList";
 import { NewChatDialog } from "@/components/chat/NewChatDialog";
 import { NewGroupDialog } from "@/components/chat/NewGroupDialog";
 import { useConversations, type Conversation } from "@/hooks/useConversations";
@@ -73,6 +74,7 @@ export default function ChatsPage() {
             </div>
           </div>
           <StoriesBar />
+          <FriendsList onSelect={handleSelectFriend} />
           <ContactList
             conversations={conversations}
             selectedId={activeConv?.id || null}
