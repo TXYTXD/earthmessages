@@ -206,7 +206,8 @@ export function useWebRTC() {
 
   const startCall = useCallback(
     async (receiverId: string, type: "voice" | "video") => {
-      if (!user) return;
+      if (!user) { console.error("[Call] No user"); return; }
+      console.log("[Call] Starting", type, "call to", receiverId);
 
       // Get receiver profile
       const { data: profile } = await supabase
@@ -226,8 +227,8 @@ export function useWebRTC() {
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = localStream.current;
         }
-      } catch {
-        console.error("Failed to get media devices");
+      } catch (err) {
+        console.error("[Call] Failed to get media devices:", err);
         return;
       }
 
@@ -238,8 +239,9 @@ export function useWebRTC() {
         .select()
         .single();
 
+      console.log("[Call] Call record result:", { call, error });
       if (!call || error) {
-        console.error("Failed to create call record:", error);
+        console.error("[Call] Failed to create call record:", error);
         localStream.current?.getTracks().forEach((t) => t.stop());
         localStream.current = null;
         return;
