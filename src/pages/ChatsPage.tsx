@@ -19,24 +19,20 @@ export default function ChatsPage() {
   const isMobile = useIsMobile();
 
   const handleSelectFriend = async (friend: Friend) => {
-    try {
-      const convId = await createDirectConversation(friend.user_id);
-      if (convId) {
-        const updated = await refetch();
-        const conv = updated.find((c) => c.id === convId);
-        if (conv) {
-          setSelectedConversation(conv);
-          return;
-        }
-      }
-    } catch (e) {
-      console.error("Error creating conversation:", e);
+    // First, immediately show the chat UI with friend info while we create/find the conversation
+    const convId = await createDirectConversation(friend.user_id);
+    if (!convId) {
+      console.error("Failed to create conversation with", friend.display_name);
+      return;
     }
-    // Always fallback: open chat immediately with friend's info
-    // This ensures clicking a friend always opens a chat
-    const fallbackId = `temp-${friend.user_id}`;
-    setSelectedConversation({
-      id: fallbackId,
+    
+    // Try to get the full conversation data
+    const updated = await refetch();
+    const conv = updated.find((c) => c.id === convId);
+    
+    // Use the real conversation data, or build one with the real convId
+    setSelectedConversation(conv || {
+      id: convId,
       type: "direct",
       name: null,
       avatar_url: friend.avatar_url,
