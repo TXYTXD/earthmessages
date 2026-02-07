@@ -126,7 +126,47 @@ export function useMessages(conversationId: string | null) {
     fetchMessages();
   }, [fetchMessages]);
 
-  // Realtime subscription
+  // Helper to enrich a raw message row with profile info
+  const enrichMessage = useCallback(async (msg: any): Promise<Message> => {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("user_id, display_name, avatar_url")
+      .eq("user_id", msg.sender_id)
+      .single();
+
+    let replyTo: Message | null = null;
+    if (msg.reply_to_id) {
+      const { data: replyMsg } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("id", msg.reply_to_id)
+        .single();
+      if (replyMsg) {
+        const { data: replyProfile } = await supabase
+          .from("profiles")
+          .select("user_id, display_name, avatar_url")
+          .eq("user_id", replyMsg.sender_id)
+          .single();
+        replyTo = {
+          ...replyMsg,
+          sender_name: replyProfile?.display_name || "Unknown",
+          sender_avatar: (replyProfile?.display_name || "?").slice(0, 2).toUpperCase(),
+          reactions: [],
+          reply_to: null,
+        };
+      }
+    }
+
+    return {
+      ...msg,
+      sender_name: profile?.display_name || "Unknown",
+      sender_avatar: (profile?.display_name || "?").slice(0, 2).toUpperCase(),
+      reactions: [],
+      reply_to: replyTo,
+    };
+  }, []);
+
+  // Realtime subscription - handle changes inline instead of refetching
   useEffect(() => {
     if (!conversationId) return;
 
@@ -135,13 +175,62 @@ export function useMessages(conversationId: string | null) {
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "INSERT",
           schema: "public",
           table: "messages",
           filter: `conversation_id=eq.${conversationId}`,
         },
-        () => {
-          fetchMessages();
+        async (payload) => {
+          const newMsg = await enrichMessage(payload.new);
+          setMessages((prev) => {
+            // Avoid duplicates
+            if (prev.some((m) => m.id === newMsg.id)) return prev;
+            return [...prev, newMsg];
+          });
+          // Mark as read
+          if (user) {
+            await supabase.from("message_read_receipts").upsert(
+              {
+                conversation_id: conversationId,
+                user_id: user.id,
+                last_read_message_id: newMsg.id,
+                read_at: new Date().toISOString(),
+              },
+              { onConflict: "conversation_id,user_id" }
+            );
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const updated = payload.new as any;
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === updated.id
+                ? { ...m, content: updated.content, is_edited: updated.is_edited, deleted_at: updated.deleted_at }
+                : m
+            )
+          );
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const deletedId = (payload.old as any).id;
+          setMessages((prev) => prev.filter((m) => m.id !== deletedId));
         }
       )
       .on(
@@ -151,8 +240,32 @@ export function useMessages(conversationId: string | null) {
           schema: "public",
           table: "message_reactions",
         },
-        () => {
-          fetchMessages();
+        async (payload) => {
+          // Refresh reactions for the affected message
+          const messageId = (payload.new as any)?.message_id || (payload.old as any)?.message_id;
+          if (!messageId) return;
+          const { data: reactions } = await supabase
+            .from("message_reactions")
+            .select("*")
+            .eq("message_id", messageId);
+          if (!reactions) return;
+
+          // Get profile names for reactions
+          const userIds = [...new Set(reactions.map((r) => r.user_id))];
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("user_id, display_name")
+            .in("user_id", userIds);
+          const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
+
+          const enrichedReactions: MessageReaction[] = reactions.map((r) => ({
+            ...r,
+            user_name: profileMap.get(r.user_id)?.display_name || "Unknown",
+          }));
+
+          setMessages((prev) =>
+            prev.map((m) => (m.id === messageId ? { ...m, reactions: enrichedReactions } : m))
+          );
         }
       )
       .on(
@@ -185,7 +298,7 @@ export function useMessages(conversationId: string | null) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversationId, user, fetchMessages]);
+  }, [conversationId, user, enrichMessage]);
 
   const sendMessage = async (
     content: string,
