@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Globe, Volume2, Languages, Zap, Check, Shield, Bell, Palette } from "lucide-react";
+import { Globe, Volume2, Languages, Zap, Check, Shield, Bell, Palette, Sun, Moon } from "lucide-react";
 import { useThemeContext, ThemeName } from "@/contexts/ThemeContext";
 
 const themes: { id: ThemeName; name: string; colors: string[] }[] = [
@@ -28,7 +28,7 @@ const languages = [
 ];
 
 export default function SettingsPage() {
-  const { theme, setTheme } = useThemeContext();
+  const { theme, setTheme, colorMode, toggleColorMode } = useThemeContext();
   const [primaryLang, setPrimaryLang] = useState("en");
   const [autoTranslate, setAutoTranslate] = useState(true);
   const [showOriginal, setShowOriginal] = useState(true);
@@ -69,6 +69,31 @@ export default function SettingsPage() {
             value={notifications}
             onChange={setNotifications}
           />
+        </div>
+
+        {/* Dark / Light Mode */}
+        <div className="bg-card rounded-xl border border-border p-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center">
+                {colorMode === "dark" ? <Moon className="w-5 h-5 text-primary" /> : <Sun className="w-5 h-5 text-primary" />}
+              </div>
+              <div>
+                <h3 className="font-semibold text-[15px]">Appearance</h3>
+                <p className="text-[13px] text-muted-foreground">{colorMode === "dark" ? "Dark mode" : "Light mode"}</p>
+              </div>
+            </div>
+            <button
+              onClick={toggleColorMode}
+              className={`w-11 h-6 rounded-full transition-colors relative ${colorMode === "dark" ? "bg-primary" : "bg-muted"}`}
+            >
+              <motion.div
+                animate={{ x: colorMode === "dark" ? 20 : 2 }}
+                className="absolute top-1 w-4 h-4 rounded-full bg-white"
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+              />
+            </button>
+          </div>
         </div>
 
         {/* Theme Picker */}
