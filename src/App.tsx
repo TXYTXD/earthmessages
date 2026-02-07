@@ -69,7 +69,10 @@ function AuthGuard() {
     );
   }
 
-  if (session) {
+  // Don't redirect if there's a verification token in the URL
+  const hasToken = window.location.hash?.includes("access_token");
+
+  if (session && !hasToken) {
     return <Navigate to="/" replace />;
   }
 
