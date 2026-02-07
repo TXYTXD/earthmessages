@@ -1,7 +1,7 @@
-import { useFriends } from "@/hooks/useFriends";
+import { useFriends, type Friend } from "@/hooks/useFriends";
 
 interface FriendsListProps {
-  onSelect: (userId: string) => void;
+  onSelect: (friend: Friend) => void;
 }
 
 export function FriendsList({ onSelect }: FriendsListProps) {
@@ -19,7 +19,7 @@ export function FriendsList({ onSelect }: FriendsListProps) {
         {sorted.map((friend) => (
           <button
             key={friend.user_id}
-            onClick={() => onSelect(friend.user_id)}
+            onClick={() => onSelect(friend)}
             className="flex flex-col items-center gap-1 min-w-[56px] group"
           >
             <div className="relative">

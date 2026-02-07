@@ -9,6 +9,7 @@ import { NewChatDialog } from "@/components/chat/NewChatDialog";
 import { NewGroupDialog } from "@/components/chat/NewGroupDialog";
 import { useConversations, type Conversation } from "@/hooks/useConversations";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { type Friend } from "@/hooks/useFriends";
 
 export default function ChatsPage() {
   const { conversations, loading, createDirectConversation, createGroupConversation, refetch } = useConversations();
@@ -17,31 +18,41 @@ export default function ChatsPage() {
   const [showNewGroup, setShowNewGroup] = useState(false);
   const isMobile = useIsMobile();
 
-  const handleSelectFriend = async (userId: string) => {
-    const convId = await createDirectConversation(userId);
+  const handleSelectFriend = async (friend: Friend) => {
+    const convId = await createDirectConversation(friend.user_id);
     if (convId) {
       const updated = await refetch();
       const conv = updated.find((c) => c.id === convId);
       if (conv) {
         setSelectedConversation(conv);
       } else {
-        // Fallback: open chat immediately
+        // Fallback: open chat immediately with friend's real info
         setSelectedConversation({
           id: convId,
           type: "direct",
           name: null,
-          avatar_url: null,
+          avatar_url: friend.avatar_url,
           theme_color: "#0084ff",
           created_by: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          display_name: "Chat",
-          display_avatar: "CH",
+          display_name: friend.display_name,
+          display_avatar: (friend.display_name || "?").slice(0, 2).toUpperCase(),
           unread_count: 0,
-          is_online: false,
+          is_online: friend.is_online,
           members: [],
         });
       }
+    }
+  };
+
+  const handleSelectFriendById = async (userId: string) => {
+    // Used by NewChatDialog which only passes userId
+    const convId = await createDirectConversation(userId);
+    if (convId) {
+      const updated = await refetch();
+      const conv = updated.find((c) => c.id === convId);
+      if (conv) setSelectedConversation(conv);
     }
   };
 
@@ -118,7 +129,7 @@ export default function ChatsPage() {
         </div>
       ) : null}
 
-      <NewChatDialog open={showNewChat} onClose={() => setShowNewChat(false)} onSelect={handleSelectFriend} />
+      <NewChatDialog open={showNewChat} onClose={() => setShowNewChat(false)} onSelect={handleSelectFriendById} />
       <NewGroupDialog open={showNewGroup} onClose={() => setShowNewGroup(false)} onCreate={handleCreateGroup} />
     </div>
   );
