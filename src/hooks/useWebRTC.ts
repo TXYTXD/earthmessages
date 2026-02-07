@@ -37,6 +37,7 @@ export function useWebRTC() {
   const durationInterval = useRef<ReturnType<typeof setInterval>>();
   const channelRef = useRef<any>(null);
   const callStateRef = useRef(callState);
+  const startingCall = useRef(false); // Guard against double-clicks
 
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
@@ -57,6 +58,7 @@ export function useWebRTC() {
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
     }
+    startingCall.current = false;
     setCallState({
       callId: null,
       status: "idle",
@@ -89,6 +91,7 @@ export function useWebRTC() {
 
   const startDurationTimer = useCallback(() => {
     if (durationInterval.current) clearInterval(durationInterval.current);
+    setCallState((prev) => ({ ...prev, duration: 0 }));
     durationInterval.current = setInterval(() => {
       setCallState((prev) => ({ ...prev, duration: prev.duration + 1 }));
     }, 1000);
@@ -207,6 +210,12 @@ export function useWebRTC() {
   const startCall = useCallback(
     async (receiverId: string, type: "voice" | "video") => {
       if (!user) { console.error("[Call] No user"); return; }
+      // Prevent duplicate calls
+      if (startingCall.current || callStateRef.current.status !== "idle") {
+        console.warn("[Call] Already in a call or starting one");
+        return;
+      }
+      startingCall.current = true;
       console.log("[Call] Starting", type, "call to", receiverId);
 
       // Get receiver profile
@@ -229,6 +238,7 @@ export function useWebRTC() {
         }
       } catch (err) {
         console.error("[Call] Failed to get media devices:", err);
+        startingCall.current = false;
         return;
       }
 
@@ -244,6 +254,7 @@ export function useWebRTC() {
         console.error("[Call] Failed to create call record:", error);
         localStream.current?.getTracks().forEach((t) => t.stop());
         localStream.current = null;
+        startingCall.current = false;
         return;
       }
 
@@ -260,8 +271,7 @@ export function useWebRTC() {
       const pc = setupPeerConnection(call.id);
 
       // Subscribe to signaling FIRST, then send offer
-      // This prevents missing the answer due to race condition
-      const channel = subscribeToSignaling(call.id);
+      subscribeToSignaling(call.id);
 
       // Wait a moment for the channel to be ready
       await new Promise((resolve) => setTimeout(resolve, 500));
