@@ -19,31 +19,37 @@ export default function ChatsPage() {
   const isMobile = useIsMobile();
 
   const handleSelectFriend = async (friend: Friend) => {
-    const convId = await createDirectConversation(friend.user_id);
-    if (convId) {
-      const updated = await refetch();
-      const conv = updated.find((c) => c.id === convId);
-      if (conv) {
-        setSelectedConversation(conv);
-      } else {
-        // Fallback: open chat immediately with friend's real info
-        setSelectedConversation({
-          id: convId,
-          type: "direct",
-          name: null,
-          avatar_url: friend.avatar_url,
-          theme_color: "#0084ff",
-          created_by: null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          display_name: friend.display_name,
-          display_avatar: (friend.display_name || "?").slice(0, 2).toUpperCase(),
-          unread_count: 0,
-          is_online: friend.is_online,
-          members: [],
-        });
+    try {
+      const convId = await createDirectConversation(friend.user_id);
+      if (convId) {
+        const updated = await refetch();
+        const conv = updated.find((c) => c.id === convId);
+        if (conv) {
+          setSelectedConversation(conv);
+          return;
+        }
       }
+    } catch (e) {
+      console.error("Error creating conversation:", e);
     }
+    // Always fallback: open chat immediately with friend's info
+    // This ensures clicking a friend always opens a chat
+    const fallbackId = `temp-${friend.user_id}`;
+    setSelectedConversation({
+      id: fallbackId,
+      type: "direct",
+      name: null,
+      avatar_url: friend.avatar_url,
+      theme_color: "#0084ff",
+      created_by: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      display_name: friend.display_name,
+      display_avatar: (friend.display_name || "?").slice(0, 2).toUpperCase(),
+      unread_count: 0,
+      is_online: friend.is_online,
+      members: [],
+    });
   };
 
   const handleSelectFriendById = async (userId: string) => {
