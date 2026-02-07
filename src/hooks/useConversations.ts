@@ -200,104 +200,43 @@ export function useConversations() {
   const createDirectConversation = async (otherUserId: string): Promise<string | null> => {
     if (!user) return null;
 
-    // Check if direct conversation already exists
-    const { data: existingMembers } = await supabase
-      .from("conversation_members")
-      .select("conversation_id")
-      .eq("user_id", user.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-conversation", {
+        body: { type: "direct", otherUserId },
+      });
 
-    if (existingMembers) {
-      for (const m of existingMembers) {
-        const { data: otherMember } = await supabase
-          .from("conversation_members")
-          .select("conversation_id")
-          .eq("conversation_id", m.conversation_id)
-          .eq("user_id", otherUserId)
-          .maybeSingle();
-
-        if (otherMember) {
-          // Check if it's a direct conversation
-          const { data: conv } = await supabase
-            .from("conversations")
-            .select("type")
-            .eq("id", m.conversation_id)
-            .eq("type", "direct")
-            .maybeSingle();
-
-          if (conv) return m.conversation_id;
-        }
+      if (error || !data?.conversationId) {
+        console.error("Failed to create conversation:", error, data);
+        return null;
       }
-    }
 
-    // Create new conversation
-    console.log("[createDirectConversation] Creating new conversation, user.id:", user.id);
-    const { data: newConv, error } = await supabase
-      .from("conversations")
-      .insert({ type: "direct", created_by: user.id })
-      .select()
-      .single();
-
-    console.log("[createDirectConversation] Insert result:", { newConv, error });
-
-    if (error || !newConv) {
-      console.error("[createDirectConversation] Failed to create conversation:", error);
+      await fetchConversations();
+      return data.conversationId;
+    } catch (err) {
+      console.error("Error creating conversation:", err);
       return null;
     }
-
-    // Add self first (as admin), so RLS policy allows adding the other member
-    const { error: selfErr } = await supabase.from("conversation_members").insert(
-      { conversation_id: newConv.id, user_id: user.id, role: "admin" }
-    );
-    console.log("[createDirectConversation] Self member insert:", { error: selfErr });
-    
-    // Now add the other member (RLS allows because we're now admin)
-    const { error: otherErr } = await supabase.from("conversation_members").insert(
-      { conversation_id: newConv.id, user_id: otherUserId, role: "admin" }
-    );
-    console.log("[createDirectConversation] Other member insert:", { error: otherErr });
-
-    await fetchConversations();
-    return newConv.id;
   };
 
   const createGroupConversation = async (name: string, memberIds: string[]): Promise<string | null> => {
     if (!user) return null;
 
-    const { data: newConv, error } = await supabase
-      .from("conversations")
-      .insert({ type: "group", name, created_by: user.id })
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase.functions.invoke("create-conversation", {
+        body: { type: "group", name, memberIds },
+      });
 
-    if (error || !newConv) return null;
+      if (error || !data?.conversationId) {
+        console.error("Failed to create group:", error, data);
+        return null;
+      }
 
-    // Add self first as admin so RLS allows adding other members
-    await supabase.from("conversation_members").insert({
-      conversation_id: newConv.id,
-      user_id: user.id,
-      role: "admin",
-    });
-
-    // Now add other members (RLS allows because we're admin)
-    const otherMembers = memberIds.map((uid) => ({
-      conversation_id: newConv.id,
-      user_id: uid,
-      role: "member" as const,
-    }));
-    if (otherMembers.length > 0) {
-      await supabase.from("conversation_members").insert(otherMembers);
+      await fetchConversations();
+      return data.conversationId;
+    } catch (err) {
+      console.error("Error creating group:", err);
+      return null;
     }
-
-    // Send system message
-    await supabase.from("messages").insert({
-      conversation_id: newConv.id,
-      sender_id: user.id,
-      content: "Group created",
-      type: "system",
-    });
-
-    await fetchConversations();
-    return newConv.id;
   };
 
   return {
