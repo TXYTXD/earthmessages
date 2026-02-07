@@ -36,9 +36,15 @@ export function useWebRTC() {
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
   const durationInterval = useRef<ReturnType<typeof setInterval>>();
   const channelRef = useRef<any>(null);
+  const callStateRef = useRef(callState);
 
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
+
+  // Keep ref in sync so callbacks always have latest state
+  useEffect(() => {
+    callStateRef.current = callState;
+  }, [callState]);
 
   const cleanup = useCallback(() => {
     peerConnection.current?.close();
@@ -62,6 +68,30 @@ export function useWebRTC() {
     });
     setIsMuted(false);
     setIsVideoOff(false);
+  }, []);
+
+  const doHangUp = useCallback(async () => {
+    const current = callStateRef.current;
+    if (current.callId && user) {
+      await (supabase.from("call_signaling") as any).insert({
+        call_id: current.callId,
+        sender_id: user.id,
+        type: "hangup",
+        payload: {},
+      });
+      await supabase
+        .from("call_records")
+        .update({ status: "ended", ended_at: new Date().toISOString() })
+        .eq("id", current.callId);
+    }
+    cleanup();
+  }, [user, cleanup]);
+
+  const startDurationTimer = useCallback(() => {
+    if (durationInterval.current) clearInterval(durationInterval.current);
+    durationInterval.current = setInterval(() => {
+      setCallState((prev) => ({ ...prev, duration: prev.duration + 1 }));
+    }, 1000);
   }, []);
 
   const setupPeerConnection = useCallback(
@@ -89,7 +119,7 @@ export function useWebRTC() {
 
       pc.onconnectionstatechange = () => {
         if (pc.connectionState === "disconnected" || pc.connectionState === "failed") {
-          hangUp();
+          doHangUp();
         }
       };
 
@@ -100,7 +130,7 @@ export function useWebRTC() {
 
       return pc;
     },
-    [user]
+    [user, doHangUp]
   );
 
   const subscribeToSignaling = useCallback(
@@ -122,26 +152,32 @@ export function useWebRTC() {
             const pc = peerConnection.current;
             if (!pc) return;
 
-            if (signal.type === "offer") {
-              await pc.setRemoteDescription(new RTCSessionDescription((signal.payload as any).sdp));
-              const answer = await pc.createAnswer();
-              await pc.setLocalDescription(answer);
-              await (supabase.from("call_signaling") as any).insert({
-                call_id: callId,
-                sender_id: user!.id,
-                type: "answer",
-                payload: { sdp: answer },
-              });
-            } else if (signal.type === "answer") {
-              await pc.setRemoteDescription(new RTCSessionDescription((signal.payload as any).sdp));
-              setCallState((prev) => ({ ...prev, status: "connected" }));
-              durationInterval.current = setInterval(() => {
-                setCallState((prev) => ({ ...prev, duration: prev.duration + 1 }));
-              }, 1000);
-            } else if (signal.type === "ice-candidate") {
-              await pc.addIceCandidate(new RTCIceCandidate((signal.payload as any).candidate));
-            } else if (signal.type === "hangup") {
-              hangUp();
+            try {
+              if (signal.type === "offer") {
+                await pc.setRemoteDescription(new RTCSessionDescription((signal.payload as any).sdp));
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                await (supabase.from("call_signaling") as any).insert({
+                  call_id: callId,
+                  sender_id: user!.id,
+                  type: "answer",
+                  payload: { sdp: answer },
+                });
+              } else if (signal.type === "answer") {
+                await pc.setRemoteDescription(new RTCSessionDescription((signal.payload as any).sdp));
+                setCallState((prev) => ({ ...prev, status: "connected" }));
+                startDurationTimer();
+              } else if (signal.type === "ice-candidate") {
+                try {
+                  await pc.addIceCandidate(new RTCIceCandidate((signal.payload as any).candidate));
+                } catch (e) {
+                  console.warn("Failed to add ICE candidate:", e);
+                }
+              } else if (signal.type === "hangup") {
+                doHangUp();
+              }
+            } catch (e) {
+              console.error("Signaling error:", e);
             }
           }
         )
@@ -163,8 +199,9 @@ export function useWebRTC() {
         .subscribe();
 
       channelRef.current = channel;
+      return channel;
     },
-    [user, cleanup]
+    [user, cleanup, doHangUp, startDurationTimer]
   );
 
   const startCall = useCallback(
@@ -190,17 +227,23 @@ export function useWebRTC() {
           localVideoRef.current.srcObject = localStream.current;
         }
       } catch {
+        console.error("Failed to get media devices");
         return;
       }
 
       // Create call record
-      const { data: call } = await supabase
+      const { data: call, error } = await supabase
         .from("call_records")
         .insert({ caller_id: user.id, receiver_id: receiverId, type })
         .select()
         .single();
 
-      if (!call) return;
+      if (!call || error) {
+        console.error("Failed to create call record:", error);
+        localStream.current?.getTracks().forEach((t) => t.stop());
+        localStream.current = null;
+        return;
+      }
 
       setCallState({
         callId: call.id,
@@ -213,7 +256,13 @@ export function useWebRTC() {
       });
 
       const pc = setupPeerConnection(call.id);
-      subscribeToSignaling(call.id);
+
+      // Subscribe to signaling FIRST, then send offer
+      // This prevents missing the answer due to race condition
+      const channel = subscribeToSignaling(call.id);
+
+      // Wait a moment for the channel to be ready
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Create and send offer
       const offer = await pc.createOffer();
@@ -241,6 +290,7 @@ export function useWebRTC() {
           localVideoRef.current.srcObject = localStream.current;
         }
       } catch {
+        console.error("Failed to get media devices");
         return;
       }
 
@@ -249,23 +299,28 @@ export function useWebRTC() {
         .update({ status: "answered", started_at: new Date().toISOString() })
         .eq("id", callId);
 
-      setupPeerConnection(callId);
+      const pc = setupPeerConnection(callId);
       subscribeToSignaling(callId);
 
-      // Fetch existing offer
+      // Wait a moment for the channel to be ready
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Fetch existing signals (offer + ICE candidates)
       const { data: signals } = await supabase
         .from("call_signaling")
         .select("*")
         .eq("call_id", callId)
         .order("created_at", { ascending: true });
 
-      const pc = peerConnection.current;
       if (!pc || !signals) return;
 
-      for (const signal of signals) {
-        if (signal.sender_id === user.id) continue;
-        if (signal.type === "offer") {
-          await pc.setRemoteDescription(new RTCSessionDescription((signal.payload as any).sdp));
+      // Process offer first, then ICE candidates
+      const offerSignal = signals.find((s: any) => s.type === "offer" && s.sender_id !== user.id);
+      const iceCandidates = signals.filter((s: any) => s.type === "ice-candidate" && s.sender_id !== user.id);
+
+      if (offerSignal) {
+        try {
+          await pc.setRemoteDescription(new RTCSessionDescription((offerSignal.payload as any).sdp));
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
           await (supabase.from("call_signaling") as any).insert({
@@ -275,16 +330,23 @@ export function useWebRTC() {
             payload: { sdp: answer },
           });
 
+          // Add ICE candidates after setting remote description
+          for (const signal of iceCandidates) {
+            try {
+              await pc.addIceCandidate(new RTCIceCandidate((signal.payload as any).candidate));
+            } catch (e) {
+              console.warn("Failed to add ICE candidate:", e);
+            }
+          }
+
           setCallState((prev) => ({ ...prev, status: "connected" }));
-          durationInterval.current = setInterval(() => {
-            setCallState((prev) => ({ ...prev, duration: prev.duration + 1 }));
-          }, 1000);
-        } else if (signal.type === "ice-candidate") {
-          await pc.addIceCandidate(new RTCIceCandidate((signal.payload as any).candidate));
+          startDurationTimer();
+        } catch (e) {
+          console.error("Error processing offer:", e);
         }
       }
     },
-    [user, setupPeerConnection, subscribeToSignaling]
+    [user, setupPeerConnection, subscribeToSignaling, startDurationTimer]
   );
 
   const declineCall = useCallback(
@@ -297,22 +359,6 @@ export function useWebRTC() {
     },
     [cleanup]
   );
-
-  const hangUp = useCallback(async () => {
-    if (callState.callId && user) {
-      await (supabase.from("call_signaling") as any).insert({
-        call_id: callState.callId,
-        sender_id: user.id,
-        type: "hangup",
-        payload: {},
-      });
-      await supabase
-        .from("call_records")
-        .update({ status: "ended", ended_at: new Date().toISOString() })
-        .eq("id", callState.callId);
-    }
-    cleanup();
-  }, [callState.callId, user, cleanup]);
 
   const toggleMute = useCallback(() => {
     localStream.current?.getAudioTracks().forEach((t) => {
@@ -345,7 +391,7 @@ export function useWebRTC() {
         async (payload: any) => {
           const call = payload.new;
           if (call.status !== "ringing") return;
-          if (callState.status !== "idle") {
+          if (callStateRef.current.status !== "idle") {
             // Already in a call, auto-decline
             await supabase
               .from("call_records")
@@ -378,7 +424,7 @@ export function useWebRTC() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, callState.status]);
+  }, [user]);
 
   return {
     callState,
@@ -389,7 +435,7 @@ export function useWebRTC() {
     startCall,
     answerCall,
     declineCall,
-    hangUp,
+    hangUp: doHangUp,
     toggleMute,
     toggleVideo,
   };
