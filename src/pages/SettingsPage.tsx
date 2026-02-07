@@ -1,6 +1,16 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Globe, Volume2, Languages, Zap, Check, Shield, Bell, Palette } from "lucide-react";
+import { useThemeContext, ThemeName } from "@/contexts/ThemeContext";
+
+const themes: { id: ThemeName; name: string; colors: string[] }[] = [
+  { id: "default", name: "Default", colors: ["hsl(270 70% 55%)", "hsl(214 100% 55%)", "hsl(190 100% 50%)"] },
+  { id: "ocean", name: "Ocean", colors: ["hsl(195 100% 45%)", "hsl(210 100% 50%)", "hsl(180 100% 40%)"] },
+  { id: "sunset", name: "Sunset", colors: ["hsl(350 80% 55%)", "hsl(25 95% 55%)", "hsl(45 100% 55%)"] },
+  { id: "forest", name: "Forest", colors: ["hsl(130 50% 35%)", "hsl(150 60% 40%)", "hsl(170 70% 45%)"] },
+  { id: "midnight", name: "Midnight", colors: ["hsl(280 80% 55%)", "hsl(265 85% 60%)", "hsl(240 80% 65%)"] },
+  { id: "rose", name: "Rose", colors: ["hsl(340 82% 55%)", "hsl(320 75% 50%)", "hsl(290 70% 55%)"] },
+];
 
 const languages = [
   { code: "en", name: "English", flag: "🇺🇸" },
@@ -18,6 +28,7 @@ const languages = [
 ];
 
 export default function SettingsPage() {
+  const { theme, setTheme } = useThemeContext();
   const [primaryLang, setPrimaryLang] = useState("en");
   const [autoTranslate, setAutoTranslate] = useState(true);
   const [showOriginal, setShowOriginal] = useState(true);
@@ -58,6 +69,39 @@ export default function SettingsPage() {
             value={notifications}
             onChange={setNotifications}
           />
+        </div>
+
+        {/* Theme Picker */}
+        <div className="bg-card rounded-xl border border-border p-5">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center">
+              <Palette className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-[15px]">App Theme</h3>
+              <p className="text-[13px] text-muted-foreground">Choose a color theme for the entire app</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {themes.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTheme(t.id)}
+                className={`p-3 rounded-lg text-sm flex flex-col items-center gap-2 transition-all ${
+                  theme === t.id
+                    ? "ring-2 ring-primary bg-primary/10"
+                    : "bg-accent hover:bg-accent/80"
+                }`}
+              >
+                <div
+                  className="w-full h-6 rounded-md"
+                  style={{ background: `linear-gradient(135deg, ${t.colors.join(", ")})` }}
+                />
+                <span className="text-xs font-medium">{t.name}</span>
+                {theme === t.id && <Check className="w-3.5 h-3.5 text-primary" />}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Primary Language */}
