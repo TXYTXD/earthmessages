@@ -30,9 +30,6 @@ export function useOnlineStatus() {
     };
 
     const handleBeforeUnload = () => {
-      // Use sendBeacon for reliable offline setting
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/user_status?user_id=eq.${user.id}`;
-      navigator.sendBeacon(url); // Limited, but signals intent
       setOffline();
     };
 
