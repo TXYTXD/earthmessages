@@ -238,11 +238,14 @@ export function useConversations() {
 
     if (error || !newConv) return null;
 
-    // Add both members
-    await supabase.from("conversation_members").insert([
-      { conversation_id: newConv.id, user_id: user.id, role: "admin" },
-      { conversation_id: newConv.id, user_id: otherUserId, role: "admin" },
-    ]);
+    // Add self first (as admin), so RLS policy allows adding the other member
+    await supabase.from("conversation_members").insert(
+      { conversation_id: newConv.id, user_id: user.id, role: "admin" }
+    );
+    // Now add the other member (RLS allows because we're now admin)
+    await supabase.from("conversation_members").insert(
+      { conversation_id: newConv.id, user_id: otherUserId, role: "admin" }
+    );
 
     await fetchConversations();
     return newConv.id;
@@ -259,13 +262,22 @@ export function useConversations() {
 
     if (error || !newConv) return null;
 
-    const members = [user.id, ...memberIds].map((uid) => ({
+    // Add self first as admin so RLS allows adding other members
+    await supabase.from("conversation_members").insert({
+      conversation_id: newConv.id,
+      user_id: user.id,
+      role: "admin",
+    });
+
+    // Now add other members (RLS allows because we're admin)
+    const otherMembers = memberIds.map((uid) => ({
       conversation_id: newConv.id,
       user_id: uid,
-      role: uid === user.id ? "admin" : "member",
+      role: "member" as const,
     }));
-
-    await supabase.from("conversation_members").insert(members);
+    if (otherMembers.length > 0) {
+      await supabase.from("conversation_members").insert(otherMembers);
+    }
 
     // Send system message
     await supabase.from("messages").insert({
