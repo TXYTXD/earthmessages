@@ -97,8 +97,21 @@
     --messenger-gradient: linear-gradient(135deg, hsl(270 70% 55%), hsl(214 100% 55%), hsl(190 100% 50%));
   }
 
-  /* Ocean Theme */
+  /* Ocean Theme - Light */
   [data-theme="ocean"] {
+    --primary: 195 100% 40%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 195 100% 40%;
+    --sidebar-primary: 195 100% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-ring: 195 100% 40%;
+    --success: 160 71% 45%;
+    --messenger-gradient: linear-gradient(135deg, hsl(195 100% 45%), hsl(210 100% 50%), hsl(180 100% 40%));
+  }
+
+  /* Ocean Theme - Dark */
+  .dark[data-theme="ocean"],
+  .dark [data-theme="ocean"] {
     --background: 210 30% 4%;
     --foreground: 200 40% 96%;
     --card: 210 28% 8%;
@@ -133,8 +146,20 @@
     --messenger-gradient: linear-gradient(135deg, hsl(195 100% 45%), hsl(210 100% 50%), hsl(180 100% 40%));
   }
 
-  /* Sunset Theme */
+  /* Sunset Theme - Light */
   [data-theme="sunset"] {
+    --primary: 25 95% 50%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 25 95% 50%;
+    --sidebar-primary: 25 95% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-ring: 25 95% 50%;
+    --messenger-gradient: linear-gradient(135deg, hsl(350 80% 55%), hsl(25 95% 55%), hsl(45 100% 55%));
+  }
+
+  /* Sunset Theme - Dark */
+  .dark[data-theme="sunset"],
+  .dark [data-theme="sunset"] {
     --background: 15 30% 4%;
     --foreground: 30 40% 96%;
     --card: 15 28% 8%;
@@ -169,8 +194,20 @@
     --messenger-gradient: linear-gradient(135deg, hsl(350 80% 55%), hsl(25 95% 55%), hsl(45 100% 55%));
   }
 
-  /* Forest Theme */
+  /* Forest Theme - Light */
   [data-theme="forest"] {
+    --primary: 150 60% 35%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 150 60% 35%;
+    --sidebar-primary: 150 60% 35%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-ring: 150 60% 35%;
+    --messenger-gradient: linear-gradient(135deg, hsl(130 50% 35%), hsl(150 60% 40%), hsl(170 70% 45%));
+  }
+
+  /* Forest Theme - Dark */
+  .dark[data-theme="forest"],
+  .dark [data-theme="forest"] {
     --background: 150 25% 4%;
     --foreground: 140 30% 96%;
     --card: 150 22% 8%;
@@ -205,8 +242,20 @@
     --messenger-gradient: linear-gradient(135deg, hsl(130 50% 35%), hsl(150 60% 40%), hsl(170 70% 45%));
   }
 
-  /* Midnight Theme */
+  /* Midnight Theme - Light */
   [data-theme="midnight"] {
+    --primary: 265 85% 55%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 265 85% 55%;
+    --sidebar-primary: 265 85% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-ring: 265 85% 55%;
+    --messenger-gradient: linear-gradient(135deg, hsl(280 80% 55%), hsl(265 85% 60%), hsl(240 80% 65%));
+  }
+
+  /* Midnight Theme - Dark */
+  .dark[data-theme="midnight"],
+  .dark [data-theme="midnight"] {
     --background: 260 30% 4%;
     --foreground: 250 30% 96%;
     --card: 260 25% 8%;
@@ -241,8 +290,20 @@
     --messenger-gradient: linear-gradient(135deg, hsl(280 80% 55%), hsl(265 85% 60%), hsl(240 80% 65%));
   }
 
-  /* Rose Theme */
+  /* Rose Theme - Light */
   [data-theme="rose"] {
+    --primary: 340 82% 50%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 340 82% 50%;
+    --sidebar-primary: 340 82% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-ring: 340 82% 50%;
+    --messenger-gradient: linear-gradient(135deg, hsl(340 82% 55%), hsl(320 75% 50%), hsl(290 70% 55%));
+  }
+
+  /* Rose Theme - Dark */
+  .dark[data-theme="rose"],
+  .dark [data-theme="rose"] {
     --background: 340 25% 4%;
     --foreground: 340 30% 96%;
     --card: 340 22% 8%;
@@ -284,7 +345,7 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased dark;
+    @apply bg-background text-foreground antialiased;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   }
 }
