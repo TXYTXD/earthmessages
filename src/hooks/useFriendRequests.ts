@@ -76,6 +76,26 @@ export function useFriendRequests() {
 
   useEffect(() => {
     fetchRequests();
+
+    // Real-time subscription for friend requests
+    const channel = supabase
+      .channel('friend-requests-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'friend_requests',
+        },
+        () => {
+          fetchRequests();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [fetchRequests]);
 
   const searchUsers = async (query: string): Promise<SearchedUser[]> => {
