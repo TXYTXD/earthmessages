@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { AppSidebar } from "@/components/AppSidebar";
 import ChatsPage from "@/pages/ChatsPage";
 import VideoCallPage from "@/pages/VideoCallPage";
@@ -17,6 +18,7 @@ const queryClient = new QueryClient();
 
 function ProtectedLayout() {
   const { session, loading } = useAuth();
+  useOnlineStatus();
 
   if (loading) {
     return (

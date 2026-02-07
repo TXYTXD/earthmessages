@@ -1,0 +1,103 @@
+import { useState } from "react";
+import { Search, MessageCircle, Users } from "lucide-react";
+import { motion } from "framer-motion";
+import { type Conversation } from "@/hooks/useConversations";
+import { formatDistanceToNow } from "date-fns";
+
+interface ContactListProps {
+  conversations: Conversation[];
+  selectedId: string | null;
+  onSelect: (conversation: Conversation) => void;
+  loading: boolean;
+}
+
+export function ContactList({ conversations, selectedId, onSelect, loading }: ContactListProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filtered = searchQuery
+    ? conversations.filter((c) =>
+        c.display_name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : conversations;
+
+  return (
+    <div className="flex-1 flex flex-col">
+      {/* Search */}
+      <div className="px-4 py-2">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search Messenger"
+            className="w-full pl-10 pr-4 py-2 bg-accent rounded-full text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+          />
+        </div>
+      </div>
+
+      {/* Conversations */}
+      <div className="flex-1 overflow-y-auto px-2 py-1">
+        {loading ? (
+          <div className="flex items-center justify-center h-32">
+            <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center px-6">
+            <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center mb-4">
+              <MessageCircle className="w-8 h-8 text-muted-foreground" />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {searchQuery ? "No conversations found" : "No conversations yet"}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">Add friends to start chatting</p>
+          </div>
+        ) : (
+          filtered.map((conv) => (
+            <button
+              key={conv.id}
+              onClick={() => onSelect(conv)}
+              className={`w-full p-2.5 flex items-center gap-3 rounded-lg transition-colors ${
+                selectedId === conv.id ? "bg-accent" : "hover:bg-accent/50"
+              }`}
+            >
+              <div className="relative flex-shrink-0">
+                <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center text-sm font-semibold text-foreground">
+                  {conv.type === "group" ? (
+                    <Users className="w-5 h-5 text-muted-foreground" />
+                  ) : (
+                    conv.display_avatar
+                  )}
+                </div>
+                {conv.is_online && conv.type === "direct" && (
+                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-success rounded-full border-2 border-card" />
+                )}
+              </div>
+              <div className="flex-1 text-left min-w-0">
+                <div className="flex items-center justify-between">
+                  <span className={`text-[15px] ${conv.unread_count > 0 ? "font-semibold" : "font-normal"}`}>
+                    {conv.display_name}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className={`text-[13px] truncate ${conv.unread_count > 0 ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                    {conv.last_message || "No messages yet"}
+                  </p>
+                  {conv.last_message_time && (
+                    <span className="text-[11px] text-muted-foreground flex-shrink-0 ml-2">
+                      {formatDistanceToNow(new Date(conv.last_message_time), { addSuffix: false })}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {conv.unread_count > 0 && (
+                <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                  <span className="text-[10px] font-bold text-primary-foreground">{conv.unread_count}</span>
+                </div>
+              )}
+            </button>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
