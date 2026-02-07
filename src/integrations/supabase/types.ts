@@ -457,6 +457,10 @@ export type Database = {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
       }
+      is_friend_or_self: {
+        Args: { _target_user_id: string; _viewer_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
