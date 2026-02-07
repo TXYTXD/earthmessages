@@ -4,8 +4,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { CallProvider } from "@/contexts/CallContext";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { AppSidebar } from "@/components/AppSidebar";
+import { IncomingCallOverlay, ActiveCallOverlay } from "@/components/call/CallOverlays";
 import ChatsPage from "@/pages/ChatsPage";
 import VideoCallPage from "@/pages/VideoCallPage";
 import CallsPage from "@/pages/CallsPage";
@@ -33,19 +35,23 @@ function ProtectedLayout() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <AppSidebar />
-      <main className="flex-1 overflow-hidden flex">
-        <Routes>
-          <Route path="/" element={<ChatsPage />} />
-          <Route path="/video" element={<VideoCallPage />} />
-          <Route path="/calls" element={<CallsPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/account" element={<AccountPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </main>
-    </div>
+    <CallProvider>
+      <div className="flex h-screen overflow-hidden">
+        <AppSidebar />
+        <main className="flex-1 overflow-hidden flex">
+          <Routes>
+            <Route path="/" element={<ChatsPage />} />
+            <Route path="/video" element={<VideoCallPage />} />
+            <Route path="/calls" element={<CallsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/account" element={<AccountPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </main>
+        <IncomingCallOverlay />
+        <ActiveCallOverlay />
+      </div>
+    </CallProvider>
   );
 }
 

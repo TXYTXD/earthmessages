@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Globe, Volume2, Languages, Zap, Check } from "lucide-react";
+import { Globe, Volume2, Languages, Zap, Check, Shield, Bell, Palette } from "lucide-react";
 
 const languages = [
   { code: "en", name: "English", flag: "🇺🇸" },
@@ -22,12 +22,44 @@ export default function SettingsPage() {
   const [autoTranslate, setAutoTranslate] = useState(true);
   const [showOriginal, setShowOriginal] = useState(true);
   const [voiceTranslation, setVoiceTranslation] = useState(true);
+  const [staySignedIn, setStaySignedIn] = useState(() => {
+    return localStorage.getItem("stay_signed_in") !== "false";
+  });
+  const [notifications, setNotifications] = useState(true);
+
+  const handleStaySignedIn = (value: boolean) => {
+    setStaySignedIn(value);
+    localStorage.setItem("stay_signed_in", String(value));
+  };
 
   return (
     <div className="flex-1 p-6 max-w-2xl mx-auto overflow-y-auto">
-      <h2 className="text-2xl font-bold mb-6">Translation Settings</h2>
+      <h2 className="text-2xl font-bold mb-6">Settings</h2>
 
       <div className="space-y-4">
+        {/* Account & Security */}
+        <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+          <h3 className="text-[15px] font-semibold flex items-center gap-2">
+            <Shield className="w-4 h-4 text-primary" />
+            Account & Security
+          </h3>
+          <ToggleRow
+            icon={<Shield className="w-5 h-5 text-primary" />}
+            title="Stay signed in"
+            desc="Keep you logged in between sessions"
+            value={staySignedIn}
+            onChange={handleStaySignedIn}
+          />
+          <div className="border-t border-border" />
+          <ToggleRow
+            icon={<Bell className="w-5 h-5 text-warning" />}
+            title="Call notifications"
+            desc="Get notified for incoming calls"
+            value={notifications}
+            onChange={setNotifications}
+          />
+        </div>
+
         {/* Primary Language */}
         <div className="bg-card rounded-xl border border-border p-5">
           <div className="flex items-center gap-3 mb-4">
@@ -58,7 +90,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Toggles */}
+        {/* Translation toggles */}
         <div className="bg-card rounded-xl border border-border p-5 space-y-4">
           <ToggleRow
             icon={<Zap className="w-5 h-5 text-warning" />}
