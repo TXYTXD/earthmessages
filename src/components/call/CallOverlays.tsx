@@ -10,47 +10,59 @@ export function IncomingCallOverlay() {
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -50 }}
-        className="fixed top-4 right-4 z-[100] bg-card border border-border rounded-2xl shadow-2xl p-5 w-80"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-sm flex flex-col items-center justify-center"
       >
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center text-sm font-semibold">
+        {/* Caller info */}
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          className="flex flex-col items-center mb-10"
+        >
+          <div className="w-24 h-24 rounded-full bg-secondary flex items-center justify-center text-2xl font-bold mb-4 relative">
             {callState.remoteAvatar}
+            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-success animate-ping" />
+            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-success" />
           </div>
-          <div>
-            <p className="font-semibold">{callState.remoteName}</p>
-            <p className="text-sm text-muted-foreground">
-              Incoming {callState.type} call...
-            </p>
-          </div>
-        </div>
+          <p className="text-xl font-semibold">{callState.remoteName}</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Incoming {callState.type} call...
+          </p>
+        </motion.div>
 
-        {/* Pulsing animation */}
-        <div className="flex justify-center mb-4">
-          <div className="relative">
-            <div className="w-4 h-4 rounded-full bg-success animate-ping absolute" />
-            <div className="w-4 h-4 rounded-full bg-success relative" />
-          </div>
-        </div>
-
-        <div className="flex justify-center gap-4">
+        {/* Accept / Ignore buttons */}
+        <div className="flex items-center gap-10">
           <motion.button
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2 }}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => declineCall(callState.callId!)}
-            className="w-14 h-14 rounded-full bg-destructive flex items-center justify-center"
+            className="flex flex-col items-center gap-2"
           >
-            <PhoneOff className="w-6 h-6 text-destructive-foreground" />
+            <div className="w-16 h-16 rounded-full bg-destructive flex items-center justify-center">
+              <PhoneOff className="w-7 h-7 text-destructive-foreground" />
+            </div>
+            <span className="text-sm font-medium text-muted-foreground">Ignore</span>
           </motion.button>
+
           <motion.button
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.3 }}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => answerCall(callState.callId!, callState.type)}
-            className="w-14 h-14 rounded-full bg-success flex items-center justify-center"
+            className="flex flex-col items-center gap-2"
           >
-            <Phone className="w-6 h-6 text-success-foreground" />
+            <div className="w-16 h-16 rounded-full bg-success flex items-center justify-center">
+              <Phone className="w-7 h-7 text-success-foreground" />
+            </div>
+            <span className="text-sm font-medium text-muted-foreground">Accept</span>
           </motion.button>
         </div>
       </motion.div>
