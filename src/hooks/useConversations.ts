@@ -230,22 +230,31 @@ export function useConversations() {
     }
 
     // Create new conversation
+    console.log("[createDirectConversation] Creating new conversation, user.id:", user.id);
     const { data: newConv, error } = await supabase
       .from("conversations")
       .insert({ type: "direct", created_by: user.id })
       .select()
       .single();
 
-    if (error || !newConv) return null;
+    console.log("[createDirectConversation] Insert result:", { newConv, error });
+
+    if (error || !newConv) {
+      console.error("[createDirectConversation] Failed to create conversation:", error);
+      return null;
+    }
 
     // Add self first (as admin), so RLS policy allows adding the other member
-    await supabase.from("conversation_members").insert(
+    const { error: selfErr } = await supabase.from("conversation_members").insert(
       { conversation_id: newConv.id, user_id: user.id, role: "admin" }
     );
+    console.log("[createDirectConversation] Self member insert:", { error: selfErr });
+    
     // Now add the other member (RLS allows because we're now admin)
-    await supabase.from("conversation_members").insert(
+    const { error: otherErr } = await supabase.from("conversation_members").insert(
       { conversation_id: newConv.id, user_id: otherUserId, role: "admin" }
     );
+    console.log("[createDirectConversation] Other member insert:", { error: otherErr });
 
     await fetchConversations();
     return newConv.id;
