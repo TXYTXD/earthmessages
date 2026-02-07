@@ -6,6 +6,7 @@ import { ChatInput } from "./ChatInput";
 import { useMessages, type Message } from "@/hooks/useMessages";
 import { type Conversation } from "@/hooks/useConversations";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCall } from "@/contexts/CallContext";
 
 interface ChatAreaProps {
   conversation: Conversation;
@@ -13,6 +14,7 @@ interface ChatAreaProps {
 
 export function ChatArea({ conversation }: ChatAreaProps) {
   const { user } = useAuth();
+  const { startCall } = useCall();
   const {
     messages,
     loading,
@@ -68,12 +70,28 @@ export function ChatArea({ conversation }: ChatAreaProps) {
           >
             <SearchIcon className="w-5 h-5" />
           </button>
-          <button className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary">
-            <Phone className="w-5 h-5" />
-          </button>
-          <button className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary">
-            <Video className="w-5 h-5" />
-          </button>
+          {conversation.type === "direct" && (
+            <>
+              <button
+                onClick={() => {
+                  const other = conversation.members.find((m) => m.user_id !== user?.id);
+                  if (other) startCall(other.user_id, "voice");
+                }}
+                className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary"
+              >
+                <Phone className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => {
+                  const other = conversation.members.find((m) => m.user_id !== user?.id);
+                  if (other) startCall(other.user_id, "video");
+                }}
+                className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary"
+              >
+                <Video className="w-5 h-5" />
+              </button>
+            </>
+          )}
           <button className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary">
             <Info className="w-5 h-5" />
           </button>

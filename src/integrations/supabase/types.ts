@@ -14,6 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
+      call_records: {
+        Row: {
+          caller_id: string
+          created_at: string
+          ended_at: string | null
+          id: string
+          receiver_id: string
+          started_at: string | null
+          status: string
+          type: string
+        }
+        Insert: {
+          caller_id: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          receiver_id: string
+          started_at?: string | null
+          status?: string
+          type?: string
+        }
+        Update: {
+          caller_id?: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          receiver_id?: string
+          started_at?: string | null
+          status?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      call_signaling: {
+        Row: {
+          call_id: string
+          created_at: string
+          id: string
+          payload: Json
+          sender_id: string
+          type: string
+        }
+        Insert: {
+          call_id: string
+          created_at?: string
+          id?: string
+          payload: Json
+          sender_id: string
+          type: string
+        }
+        Update: {
+          call_id?: string
+          created_at?: string
+          id?: string
+          payload?: Json
+          sender_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_signaling_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "call_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_members: {
         Row: {
           conversation_id: string
