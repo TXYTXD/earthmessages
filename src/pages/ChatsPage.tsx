@@ -20,12 +20,37 @@ export default function ChatsPage() {
   const handleSelectFriend = async (userId: string) => {
     const convId = await createDirectConversation(userId);
     if (convId) {
-      await refetch();
-      const conv = conversations.find((c) => c.id === convId);
-      if (conv) setSelectedConversation(conv);
-      setTimeout(async () => {
+      // refetch returns updated list via state, but we need to select immediately
+      // so we poll briefly until the conversation appears
+      const trySelect = async (retries = 3) => {
         await refetch();
-      }, 500);
+        // Wait a tick for state to update
+        await new Promise((r) => setTimeout(r, 200));
+        const found = conversations.find((c) => c.id === convId);
+        if (found) {
+          setSelectedConversation(found);
+        } else if (retries > 0) {
+          await trySelect(retries - 1);
+        } else {
+          // Fallback: create a minimal conversation object to open the chat
+          setSelectedConversation({
+            id: convId,
+            type: "direct",
+            name: null,
+            avatar_url: null,
+            theme_color: "#0084ff",
+            created_by: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            display_name: "Chat",
+            display_avatar: "CH",
+            unread_count: 0,
+            is_online: false,
+            members: [],
+          });
+        }
+      };
+      trySelect();
     }
   };
 
