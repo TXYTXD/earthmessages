@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNotificationSound } from "./useNotificationSound";
 
 export interface Message {
   id: string;
@@ -29,6 +30,7 @@ export interface MessageReaction {
 
 export function useMessages(conversationId: string | null) {
   const { user } = useAuth();
+  const { playMessageSound } = useNotificationSound();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
@@ -183,10 +185,13 @@ export function useMessages(conversationId: string | null) {
         async (payload) => {
           const newMsg = await enrichMessage(payload.new);
           setMessages((prev) => {
-            // Avoid duplicates
             if (prev.some((m) => m.id === newMsg.id)) return prev;
             return [...prev, newMsg];
           });
+          // Play sound for messages from others
+          if (newMsg.sender_id !== user?.id) {
+            playMessageSound();
+          }
           // Mark as read
           if (user) {
             await supabase.from("message_read_receipts").upsert(
