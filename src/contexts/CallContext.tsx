@@ -1,5 +1,6 @@
-import { createContext, useContext, ReactNode } from "react";
+import { createContext, useContext, ReactNode, useEffect, useRef } from "react";
 import { useWebRTC, type CallState } from "@/hooks/useWebRTC";
+import { useCallSounds } from "@/hooks/useCallSounds";
 
 interface CallContextType {
   callState: CallState;
@@ -25,6 +26,25 @@ export const useCall = () => {
 
 export function CallProvider({ children }: { children: ReactNode }) {
   const webrtc = useWebRTC();
+  const { playIncomingRing, playDialingTone, stopSound } = useCallSounds();
+  const prevStatus = useRef(webrtc.callState.status);
+
+  useEffect(() => {
+    const { status, isIncoming } = webrtc.callState;
+
+    if (status !== prevStatus.current) {
+      // Stop any playing sound on state change
+      stopSound();
+
+      if (status === "ringing" && isIncoming) {
+        playIncomingRing();
+      } else if (status === "calling" && !isIncoming) {
+        playDialingTone();
+      }
+
+      prevStatus.current = status;
+    }
+  }, [webrtc.callState.status, webrtc.callState.isIncoming, playIncomingRing, playDialingTone, stopSound]);
 
   return (
     <CallContext.Provider value={webrtc}>
