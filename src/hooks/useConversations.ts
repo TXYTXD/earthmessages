@@ -37,8 +37,8 @@ export function useConversations() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchConversations = useCallback(async () => {
-    if (!user) return;
+  const fetchConversations = useCallback(async (): Promise<Conversation[]> => {
+    if (!user) return [];
 
     // Get all conversation IDs the user is a member of
     const { data: memberships } = await supabase
@@ -49,7 +49,7 @@ export function useConversations() {
     if (!memberships || memberships.length === 0) {
       setConversations([]);
       setLoading(false);
-      return;
+      return [];
     }
 
     const convIds = memberships.map((m) => m.conversation_id);
@@ -63,7 +63,7 @@ export function useConversations() {
     if (!convs) {
       setConversations([]);
       setLoading(false);
-      return;
+      return [];
     }
 
     // Fetch all members for these conversations
@@ -190,6 +190,7 @@ export function useConversations() {
 
     setConversations(result);
     setLoading(false);
+    return result;
   }, [user]);
 
   useEffect(() => {
