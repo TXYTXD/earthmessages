@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from "react";
-import { Phone, Video, Info, Search as SearchIcon } from "lucide-react";
+import { Phone, Video, Info, Search as SearchIcon, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { MessageBubble } from "./MessageBubble";
 import { ChatInput } from "./ChatInput";
@@ -10,9 +10,10 @@ import { useCall } from "@/contexts/CallContext";
 
 interface ChatAreaProps {
   conversation: Conversation;
+  onBack?: () => void;
 }
 
-export function ChatArea({ conversation }: ChatAreaProps) {
+export function ChatArea({ conversation, onBack }: ChatAreaProps) {
   const { user } = useAuth();
   const { startCall } = useCall();
   const {
@@ -45,7 +46,15 @@ export function ChatArea({ conversation }: ChatAreaProps) {
     <div className="flex-1 flex flex-col bg-background">
       {/* Chat Header */}
       <div className="h-14 px-4 flex items-center justify-between border-b border-border">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-foreground"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          )}
           <div className="relative">
             <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center text-sm font-semibold">
               {conversation.display_avatar}
