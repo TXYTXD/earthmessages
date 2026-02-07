@@ -84,6 +84,7 @@ export function ChatArea({ conversation, onBack }: ChatAreaProps) {
               <button
                 onClick={() => {
                   const other = conversation.members.find((m) => m.user_id !== user?.id);
+                  console.log("[ChatArea] Voice call clicked, other member:", other);
                   if (other) startCall(other.user_id, "voice");
                 }}
                 className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary"
@@ -93,6 +94,7 @@ export function ChatArea({ conversation, onBack }: ChatAreaProps) {
               <button
                 onClick={() => {
                   const other = conversation.members.find((m) => m.user_id !== user?.id);
+                  console.log("[ChatArea] Video call clicked, other member:", other);
                   if (other) startCall(other.user_id, "video");
                 }}
                 className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary"
