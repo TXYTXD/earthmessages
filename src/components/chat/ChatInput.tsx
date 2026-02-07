@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { Send, Smile, Image, Paperclip, Mic, ThumbsUp, X } from "lucide-react";
 import { type Message } from "@/hooks/useMessages";
 import { useMediaUpload } from "@/hooks/useMediaUpload";
+import EmojiPicker, { Theme } from "emoji-picker-react";
 
 interface ChatInputProps {
   onSend: (content: string, type?: string, mediaUrl?: string, metadata?: any, replyToId?: string) => void;
@@ -12,6 +13,7 @@ interface ChatInputProps {
 
 export function ChatInput({ onSend, onTyping, replyTo, onCancelReply }: ChatInputProps) {
   const [message, setMessage] = useState("");
+  const [showEmoji, setShowEmoji] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile, uploading } = useMediaUpload();
@@ -22,6 +24,7 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply }: ChatInpu
       onSend(message.trim(), "text", undefined, undefined, replyTo?.id);
       setMessage("");
       onCancelReply();
+      setShowEmoji(false);
     }
   };
 
@@ -48,8 +51,24 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply }: ChatInpu
     onSend("👍", "text");
   };
 
+  const handleEmojiClick = (emojiData: { emoji: string }) => {
+    setMessage((prev) => prev + emojiData.emoji);
+  };
+
   return (
-    <div className="px-3 py-2 border-t border-border">
+    <div className="px-3 py-2 border-t border-border relative">
+      {/* Emoji Picker */}
+      {showEmoji && (
+        <div className="absolute bottom-full left-0 mb-2 z-50">
+          <EmojiPicker
+            onEmojiClick={handleEmojiClick}
+            theme={Theme.AUTO}
+            width={320}
+            height={400}
+          />
+        </div>
+      )}
+
       {/* Reply preview */}
       {replyTo && (
         <div className="flex items-center gap-2 mb-2 px-2 py-1.5 bg-accent rounded-lg">
@@ -91,6 +110,12 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply }: ChatInpu
           className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary flex-shrink-0"
         >
           <Paperclip className="w-5 h-5" />
+        </button>
+        <button
+          onClick={() => setShowEmoji(!showEmoji)}
+          className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary flex-shrink-0"
+        >
+          <Smile className="w-5 h-5" />
         </button>
 
         <div className="flex-1 relative">
