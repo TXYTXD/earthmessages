@@ -60,10 +60,21 @@ export function useStories() {
 
     const viewedIds = new Set(views?.map((v) => v.story_id) || []);
 
+    // Generate signed URLs for story media
+    const signedUrls = new Map<string, string>();
+    for (const s of stories) {
+      // If media_url is a path (not a full URL), generate signed URL
+      if (!s.media_url.startsWith("http")) {
+        const { data } = await supabase.storage.from("stories").createSignedUrl(s.media_url, 60 * 60 * 24);
+        if (data) signedUrls.set(s.id, data.signedUrl);
+      }
+    }
+
     const enriched: Story[] = stories.map((s) => {
       const profile = profileMap.get(s.user_id);
       return {
         ...s,
+        media_url: signedUrls.get(s.id) || s.media_url,
         user_name: profile?.display_name || "Unknown",
         user_avatar: (profile?.display_name || "?").slice(0, 2).toUpperCase(),
         viewed: viewedIds.has(s.id),
@@ -112,11 +123,10 @@ export function useStories() {
 
     if (uploadError) return;
 
-    const { data: urlData } = supabase.storage.from("stories").getPublicUrl(filePath);
-
+    // Store the file path as media_url (we'll generate signed URLs when fetching)
     await supabase.from("stories").insert({
       user_id: user.id,
-      media_url: urlData.publicUrl,
+      media_url: filePath,
       media_type: file.type.startsWith("video") ? "video" : "image",
       caption: caption || null,
     });

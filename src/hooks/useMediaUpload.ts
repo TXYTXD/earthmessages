@@ -18,15 +18,21 @@ export function useMediaUpload() {
       return null;
     }
 
-    const { data: urlData } = supabase.storage.from("chat-media").getPublicUrl(filePath);
+    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+      .from("chat-media")
+      .createSignedUrl(filePath, 60 * 60 * 24 * 7); // 7 days
 
     setUploading(false);
+    if (signedUrlError || !signedUrlData) return null;
+
     return {
-      url: urlData.publicUrl,
+      url: signedUrlData.signedUrl,
       metadata: {
         name: file.name,
         size: file.size,
         type: file.type,
+        path: filePath,
+        bucket: "chat-media",
       },
     };
   };
