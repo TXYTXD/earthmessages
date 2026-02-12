@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
 
 const ICE_SERVERS = [
   { urls: "stun:stun.l.google.com:19302" },
@@ -209,10 +210,15 @@ export function useWebRTC() {
 
   const startCall = useCallback(
     async (receiverId: string, type: "voice" | "video") => {
-      if (!user) { console.error("[Call] No user"); return; }
+      if (!user) {
+        console.error("[Call] No user");
+        toast({ title: "Not logged in", description: "Please log in to make calls", variant: "destructive" });
+        return;
+      }
       // Prevent duplicate calls
       if (startingCall.current || callStateRef.current.status !== "idle") {
-        console.warn("[Call] Already in a call or starting one");
+        console.warn("[Call] Already in a call or starting one, status:", callStateRef.current.status, "starting:", startingCall.current);
+        toast({ title: "Call in progress", description: "You're already in a call or starting one", variant: "destructive" });
         return;
       }
       startingCall.current = true;
@@ -238,6 +244,7 @@ export function useWebRTC() {
         }
       } catch (err) {
         console.error("[Call] Failed to get media devices:", err);
+        toast({ title: "Media access denied", description: "Please allow microphone/camera access to make calls", variant: "destructive" });
         startingCall.current = false;
         return;
       }
@@ -252,6 +259,7 @@ export function useWebRTC() {
       console.log("[Call] Call record result:", { call, error });
       if (!call || error) {
         console.error("[Call] Failed to create call record:", error);
+        toast({ title: "Call failed", description: error?.message || "Could not start call", variant: "destructive" });
         localStream.current?.getTracks().forEach((t) => t.stop());
         localStream.current = null;
         startingCall.current = false;
