@@ -1,0 +1,2 @@
+ALTER TABLE public.call_records REPLICA IDENTITY FULL;
+ALTER TABLE public.call_signaling REPLICA IDENTITY FULL;
