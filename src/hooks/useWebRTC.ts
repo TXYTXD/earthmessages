@@ -398,6 +398,8 @@ export function useWebRTC() {
   useEffect(() => {
     if (!user) return;
 
+    console.log("[Call] Setting up incoming call listener for user:", user.id);
+    
     const channel = supabase
       .channel("incoming-calls")
       .on(
@@ -406,13 +408,23 @@ export function useWebRTC() {
           event: "INSERT",
           schema: "public",
           table: "call_records",
-          filter: `receiver_id=eq.${user.id}`,
         },
         async (payload: any) => {
           const call = payload.new;
-          if (call.status !== "ringing") return;
+          console.log("[Call] Received call_records INSERT:", call);
+          
+          // Filter for calls where we are the receiver
+          if (call.receiver_id !== user.id) {
+            console.log("[Call] Not for us, ignoring");
+            return;
+          }
+          
+          if (call.status !== "ringing") {
+            console.log("[Call] Status is not ringing:", call.status);
+            return;
+          }
           if (callStateRef.current.status !== "idle") {
-            // Already in a call, auto-decline
+            console.log("[Call] Already in a call, auto-declining");
             await supabase
               .from("call_records")
               .update({ status: "missed" })
@@ -420,6 +432,7 @@ export function useWebRTC() {
             return;
           }
 
+          console.log("[Call] Incoming call from:", call.caller_id);
           const { data: profile } = await supabase
             .from("profiles")
             .select("display_name")
@@ -437,9 +450,12 @@ export function useWebRTC() {
             isIncoming: true,
             duration: 0,
           });
+          console.log("[Call] Incoming call state set, should ring now");
         }
       )
-      .subscribe();
+      .subscribe((status: string) => {
+        console.log("[Call] Incoming calls channel status:", status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
