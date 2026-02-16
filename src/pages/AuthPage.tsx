@@ -150,7 +150,7 @@ export default function AuthPage() {
           <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "var(--messenger-gradient)" }}>
             <MessageCircle className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold gradient-text">Earth Messages</h1>
+          <h1 className="text-3xl font-bold gradient-text">umsmessages</h1>
           <p className="text-muted-foreground text-sm mt-1">Connect & Communicate</p>
         </div>
 
