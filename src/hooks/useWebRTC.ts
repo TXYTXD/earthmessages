@@ -394,12 +394,75 @@ export function useWebRTC() {
     setIsVideoOff((prev) => !prev);
   }, []);
 
-  // Listen for incoming calls
+  // Handle an incoming call (shared between realtime and polling)
+  const handleIncomingCall = useCallback(
+    async (call: any) => {
+      if (call.receiver_id !== user?.id) return;
+      if (call.status !== "ringing") return;
+      if (callStateRef.current.status !== "idle") {
+        await supabase
+          .from("call_records")
+          .update({ status: "missed" })
+          .eq("id", call.id);
+        return;
+      }
+
+      console.log("[Call] Incoming call from:", call.caller_id, "id:", call.id);
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("user_id", call.caller_id)
+        .maybeSingle();
+
+      const remoteName = profile?.display_name || "Unknown";
+
+      setCallState({
+        callId: call.id,
+        status: "ringing",
+        type: call.type,
+        remoteName,
+        remoteAvatar: (remoteName || "?").slice(0, 2).toUpperCase(),
+        isIncoming: true,
+        duration: 0,
+      });
+
+      // Show browser notification if tab is not focused
+      if (document.hidden && "Notification" in window && Notification.permission === "granted") {
+        try {
+          const notification = new Notification(`Incoming ${call.type} call`, {
+            body: `${remoteName} is calling you`,
+            tag: `call-${call.id}`,
+            requireInteraction: true,
+          });
+          notification.onclick = () => {
+            window.focus();
+            notification.close();
+          };
+        } catch (e) {
+          console.warn("[Call] Failed to show notification:", e);
+        }
+      }
+    },
+    [user]
+  );
+
+  // Request notification permission on mount
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission().then((perm) => {
+        console.log("[Call] Notification permission:", perm);
+      });
+    }
+  }, []);
+
+  // Listen for incoming calls via Realtime + Polling fallback
   useEffect(() => {
     if (!user) return;
 
     console.log("[Call] Setting up incoming call listener for user:", user.id);
-    
+    const seenCallIds = new Set<string>();
+
+    // Realtime listener
     const channel = supabase
       .channel("incoming-calls")
       .on(
@@ -411,56 +474,44 @@ export function useWebRTC() {
         },
         async (payload: any) => {
           const call = payload.new;
-          console.log("[Call] Received call_records INSERT:", call);
-          
-          // Filter for calls where we are the receiver
-          if (call.receiver_id !== user.id) {
-            console.log("[Call] Not for us, ignoring");
-            return;
+          console.log("[Call] Realtime: received call_records INSERT:", call?.id);
+          if (call && !seenCallIds.has(call.id)) {
+            seenCallIds.add(call.id);
+            handleIncomingCall(call);
           }
-          
-          if (call.status !== "ringing") {
-            console.log("[Call] Status is not ringing:", call.status);
-            return;
-          }
-          if (callStateRef.current.status !== "idle") {
-            console.log("[Call] Already in a call, auto-declining");
-            await supabase
-              .from("call_records")
-              .update({ status: "missed" })
-              .eq("id", call.id);
-            return;
-          }
-
-          console.log("[Call] Incoming call from:", call.caller_id);
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("display_name")
-            .eq("user_id", call.caller_id)
-            .maybeSingle();
-
-          const remoteName = profile?.display_name || "Unknown";
-
-          setCallState({
-            callId: call.id,
-            status: "ringing",
-            type: call.type,
-            remoteName,
-            remoteAvatar: (remoteName || "?").slice(0, 2).toUpperCase(),
-            isIncoming: true,
-            duration: 0,
-          });
-          console.log("[Call] Incoming call state set, should ring now");
         }
       )
       .subscribe((status: string) => {
         console.log("[Call] Incoming calls channel status:", status);
       });
 
+    // Polling fallback: check for ringing calls every 3 seconds
+    const pollInterval = setInterval(async () => {
+      if (callStateRef.current.status !== "idle") return;
+
+      const { data: pendingCalls } = await supabase
+        .from("call_records")
+        .select("*")
+        .eq("receiver_id", user.id)
+        .eq("status", "ringing")
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (pendingCalls && pendingCalls.length > 0) {
+        const call = pendingCalls[0];
+        if (!seenCallIds.has(call.id)) {
+          console.log("[Call] Polling: found ringing call:", call.id);
+          seenCallIds.add(call.id);
+          handleIncomingCall(call);
+        }
+      }
+    }, 3000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(pollInterval);
     };
-  }, [user]);
+  }, [user, handleIncomingCall]);
 
   return {
     callState,
