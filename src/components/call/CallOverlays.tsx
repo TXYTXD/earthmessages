@@ -41,7 +41,11 @@ export function IncomingCallOverlay() {
             transition={{ delay: 0.2 }}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            onClick={() => declineCall(callState.callId!)}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              declineCall(callState.callId!);
+            }}
             className="flex flex-col items-center gap-2"
           >
             <div className="w-16 h-16 rounded-full bg-destructive flex items-center justify-center">
@@ -56,7 +60,11 @@ export function IncomingCallOverlay() {
             transition={{ delay: 0.3 }}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            onClick={() => answerCall(callState.callId!, callState.type)}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              answerCall(callState.callId!, callState.type);
+            }}
             className="flex flex-col items-center gap-2"
           >
             <div className="w-16 h-16 rounded-full bg-success flex items-center justify-center">
