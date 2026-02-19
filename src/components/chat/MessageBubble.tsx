@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Globe, Reply, Smile, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Globe, Reply, Smile, MoreHorizontal, Pencil, Trash2, Lock } from "lucide-react";
 import { type Message } from "@/hooks/useMessages";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
@@ -118,6 +118,9 @@ export function MessageBubble({ message, onReact, onReply, onEdit, onDelete, sho
 
           {message.is_edited && !isDeleted && (
             <span className="text-[10px] opacity-60 ml-1">edited</span>
+          )}
+          {message.is_encrypted && !isDeleted && (
+            <Lock className="w-2.5 h-2.5 inline-block ml-1 opacity-50" />
           )}
         </div>
 

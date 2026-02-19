@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotificationSound } from "./useNotificationSound";
+import { encryptMessage, decryptMessage, getConversationKey, isEncrypted } from "@/lib/encryption";
 
 export interface Message {
   id: string;
@@ -19,6 +20,7 @@ export interface Message {
   sender_avatar?: string;
   reactions: MessageReaction[];
   reply_to?: Message | null;
+  is_encrypted?: boolean;
 }
 
 export interface MessageReaction {
@@ -88,26 +90,43 @@ export function useMessages(conversationId: string | null) {
       replies?.forEach((r) => replyMap.set(r.id, r));
     }
 
-    const result: Message[] = msgs.map((msg) => {
-      const profile = profileMap.get(msg.sender_id);
-      const replyMsg = msg.reply_to_id ? replyMap.get(msg.reply_to_id) : null;
-      let replyTo: Message | null = null;
-      if (replyMsg) {
-        const replyProfile = profileMap.get(replyMsg.sender_id);
-        replyTo = {
-          ...replyMsg,
-          sender_name: replyProfile?.display_name || "Unknown",
-          reactions: [],
+    // Get conversation encryption key
+    const encKey = await getConversationKey(conversationId);
+
+    const result: Message[] = await Promise.all(
+      msgs.map(async (msg) => {
+        const profile = profileMap.get(msg.sender_id);
+        const replyMsg = msg.reply_to_id ? replyMap.get(msg.reply_to_id) : null;
+        let replyTo: Message | null = null;
+        if (replyMsg) {
+          const replyProfile = profileMap.get(replyMsg.sender_id);
+          const replyContent = replyMsg.content
+            ? await decryptMessage(replyMsg.content, encKey)
+            : replyMsg.content;
+          replyTo = {
+            ...replyMsg,
+            content: replyContent,
+            sender_name: replyProfile?.display_name || "Unknown",
+            reactions: [],
+            is_encrypted: isEncrypted(replyMsg.content),
+          };
+        }
+
+        const decryptedContent = msg.content
+          ? await decryptMessage(msg.content, encKey)
+          : msg.content;
+
+        return {
+          ...msg,
+          content: decryptedContent,
+          sender_name: profile?.display_name || "Unknown",
+          sender_avatar: (profile?.display_name || "?").slice(0, 2).toUpperCase(),
+          reactions: reactionsByMsg.get(msg.id) || [],
+          reply_to: replyTo,
+          is_encrypted: isEncrypted(msg.content),
         };
-      }
-      return {
-        ...msg,
-        sender_name: profile?.display_name || "Unknown",
-        sender_avatar: (profile?.display_name || "?").slice(0, 2).toUpperCase(),
-        reactions: reactionsByMsg.get(msg.id) || [],
-        reply_to: replyTo,
-      };
-    });
+      })
+    );
 
     setMessages(result);
     setLoading(false);
@@ -149,22 +168,37 @@ export function useMessages(conversationId: string | null) {
           .select("user_id, display_name, avatar_url")
           .eq("user_id", replyMsg.sender_id)
           .single();
+
+        const encKey = msg.conversation_id ? await getConversationKey(msg.conversation_id) : null;
+        const replyContent = replyMsg.content && encKey
+          ? await decryptMessage(replyMsg.content, encKey)
+          : replyMsg.content;
+
         replyTo = {
           ...replyMsg,
+          content: replyContent,
           sender_name: replyProfile?.display_name || "Unknown",
           sender_avatar: (replyProfile?.display_name || "?").slice(0, 2).toUpperCase(),
           reactions: [],
           reply_to: null,
+          is_encrypted: isEncrypted(replyMsg.content),
         };
       }
     }
 
+    const encKey = msg.conversation_id ? await getConversationKey(msg.conversation_id) : null;
+    const decryptedContent = msg.content && encKey
+      ? await decryptMessage(msg.content, encKey)
+      : msg.content;
+
     return {
       ...msg,
+      content: decryptedContent,
       sender_name: profile?.display_name || "Unknown",
       sender_avatar: (profile?.display_name || "?").slice(0, 2).toUpperCase(),
       reactions: [],
       reply_to: replyTo,
+      is_encrypted: isEncrypted(msg.content),
     };
   }, []);
 
@@ -214,12 +248,17 @@ export function useMessages(conversationId: string | null) {
           table: "messages",
           filter: `conversation_id=eq.${conversationId}`,
         },
-        (payload) => {
+        async (payload) => {
           const updated = payload.new as any;
+          let decryptedContent = updated.content;
+          if (updated.content && conversationId) {
+            const encKey = await getConversationKey(conversationId);
+            decryptedContent = await decryptMessage(updated.content, encKey);
+          }
           setMessages((prev) =>
             prev.map((m) =>
               m.id === updated.id
-                ? { ...m, content: updated.content, is_edited: updated.is_edited, deleted_at: updated.deleted_at }
+                ? { ...m, content: decryptedContent, is_edited: updated.is_edited, deleted_at: updated.deleted_at, is_encrypted: isEncrypted(updated.content) }
                 : m
             )
           );
@@ -312,12 +351,17 @@ export function useMessages(conversationId: string | null) {
     mediaMetadata?: any,
     replyToId?: string
   ) => {
-    if (!user || !conversationId) return;
+    // Encrypt text messages before storing
+    let encryptedContent = content;
+    if (type === "text" && content) {
+      const encKey = await getConversationKey(conversationId);
+      encryptedContent = await encryptMessage(content, encKey);
+    }
 
     await supabase.from("messages").insert({
       conversation_id: conversationId,
       sender_id: user.id,
-      content,
+      content: encryptedContent,
       type,
       media_url: mediaUrl || null,
       media_metadata: mediaMetadata || null,
@@ -333,10 +377,12 @@ export function useMessages(conversationId: string | null) {
   };
 
   const editMessage = async (messageId: string, newContent: string) => {
-    if (!user) return;
+    if (!user || !conversationId) return;
+    const encKey = await getConversationKey(conversationId);
+    const encrypted = await encryptMessage(newContent, encKey);
     await supabase
       .from("messages")
-      .update({ content: newContent, is_edited: true })
+      .update({ content: encrypted, is_edited: true })
       .eq("id", messageId)
       .eq("sender_id", user.id);
   };

@@ -82,6 +82,35 @@ export type Database = {
           },
         ]
       }
+      conversation_keys: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          encryption_key: string
+          id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          encryption_key: string
+          id?: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          encryption_key?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_keys_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: true
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_members: {
         Row: {
           conversation_id: string

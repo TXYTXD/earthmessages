@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from "react";
-import { Phone, Video, Info, Search as SearchIcon, ArrowLeft } from "lucide-react";
+import { Phone, Video, Info, Search as SearchIcon, ArrowLeft, Lock } from "lucide-react";
 import { motion } from "framer-motion";
 import { MessageBubble } from "./MessageBubble";
 import { ChatInput } from "./ChatInput";
@@ -65,10 +65,11 @@ export function ChatArea({ conversation, onBack }: ChatAreaProps) {
           </div>
           <div>
             <h3 className="text-[15px] font-semibold leading-tight">{conversation.display_name}</h3>
-            <span className="text-[11px] text-muted-foreground">
+            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <Lock className="w-2.5 h-2.5" />
               {conversation.type === "direct"
-                ? conversation.is_online ? "Active now" : "Offline"
-                : `${conversation.members.length} members`}
+                ? conversation.is_online ? "Encrypted · Active now" : "Encrypted · Offline"
+                : `Encrypted · ${conversation.members.length} members`}
             </span>
           </div>
         </div>
