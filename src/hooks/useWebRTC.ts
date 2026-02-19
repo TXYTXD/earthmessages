@@ -116,9 +116,12 @@ export function useWebRTC() {
 
       pc.ontrack = (event) => {
         remoteStream.current = event.streams[0];
+        // Try to assign immediately, but also rely on the effect in the overlay
         if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = event.streams[0];
         }
+        // Force a re-render so the overlay effect can pick up the stream
+        setCallState((prev) => ({ ...prev }));
       };
 
       pc.onconnectionstatechange = () => {
@@ -519,6 +522,8 @@ export function useWebRTC() {
     isVideoOff,
     localVideoRef,
     remoteVideoRef,
+    localStream,
+    remoteStream,
     startCall,
     answerCall,
     declineCall,

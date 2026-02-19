@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff } from "lucide-react";
 import { useCall } from "@/contexts/CallContext";
@@ -79,7 +80,20 @@ export function IncomingCallOverlay() {
 }
 
 export function ActiveCallOverlay() {
-  const { callState, hangUp, toggleMute, toggleVideo, isMuted, isVideoOff, localVideoRef, remoteVideoRef } = useCall();
+  const { callState, hangUp, toggleMute, toggleVideo, isMuted, isVideoOff, localVideoRef, remoteVideoRef, localStream, remoteStream } = useCall();
+
+  // Sync streams to video elements whenever they change or mount
+  useEffect(() => {
+    if (localVideoRef.current && localStream.current) {
+      localVideoRef.current.srcObject = localStream.current;
+    }
+  }, [callState.status, localVideoRef, localStream]);
+
+  useEffect(() => {
+    if (remoteVideoRef.current && remoteStream.current) {
+      remoteVideoRef.current.srcObject = remoteStream.current;
+    }
+  }, [callState.status, callState.duration, remoteVideoRef, remoteStream]);
 
   if (callState.status !== "calling" && callState.status !== "connected") return null;
 
