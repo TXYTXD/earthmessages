@@ -1,8 +1,10 @@
 import { useState, useRef } from "react";
-import { Send, Smile, Image, Paperclip, Mic, ThumbsUp, X } from "lucide-react";
+import { Send, Smile, Image, Paperclip, Mic, ThumbsUp, X, Sticker } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
 import { type Message } from "@/hooks/useMessages";
 import { useMediaUpload } from "@/hooks/useMediaUpload";
 import EmojiPicker, { Theme } from "emoji-picker-react";
+import { StickerPicker } from "./StickerPicker";
 
 interface ChatInputProps {
   onSend: (content: string, type?: string, mediaUrl?: string, metadata?: any, replyToId?: string) => void;
@@ -14,6 +16,7 @@ interface ChatInputProps {
 export function ChatInput({ onSend, onTyping, replyTo, onCancelReply }: ChatInputProps) {
   const [message, setMessage] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
+  const [showStickers, setShowStickers] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile, uploading } = useMediaUpload();
@@ -55,6 +58,12 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply }: ChatInpu
     setMessage((prev) => prev + emojiData.emoji);
   };
 
+  const handleStickerSelect = (sticker: string) => {
+    onSend(sticker, "sticker", undefined, undefined, replyTo?.id);
+    onCancelReply();
+    setShowStickers(false);
+  };
+
   return (
     <div className="px-3 py-2 border-t border-border relative">
       {/* Emoji Picker */}
@@ -68,6 +77,16 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply }: ChatInpu
           />
         </div>
       )}
+
+      {/* Sticker Picker */}
+      <AnimatePresence>
+        {showStickers && (
+          <StickerPicker
+            onSelect={handleStickerSelect}
+            onClose={() => setShowStickers(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Reply preview */}
       {replyTo && (
@@ -116,6 +135,12 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply }: ChatInpu
           className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary flex-shrink-0"
         >
           <Smile className="w-5 h-5" />
+        </button>
+        <button
+          onClick={() => { setShowStickers(!showStickers); setShowEmoji(false); }}
+          className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary flex-shrink-0"
+        >
+          <Sticker className="w-5 h-5" />
         </button>
 
         <div className="flex-1 relative">

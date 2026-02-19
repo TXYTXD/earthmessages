@@ -104,6 +104,8 @@ export function MessageBubble({ message, onReact, onReply, onEdit, onDelete, sho
             </div>
           ) : message.type === "image" ? (
             <img src={message.media_url || ""} alt="Shared image" className="rounded-lg max-w-full max-h-64 object-cover" />
+          ) : message.type === "sticker" ? (
+            <span className="text-5xl leading-none">{message.content}</span>
           ) : message.type === "file" ? (
             <a href={message.media_url || ""} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 underline">
               📎 {message.media_metadata?.name || "File"}
