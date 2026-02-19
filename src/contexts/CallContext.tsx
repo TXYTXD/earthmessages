@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode, useEffect, useRef } from "react";
+import { createContext, useContext, ReactNode, useEffect, useRef, MutableRefObject } from "react";
 import { useWebRTC, type CallState } from "@/hooks/useWebRTC";
 import { useCallSounds } from "@/hooks/useCallSounds";
 
@@ -8,6 +8,8 @@ interface CallContextType {
   isVideoOff: boolean;
   localVideoRef: React.RefObject<HTMLVideoElement>;
   remoteVideoRef: React.RefObject<HTMLVideoElement>;
+  localStream: MutableRefObject<MediaStream | null>;
+  remoteStream: MutableRefObject<MediaStream | null>;
   startCall: (receiverId: string, type: "voice" | "video") => Promise<void>;
   answerCall: (callId: string, type: "voice" | "video") => Promise<void>;
   declineCall: (callId: string) => Promise<void>;
@@ -33,7 +35,6 @@ export function CallProvider({ children }: { children: ReactNode }) {
     const { status, isIncoming } = webrtc.callState;
 
     if (status !== prevStatus.current) {
-      // Stop any playing sound on state change
       stopSound();
 
       if (status === "ringing" && isIncoming) {
