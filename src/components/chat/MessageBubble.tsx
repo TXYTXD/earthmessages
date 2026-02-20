@@ -1,9 +1,9 @@
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Globe, Reply, Smile, MoreHorizontal, Pencil, Trash2, Lock } from "lucide-react";
+import { Globe, Reply, Smile, Pencil, Trash2, Lock } from "lucide-react";
 import { type Message } from "@/hooks/useMessages";
 import { useAuth } from "@/contexts/AuthContext";
-import { useState } from "react";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 const QUICK_REACTIONS = ["❤️", "😂", "😮", "😢", "👍", "👎"];
 
@@ -19,13 +19,34 @@ interface MessageBubbleProps {
 
 export function MessageBubble({ message, onReact, onReply, onEdit, onDelete, showAvatar, isGroup }: MessageBubbleProps) {
   const { user } = useAuth();
+  const { autoTranslate, showOriginal, primaryLang, translateText } = useTranslation();
   const isMe = message.sender_id === user?.id;
   const isDeleted = !!message.deleted_at;
   const [showActions, setShowActions] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(message.content || "");
+  const [translatedText, setTranslatedText] = useState<string | null>(null);
+  const [translating, setTranslating] = useState(false);
   const actionsRef = useRef<HTMLDivElement>(null);
+
+  // Auto-translate incoming messages
+  useEffect(() => {
+    if (!autoTranslate || isMe || isDeleted || !message.content || message.type !== "text") {
+      setTranslatedText(null);
+      return;
+    }
+
+    let cancelled = false;
+    setTranslating(true);
+    translateText(message.content).then((result) => {
+      if (!cancelled) {
+        setTranslatedText(result);
+        setTranslating(false);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [autoTranslate, primaryLang, message.content, message.type, isMe, isDeleted, translateText]);
 
   if (message.type === "system") {
     return (
@@ -51,6 +72,8 @@ export function MessageBubble({ message, onReact, onReply, onEdit, onDelete, sho
   }, {} as Record<string, number>);
 
   const myReactions = new Set(message.reactions.filter((r) => r.user_id === user?.id).map((r) => r.emoji));
+
+  const displayContent = translatedText || message.content;
 
   return (
     <div
@@ -115,7 +138,24 @@ export function MessageBubble({ message, onReact, onReply, onEdit, onDelete, sho
           ) : message.type === "voice" ? (
             <audio controls src={message.media_url || ""} className="max-w-full" />
           ) : (
-            <span>{message.content}</span>
+            <div>
+              <span>{displayContent}</span>
+              {/* Show original text below translation */}
+              {translatedText && showOriginal && message.content && (
+                <div className="mt-1 pt-1 border-t border-white/20">
+                  <span className="text-[12px] opacity-70 italic">{message.content}</span>
+                </div>
+              )}
+              {translating && (
+                <span className="text-[10px] opacity-50 ml-1">translating...</span>
+              )}
+              {translatedText && !translating && (
+                <span className="text-[10px] opacity-60 ml-1 inline-flex items-center gap-0.5">
+                  <Globe className="w-2.5 h-2.5" />
+                  translated
+                </span>
+              )}
+            </div>
           )}
 
           {message.is_edited && !isDeleted && (
