@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Globe, Volume2, Languages, Zap, Check, Shield, Bell, Palette, Sun, Moon } from "lucide-react";
 import { useThemeContext, ThemeName } from "@/contexts/ThemeContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 const themes: { id: ThemeName; name: string; colors: string[] }[] = [
   { id: "default", name: "Default", colors: ["hsl(270 70% 55%)", "hsl(214 100% 55%)", "hsl(190 100% 50%)"] },
@@ -29,10 +30,16 @@ const languages = [
 
 export default function SettingsPage() {
   const { theme, setTheme, colorMode, toggleColorMode } = useThemeContext();
-  const [primaryLang, setPrimaryLang] = useState("en");
-  const [autoTranslate, setAutoTranslate] = useState(true);
-  const [showOriginal, setShowOriginal] = useState(true);
-  const [voiceTranslation, setVoiceTranslation] = useState(true);
+  const {
+    primaryLang,
+    setPrimaryLang,
+    autoTranslate,
+    setAutoTranslate,
+    showOriginal,
+    setShowOriginal,
+    voiceTranslation,
+    setVoiceTranslation,
+  } = useTranslation();
   const [staySignedIn, setStaySignedIn] = useState(() => {
     return localStorage.getItem("stay_signed_in") !== "false";
   });

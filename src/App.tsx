@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { CallProvider } from "@/contexts/CallContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { TranslationProvider } from "@/contexts/TranslationContext";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { AppSidebar } from "@/components/AppSidebar";
 import { IncomingCallOverlay, ActiveCallOverlay } from "@/components/call/CallOverlays";
@@ -82,6 +83,7 @@ function AuthGuard() {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
+      <TranslationProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -94,6 +96,7 @@ const App = () => (
           </BrowserRouter>
         </AuthProvider>
       </TooltipProvider>
+      </TranslationProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
