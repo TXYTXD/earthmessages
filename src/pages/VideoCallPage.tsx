@@ -1,17 +1,48 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Video, Phone } from "lucide-react";
+import { Video, Phone, Mic } from "lucide-react";
 import { useFriends } from "@/hooks/useFriends";
 import { useCall } from "@/contexts/CallContext";
+import { toast } from "@/hooks/use-toast";
 
 export default function VideoCallPage() {
   const { friends } = useFriends();
   const { startCall } = useCall();
+  const [permissionGranted, setPermissionGranted] = useState<boolean | null>(null);
+
+  // Proactively request media permissions when page loads
+  useEffect(() => {
+    navigator.mediaDevices
+      .getUserMedia({ audio: true, video: true })
+      .then((stream) => {
+        // Stop tracks immediately - we just needed the permission
+        stream.getTracks().forEach((t) => t.stop());
+        setPermissionGranted(true);
+      })
+      .catch(() => {
+        setPermissionGranted(false);
+      });
+  }, []);
+
+  const handleCall = useCallback(
+    (friendId: string, type: "voice" | "video") => {
+      // Call startCall directly - it handles getUserMedia internally
+      startCall(friendId, type);
+    },
+    [startCall]
+  );
 
   return (
     <div className="flex-1 p-6 max-w-2xl mx-auto overflow-y-auto">
       <h2 className="text-2xl font-bold mb-2">Video Calls</h2>
       <p className="text-sm text-muted-foreground mb-6">Start a video call with a friend</p>
+
+      {permissionGranted === false && (
+        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm flex items-center gap-2">
+          <Mic className="w-4 h-4" />
+          Camera/microphone access denied. Please enable it in your browser settings and reload.
+        </div>
+      )}
 
       {friends.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -48,7 +79,7 @@ export default function VideoCallPage() {
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  onClick={() => startCall(friend.user_id, "voice")}
+                  onClick={() => handleCall(friend.user_id, "voice")}
                   className="w-10 h-10 rounded-full hover:bg-secondary transition-colors flex items-center justify-center text-primary"
                 >
                   <Phone className="w-5 h-5" />
@@ -56,7 +87,7 @@ export default function VideoCallPage() {
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  onClick={() => startCall(friend.user_id, "video")}
+                  onClick={() => handleCall(friend.user_id, "video")}
                   className="w-10 h-10 rounded-full hover:bg-secondary transition-colors flex items-center justify-center text-primary"
                 >
                   <Video className="w-5 h-5" />
