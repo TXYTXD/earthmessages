@@ -227,16 +227,8 @@ export function useWebRTC() {
       startingCall.current = true;
       console.log("[Call] Starting", type, "call to", receiverId);
 
-      // Get receiver profile
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("display_name")
-        .eq("user_id", receiverId)
-        .maybeSingle();
-
-      const remoteName = profile?.display_name || "Unknown";
-
-      // Get media
+      // CRITICAL: getUserMedia must be called FIRST in the click handler
+      // to preserve the user-gesture context for browser permission prompts
       try {
         localStream.current = await navigator.mediaDevices.getUserMedia({
           audio: true,
@@ -251,6 +243,15 @@ export function useWebRTC() {
         startingCall.current = false;
         return;
       }
+
+      // Get receiver profile (after getUserMedia to preserve gesture context)
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("user_id", receiverId)
+        .maybeSingle();
+
+      const remoteName = profile?.display_name || "Unknown";
 
       // Create call record
       const { data: call, error } = await supabase
