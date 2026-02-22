@@ -5,10 +5,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { usePin } from "@/hooks/usePin";
+import { PinVerifyDialog } from "@/components/PinVerifyDialog";
 
 export default function AccountPage() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { verifyPin } = usePin();
 
   const [profile, setProfile] = useState<{ display_name: string; avatar_url: string | null }>({
     display_name: "",
@@ -21,6 +24,7 @@ export default function AccountPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [pinAction, setPinAction] = useState<"signout" | "delete" | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -234,7 +238,7 @@ export default function AccountPage() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          onClick={handleSignOut}
+          onClick={() => setPinAction("signout")}
           className="w-full p-3 flex items-center gap-4 rounded-lg hover:bg-destructive/10 transition-colors"
         >
           <div className="w-10 h-10 rounded-full bg-destructive/15 flex items-center justify-center">
@@ -248,7 +252,7 @@ export default function AccountPage() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          onClick={() => setShowDeleteConfirm(true)}
+          onClick={() => setPinAction("delete")}
           className="w-full p-3 flex items-center gap-4 rounded-lg hover:bg-destructive/10 transition-colors"
         >
           <div className="w-10 h-10 rounded-full bg-destructive/15 flex items-center justify-center">
@@ -305,6 +309,22 @@ export default function AccountPage() {
           </motion.div>
         </div>
       )}
+
+      <PinVerifyDialog
+        open={!!pinAction}
+        onVerified={() => {
+          if (pinAction === "signout") {
+            setPinAction(null);
+            handleSignOut();
+          } else if (pinAction === "delete") {
+            setPinAction(null);
+            setShowDeleteConfirm(true);
+          }
+        }}
+        onCancel={() => setPinAction(null)}
+        verifyPin={verifyPin}
+        title={pinAction === "signout" ? "Verify PIN to sign out" : "Verify PIN to delete account"}
+      />
     </div>
   );
 }

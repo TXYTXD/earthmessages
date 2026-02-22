@@ -8,9 +8,11 @@ import { CallProvider } from "@/contexts/CallContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { TranslationProvider } from "@/contexts/TranslationContext";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { usePin } from "@/hooks/usePin";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { IncomingCallOverlay, ActiveCallOverlay } from "@/components/call/CallOverlays";
+import { PinSetup } from "@/components/PinSetup";
 import ChatsPage from "@/pages/ChatsPage";
 import VideoCallPage from "@/pages/VideoCallPage";
 import CallsPage from "@/pages/CallsPage";
@@ -26,9 +28,10 @@ const queryClient = new QueryClient();
 
 function ProtectedLayout() {
   const { session, loading } = useAuth();
+  const { hasPin, loading: pinLoading, savePin } = usePin();
   useOnlineStatus();
 
-  if (loading) {
+  if (loading || pinLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -38,6 +41,10 @@ function ProtectedLayout() {
 
   if (!session) {
     return <Navigate to="/welcome" replace />;
+  }
+
+  if (!hasPin) {
+    return <PinSetup onComplete={savePin} />;
   }
 
   return (
