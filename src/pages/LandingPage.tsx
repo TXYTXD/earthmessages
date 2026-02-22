@@ -200,6 +200,121 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Social Proof */}
+      <section className="py-20 md:py-24 px-6">
+        <div className="max-w-5xl mx-auto">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            custom={0}
+            variants={fadeUp}
+            className="text-center mb-12"
+          >
+            <p className="text-sm font-medium text-primary uppercase tracking-widest mb-3">
+              Social Proof
+            </p>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
+              Trusted by teams & professionals
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+              From startups to enterprise — people rely on UMS every day.
+            </p>
+          </motion.div>
+
+          {/* Avatar cluster */}
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            custom={1}
+            variants={fadeUp}
+            className="flex flex-col items-center gap-4 mb-14"
+          >
+            <div className="flex -space-x-3">
+              {["E", "S", "M", "A", "J", "L", "R"].map((letter, i) => {
+                const colors = [
+                  "hsl(214 100% 50%)",
+                  "hsl(270 70% 55%)",
+                  "hsl(340 82% 50%)",
+                  "hsl(150 60% 40%)",
+                  "hsl(25 95% 50%)",
+                  "hsl(190 100% 40%)",
+                  "hsl(265 85% 55%)",
+                ];
+                return (
+                  <div
+                    key={i}
+                    className="w-10 h-10 rounded-full border-2 border-background flex items-center justify-center text-sm font-semibold text-white"
+                    style={{ background: colors[i % colors.length] }}
+                  >
+                    {letter}
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              <span className="font-semibold text-foreground">2,400+</span> professionals already on UMS
+            </p>
+          </motion.div>
+
+          {/* Use case cards */}
+          <div className="grid md:grid-cols-3 gap-5">
+            {[
+              {
+                emoji: "🏢",
+                title: "Remote Teams",
+                quote: "We replaced 3 tools with UMS. Encrypted group chats and instant video calls keep our distributed team in sync.",
+                name: "Elena P.",
+                role: "Engineering Lead",
+              },
+              {
+                emoji: "🎓",
+                title: "Education",
+                quote: "The built-in translation lets our international students communicate effortlessly across languages.",
+                name: "Dr. Sarah K.",
+                role: "University Professor",
+              },
+              {
+                emoji: "💼",
+                title: "Freelancers & Agencies",
+                quote: "I share files, hop on quick video calls, and know everything stays private. It's the only messenger I trust for client work.",
+                name: "Marco T.",
+                role: "Creative Director",
+              },
+            ].map((item, i) => (
+              <motion.div
+                key={item.title}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                custom={i + 1}
+                variants={fadeUp}
+                className="p-6 rounded-2xl border border-border bg-card"
+              >
+                <div className="text-3xl mb-3">{item.emoji}</div>
+                <h3 className="text-base font-semibold mb-2">{item.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4 italic">
+                  "{item.quote}"
+                </p>
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                    style={{ background: "var(--messenger-gradient)" }}
+                  >
+                    {item.name[0]}
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium">{item.name}</div>
+                    <div className="text-xs text-muted-foreground">{item.role}</div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* App Preview */}
       <section className="py-20 md:py-28 px-6">
         <div className="max-w-5xl mx-auto">
