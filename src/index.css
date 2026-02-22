@@ -366,4 +366,8 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }

@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { TranslationProvider } from "@/contexts/TranslationContext";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { AppSidebar } from "@/components/AppSidebar";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { IncomingCallOverlay, ActiveCallOverlay } from "@/components/call/CallOverlays";
 import ChatsPage from "@/pages/ChatsPage";
 import VideoCallPage from "@/pages/VideoCallPage";
@@ -42,7 +43,7 @@ function ProtectedLayout() {
     <CallProvider>
       <div className="flex h-screen overflow-hidden">
         <AppSidebar />
-        <main className="flex-1 overflow-hidden flex">
+        <main className="flex-1 overflow-hidden flex pb-14 md:pb-0">
           <Routes>
             <Route path="/" element={<ChatsPage />} />
             <Route path="/stories" element={<StoriesPage />} />
@@ -53,6 +54,7 @@ function ProtectedLayout() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
+        <MobileBottomNav />
         <IncomingCallOverlay />
         <ActiveCallOverlay />
       </div>
