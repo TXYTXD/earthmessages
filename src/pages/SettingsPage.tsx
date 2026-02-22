@@ -26,6 +26,7 @@ const languages = [
   { code: "hi", name: "Hindi", flag: "🇮🇳" },
   { code: "it", name: "Italian", flag: "🇮🇹" },
   { code: "ru", name: "Russian", flag: "🇷🇺" },
+  { code: "el", name: "Greek", flag: "🇬🇷" },
 ];
 
 export default function SettingsPage() {
@@ -148,21 +149,29 @@ export default function SettingsPage() {
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2">
-            {languages.map((lang) => (
-              <button
-                key={lang.code}
-                onClick={() => setPrimaryLang(lang.code)}
-                className={`p-2.5 rounded-lg text-sm flex items-center gap-2 transition-all ${
-                  primaryLang === lang.code
-                    ? "bg-primary/15 text-primary ring-1 ring-primary/30"
-                    : "bg-accent text-foreground hover:bg-accent/80"
-                }`}
-              >
-                <span>{lang.flag}</span>
-                <span className="truncate">{lang.name}</span>
-                {primaryLang === lang.code && <Check className="w-3.5 h-3.5 ml-auto flex-shrink-0" />}
-              </button>
-            ))}
+            {languages.map((lang) => {
+              const isSelected = primaryLang === lang.code;
+              return (
+                <button
+                  key={lang.code}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setPrimaryLang(lang.code);
+                  }}
+                  className={`p-2.5 rounded-lg text-sm flex items-center gap-2 transition-all cursor-pointer ${
+                    isSelected
+                      ? "bg-primary/15 text-primary ring-1 ring-primary/30"
+                      : "bg-accent text-foreground hover:bg-accent/80"
+                  }`}
+                >
+                  <span>{lang.flag}</span>
+                  <span className="truncate">{lang.name}</span>
+                  {isSelected && <Check className="w-3.5 h-3.5 ml-auto flex-shrink-0" />}
+                </button>
+              );
+            })}
           </div>
         </div>
 
