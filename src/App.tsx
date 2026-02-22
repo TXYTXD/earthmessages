@@ -18,6 +18,7 @@ import StoriesPage from "@/pages/StoriesPage";
 import AccountPage from "@/pages/AccountPage";
 import AuthPage from "@/pages/AuthPage";
 import NotFound from "./pages/NotFound";
+import InstallPage from "@/pages/InstallPage";
 
 const queryClient = new QueryClient();
 
@@ -91,6 +92,7 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/auth" element={<AuthGuard />} />
+              <Route path="/install" element={<InstallPage />} />
               <Route path="/*" element={<ProtectedLayout />} />
             </Routes>
           </BrowserRouter>
