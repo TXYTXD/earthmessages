@@ -1,6 +1,6 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import {
   MessageCircle,
   Shield,
@@ -19,8 +19,14 @@ import {
   Send,
   Mic,
   Smile,
+  Mail,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 /* ─── Data ─── */
 
@@ -97,6 +103,57 @@ const childFade = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease } },
 };
 
+/* ─── Contact Form ─── */
+
+function ContactForm() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !email.trim() || !message.trim()) return;
+
+    setSending(true);
+    const { error } = await supabase.from("contact_messages").insert({ name: name.trim(), email: email.trim(), message: message.trim() });
+    setSending(false);
+
+    if (error) {
+      toast({ title: "Something went wrong", description: "Please try again later.", variant: "destructive" });
+    } else {
+      toast({ title: "Message sent!", description: "We'll get back to you soon." });
+      setName("");
+      setEmail("");
+      setMessage("");
+    }
+  };
+
+  return (
+    <motion.form onSubmit={handleSubmit} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={1} variants={fadeUp}
+      className="space-y-4 p-6 rounded-2xl border border-border/40 bg-card">
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label className="text-[13px] font-medium mb-1.5 block">Name</label>
+          <Input placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} required className="rounded-xl h-10 text-[13px]" />
+        </div>
+        <div>
+          <label className="text-[13px] font-medium mb-1.5 block">Email</label>
+          <Input type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={255} required className="rounded-xl h-10 text-[13px]" />
+        </div>
+      </div>
+      <div>
+        <label className="text-[13px] font-medium mb-1.5 block">Message</label>
+        <Textarea placeholder="How can we help?" value={message} onChange={(e) => setMessage(e.target.value)} maxLength={1000} required className="rounded-xl text-[13px] min-h-[120px] resize-none" />
+      </div>
+      <Button type="submit" disabled={sending} className="rounded-full px-6 h-10 text-[13px] gap-2 shadow-lg shadow-primary/20 w-full sm:w-auto">
+        {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+        {sending ? "Sending…" : "Send message"}
+      </Button>
+    </motion.form>
+  );
+}
+
 /* ─── Component ─── */
 
 export default function LandingPage() {
@@ -131,6 +188,7 @@ export default function LandingPage() {
               { label: "Security", id: "security" },
               { label: "How it works", id: "how-it-works" },
               { label: "Compare", id: "compare" },
+              { label: "Contact", id: "contact" },
             ].map((link) => (
               <button
                 key={link.id}
@@ -490,6 +548,20 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Contact ── */}
+      <section id="contact" className="py-20 md:py-28 px-6 bg-muted/10 border-y border-border/20">
+        <div className="max-w-[560px] mx-auto">
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-60px" }} custom={0} variants={fadeUp} className="text-center mb-10">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-5 bg-primary/8 border border-primary/10">
+              <Mail className="w-7 h-7 text-primary" />
+            </div>
+            <h2 className="font-display text-2xl md:text-3xl font-bold tracking-tight mb-3">Get in touch</h2>
+            <p className="text-muted-foreground text-base max-w-md mx-auto">Have a question, feedback, or partnership idea? We'd love to hear from you.</p>
+          </motion.div>
+          <ContactForm />
+        </div>
+      </section>
+
       {/* ── Final CTA ── */}
       <section className="py-24 md:py-32 px-6 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
@@ -526,7 +598,7 @@ export default function LandingPage() {
               <span className="text-sm font-semibold font-display">UMS Messages</span>
             </div>
             <div className="flex items-center gap-6 text-[12px] text-muted-foreground">
-              {["Features", "Security", "How it works", "Compare"].map((label) => (
+              {["Features", "Security", "How it works", "Compare", "Contact"].map((label) => (
                 <button key={label} onClick={() => document.getElementById(label.toLowerCase().replace(/ /g, "-"))?.scrollIntoView({ behavior: "smooth" })}
                   className="hover:text-foreground transition-colors">{label}</button>
               ))}
