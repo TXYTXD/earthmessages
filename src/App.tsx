@@ -18,6 +18,7 @@ import SettingsPage from "@/pages/SettingsPage";
 import StoriesPage from "@/pages/StoriesPage";
 import AccountPage from "@/pages/AccountPage";
 import AuthPage from "@/pages/AuthPage";
+import LandingPage from "@/pages/LandingPage";
 import NotFound from "./pages/NotFound";
 import InstallPage from "@/pages/InstallPage";
 
@@ -36,7 +37,7 @@ function ProtectedLayout() {
   }
 
   if (!session) {
-    return <Navigate to="/auth" replace />;
+    return <Navigate to="/welcome" replace />;
   }
 
   return (
@@ -93,6 +94,7 @@ const App = () => (
         <AuthProvider>
           <BrowserRouter>
             <Routes>
+              <Route path="/welcome" element={<LandingPage />} />
               <Route path="/auth" element={<AuthGuard />} />
               <Route path="/install" element={<InstallPage />} />
               <Route path="/*" element={<ProtectedLayout />} />
