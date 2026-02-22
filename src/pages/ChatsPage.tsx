@@ -117,6 +117,7 @@ export default function ChatsPage() {
       {showChatArea || (!isMobile && activeConv) ? (
         <ChatArea
           conversation={activeConv!}
+          conversations={conversations}
           onBack={isMobile ? () => setSelectedConversation(null) : undefined}
         />
       ) : !isMobile ? (
