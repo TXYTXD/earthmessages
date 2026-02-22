@@ -556,7 +556,10 @@ export default function LandingPage() {
               <Mail className="w-7 h-7 text-primary" />
             </div>
             <h2 className="font-display text-2xl md:text-3xl font-bold tracking-tight mb-3">Get in touch</h2>
-            <p className="text-muted-foreground text-base max-w-md mx-auto">Have a question, feedback, or partnership idea? We'd love to hear from you.</p>
+            <p className="text-muted-foreground text-base max-w-md mx-auto mb-4">Have a question, feedback, or partnership idea? We'd love to hear from you.</p>
+            <a href="mailto:support@earthmessages.com" className="inline-flex items-center gap-2 text-[13px] font-medium text-primary hover:underline">
+              <Mail className="w-4 h-4" /> support@earthmessages.com
+            </a>
           </motion.div>
           <ContactForm />
         </div>
@@ -603,7 +606,13 @@ export default function LandingPage() {
                   className="hover:text-foreground transition-colors">{label}</button>
               ))}
             </div>
-            <p className="text-[11px] text-muted-foreground">© {new Date().getFullYear()} UMS Messages. All rights reserved.</p>
+            <div className="flex items-center gap-4">
+              <a href="mailto:support@earthmessages.com" className="text-[12px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                <Mail className="w-3 h-3" /> support@earthmessages.com
+              </a>
+              <span className="text-border">·</span>
+              <p className="text-[11px] text-muted-foreground">© {new Date().getFullYear()} UMS Messages. All rights reserved.</p>
+            </div>
           </div>
         </div>
       </footer>
