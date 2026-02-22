@@ -3,17 +3,20 @@ import { Phone, Video, Info, Search as SearchIcon, ArrowLeft, Lock } from "lucid
 import { motion } from "framer-motion";
 import { MessageBubble } from "./MessageBubble";
 import { ChatInput } from "./ChatInput";
+import { ForwardDialog } from "./ForwardDialog";
 import { useMessages, type Message } from "@/hooks/useMessages";
+import { useStarredMessages } from "@/hooks/useStarredMessages";
 import { type Conversation } from "@/hooks/useConversations";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCall } from "@/contexts/CallContext";
 
 interface ChatAreaProps {
   conversation: Conversation;
+  conversations: Conversation[];
   onBack?: () => void;
 }
 
-export function ChatArea({ conversation, onBack }: ChatAreaProps) {
+export function ChatArea({ conversation, conversations, onBack }: ChatAreaProps) {
   const { user } = useAuth();
   const { startCall } = useCall();
   const {
@@ -28,8 +31,10 @@ export function ChatArea({ conversation, onBack }: ChatAreaProps) {
   } = useMessages(conversation.id);
 
   const [replyTo, setReplyTo] = useState<Message | null>(null);
+  const [forwardMsg, setForwardMsg] = useState<Message | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
+  const { starredIds, toggleStar } = useStarredMessages(conversation.id);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -151,6 +156,9 @@ export function ChatArea({ conversation, onBack }: ChatAreaProps) {
                   onReply={setReplyTo}
                   onEdit={editMessage}
                   onDelete={deleteMessage}
+                  onForward={setForwardMsg}
+                  onToggleStar={toggleStar}
+                  isStarred={starredIds.has(msg.id)}
                   showAvatar={showAvatar}
                   isGroup={isGroup}
                 />
@@ -180,6 +188,13 @@ export function ChatArea({ conversation, onBack }: ChatAreaProps) {
         onTyping={setTyping}
         replyTo={replyTo}
         onCancelReply={() => setReplyTo(null)}
+      />
+
+      <ForwardDialog
+        open={!!forwardMsg}
+        onClose={() => setForwardMsg(null)}
+        message={forwardMsg}
+        conversations={conversations}
       />
     </div>
   );

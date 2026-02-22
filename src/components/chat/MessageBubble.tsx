@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Globe, Reply, Smile, Pencil, Trash2, Lock } from "lucide-react";
+import { Globe, Reply, Smile, Pencil, Trash2, Lock, Forward, Star } from "lucide-react";
 import { type Message } from "@/hooks/useMessages";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/contexts/TranslationContext";
@@ -13,11 +13,14 @@ interface MessageBubbleProps {
   onReply: (message: Message) => void;
   onEdit: (messageId: string, content: string) => void;
   onDelete: (messageId: string) => void;
+  onForward: (message: Message) => void;
+  onToggleStar: (messageId: string) => void;
+  isStarred: boolean;
   showAvatar: boolean;
   isGroup: boolean;
 }
 
-export function MessageBubble({ message, onReact, onReply, onEdit, onDelete, showAvatar, isGroup }: MessageBubbleProps) {
+export function MessageBubble({ message, onReact, onReply, onEdit, onDelete, onForward, onToggleStar, isStarred, showAvatar, isGroup }: MessageBubbleProps) {
   const { user } = useAuth();
   const { autoTranslate, showOriginal, primaryLang, translateText } = useTranslation();
   const isMe = message.sender_id === user?.id;
@@ -204,6 +207,18 @@ export function MessageBubble({ message, onReact, onReply, onEdit, onDelete, sho
                 className="w-7 h-7 rounded-md hover:bg-accent flex items-center justify-center text-muted-foreground"
               >
                 <Reply className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => onForward(message)}
+                className="w-7 h-7 rounded-md hover:bg-accent flex items-center justify-center text-muted-foreground"
+              >
+                <Forward className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => onToggleStar(message.id)}
+                className={`w-7 h-7 rounded-md hover:bg-accent flex items-center justify-center ${isStarred ? "text-yellow-500" : "text-muted-foreground"}`}
+              >
+                <Star className={`w-3.5 h-3.5 ${isStarred ? "fill-yellow-500" : ""}`} />
               </button>
               {isMe && (
                 <>
