@@ -120,19 +120,36 @@ export default function LandingPage() {
             transition={{ duration: 0.6 }}
           >
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-8">
-              <Zap className="w-3.5 h-3.5" />
-              Fast, secure, and open
+              <Lock className="w-3.5 h-3.5" />
+              Private by default. Secure by design.
             </div>
             <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tight leading-[1.1] mb-6">
-              Messaging that
+              Your conversations.
               <br />
-              <span className="gradient-text">respects you.</span>
+              <span className="gradient-text">Nobody else's.</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-              UMS Messages is the modern communication platform with encrypted
-              messaging, HD video calls, real-time translation, and stories —
-              all in one place.
+              UMS Messages is the private messaging platform where every text,
+              call, and file is end-to-end encrypted. Talk freely — no ads, no
+              tracking, no compromises.
             </p>
+
+            {/* 3 key benefits */}
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 mb-10 text-sm font-medium">
+              <div className="flex items-center gap-2 text-foreground">
+                <Shield className="w-4 h-4 text-primary" />
+                End-to-end encrypted
+              </div>
+              <div className="flex items-center gap-2 text-foreground">
+                <Zap className="w-4 h-4 text-primary" />
+                Instant HD video calls
+              </div>
+              <div className="flex items-center gap-2 text-foreground">
+                <Globe className="w-4 h-4 text-primary" />
+                Real-time translation
+              </div>
+            </div>
+
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Button
                 size="lg"
