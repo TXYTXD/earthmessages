@@ -23,23 +23,25 @@ export default function AuthPage() {
 
   // Handle tokens in URL hash (email verification + password recovery)
   useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setView("reset-password");
+      } else if (event === "SIGNED_IN" && session && view !== "reset-password") {
+        navigate("/", { replace: true });
+      }
+    });
+
+    // Also check URL hash for recovery type on initial load
     const hash = window.location.hash;
     if (hash) {
       const params = new URLSearchParams(hash.substring(1));
-      const type = params.get("type");
-
-      if (type === "recovery") {
+      if (params.get("type") === "recovery") {
         setView("reset-password");
-      } else if (params.get("access_token")) {
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-          if (event === "SIGNED_IN" && session) {
-            navigate("/", { replace: true });
-          }
-        });
-        return () => subscription.unsubscribe();
       }
     }
-  }, [navigate]);
+
+    return () => subscription.unsubscribe();
+  }, [navigate, view]);
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
