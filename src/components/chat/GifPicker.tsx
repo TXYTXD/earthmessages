@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Search, X, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 
 interface GifResult {
   id: string;
@@ -17,6 +16,8 @@ interface GifPickerProps {
   onClose: () => void;
 }
 
+const TENOR_KEY = "LIVDSRZULELA";
+
 export function GifPicker({ onSelect, onClose }: GifPickerProps) {
   const [query, setQuery] = useState("");
   const [gifs, setGifs] = useState<GifResult[]>([]);
@@ -27,12 +28,20 @@ export function GifPicker({ onSelect, onClose }: GifPickerProps) {
   const fetchGifs = useCallback(async (searchQuery: string) => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("gif-search", {
-        body: { query: searchQuery, limit: 12 },
-      });
-      if (!error && data?.gifs) {
-        setGifs(data.gifs);
-      }
+      const endpoint = searchQuery.trim()
+        ? `https://g.tenor.com/v1/search?q=${encodeURIComponent(searchQuery)}&key=${TENOR_KEY}&limit=12&media_filter=minimal`
+        : `https://g.tenor.com/v1/trending?key=${TENOR_KEY}&limit=12&media_filter=minimal`;
+      const res = await fetch(endpoint);
+      const data = await res.json();
+      const results = (data.results || []).map((r: any) => ({
+        id: r.id,
+        title: r.title || "",
+        preview: r.media?.[0]?.tinygif?.url || r.media?.[0]?.gif?.url || "",
+        url: r.media?.[0]?.gif?.url || "",
+        width: r.media?.[0]?.gif?.dims?.[0] || 200,
+        height: r.media?.[0]?.gif?.dims?.[1] || 200,
+      }));
+      setGifs(results);
     } catch (e) {
       console.error("GIF search error:", e);
     } finally {
