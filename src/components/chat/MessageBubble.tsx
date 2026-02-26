@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Globe, Reply, Smile, Pencil, Trash2, Lock, Forward, Star } from "lucide-react";
+import { Globe, Reply, Smile, Pencil, Trash2, Lock, Forward, Star, Share2 } from "lucide-react";
 import { type Message } from "@/hooks/useMessages";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/contexts/TranslationContext";
@@ -213,6 +213,17 @@ export function MessageBubble({ message, onReact, onReply, onEdit, onDelete, onF
                 className="w-7 h-7 rounded-md hover:bg-accent flex items-center justify-center text-muted-foreground"
               >
                 <Forward className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => {
+                  const text = message.content || (message.media_url ? message.media_url : "");
+                  const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+                  window.open(url, "_blank", "noopener,noreferrer");
+                }}
+                className="w-7 h-7 rounded-md hover:bg-accent flex items-center justify-center text-green-500"
+                title="Share to WhatsApp"
+              >
+                <Share2 className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => onToggleStar(message.id)}
