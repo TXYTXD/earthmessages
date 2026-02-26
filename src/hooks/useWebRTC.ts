@@ -3,9 +3,30 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 
-const ICE_SERVERS = [
+const ICE_SERVERS: RTCIceServer[] = [
   { urls: "stun:stun.l.google.com:19302" },
   { urls: "stun:stun1.l.google.com:19302" },
+  { urls: "stun:stun.relay.metered.ca:80" },
+  {
+    urls: "turn:global.relay.metered.ca:80",
+    username: "e8dd65b92c8bfc78d8de7f18",
+    credential: "30YDVssHi/YUpxlY",
+  },
+  {
+    urls: "turn:global.relay.metered.ca:80?transport=tcp",
+    username: "e8dd65b92c8bfc78d8de7f18",
+    credential: "30YDVssHi/YUpxlY",
+  },
+  {
+    urls: "turn:global.relay.metered.ca:443",
+    username: "e8dd65b92c8bfc78d8de7f18",
+    credential: "30YDVssHi/YUpxlY",
+  },
+  {
+    urls: "turns:global.relay.metered.ca:443?transport=tcp",
+    username: "e8dd65b92c8bfc78d8de7f18",
+    credential: "30YDVssHi/YUpxlY",
+  },
 ];
 
 export interface CallState {

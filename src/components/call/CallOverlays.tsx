@@ -82,16 +82,23 @@ export function IncomingCallOverlay() {
 export function ActiveCallOverlay() {
   const { callState, hangUp, toggleMute, toggleVideo, isMuted, isVideoOff, localVideoRef, remoteVideoRef, localStream, remoteStream } = useCall();
 
-  // Sync streams to video elements whenever they change or mount
+  // Sync local stream to video element
   useEffect(() => {
-    if (localVideoRef.current && localStream.current) {
-      localVideoRef.current.srcObject = localStream.current;
+    const el = localVideoRef.current;
+    const stream = localStream.current;
+    if (el && stream && el.srcObject !== stream) {
+      el.srcObject = stream;
+      el.play().catch(() => {});
     }
-  }, [callState.status, localVideoRef, localStream]);
+  }, [callState.status, callState.duration, localVideoRef, localStream]);
 
+  // Sync remote stream to video element
   useEffect(() => {
-    if (remoteVideoRef.current && remoteStream.current) {
-      remoteVideoRef.current.srcObject = remoteStream.current;
+    const el = remoteVideoRef.current;
+    const stream = remoteStream.current;
+    if (el && stream && el.srcObject !== stream) {
+      el.srcObject = stream;
+      el.play().catch(() => {});
     }
   }, [callState.status, callState.duration, remoteVideoRef, remoteStream]);
 
