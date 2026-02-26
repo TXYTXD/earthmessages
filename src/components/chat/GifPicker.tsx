@@ -28,7 +28,7 @@ export function GifPicker({ onSelect, onClose }: GifPickerProps) {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("gif-search", {
-        body: { query: searchQuery, limit: 24 },
+        body: { query: searchQuery, limit: 12 },
       });
       if (!error && data?.gifs) {
         setGifs(data.gifs);
