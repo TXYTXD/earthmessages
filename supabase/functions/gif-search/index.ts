@@ -10,37 +10,33 @@ Deno.serve(async (req) => {
 
   try {
     const { query, limit = 20 } = await req.json();
-    const API_KEY = Deno.env.get('GIPHY_API_KEY');
-
-    if (!API_KEY) {
-      return new Response(
-        JSON.stringify({ error: 'GIPHY_API_KEY not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // Tenor v1 anonymous key
+    const ANON_KEY = 'LIVDSRZULELA';
 
     const endpoint = query?.trim()
-      ? `https://api.giphy.com/v1/gifs/search?api_key=${API_KEY}&q=${encodeURIComponent(query)}&limit=${limit}&rating=g`
-      : `https://api.giphy.com/v1/gifs/trending?api_key=${API_KEY}&limit=${limit}&rating=g`;
+      ? `https://g.tenor.com/v1/search?q=${encodeURIComponent(query)}&key=${ANON_KEY}&limit=${limit}&media_filter=minimal`
+      : `https://g.tenor.com/v1/trending?key=${ANON_KEY}&limit=${limit}&media_filter=minimal`;
 
     const response = await fetch(endpoint);
-    const data = await response.json();
-
+    
     if (!response.ok) {
-      console.error('GIPHY API error:', data);
+      const errorText = await response.text();
+      console.error('Tenor API error:', errorText);
       return new Response(
-        JSON.stringify({ error: 'GIPHY API error', details: data }),
-        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Tenor API error', gifs: [] }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const gifs = (data.data || []).map((r: any) => ({
+    const data = await response.json();
+
+    const gifs = (data.results || []).map((r: any) => ({
       id: r.id,
       title: r.title || '',
-      preview: r.images?.fixed_width_small?.url || r.images?.fixed_width?.url || '',
-      url: r.images?.original?.url || r.images?.fixed_width?.url || '',
-      width: parseInt(r.images?.original?.width || '200'),
-      height: parseInt(r.images?.original?.height || '200'),
+      preview: r.media?.[0]?.tinygif?.url || r.media?.[0]?.gif?.url || '',
+      url: r.media?.[0]?.gif?.url || '',
+      width: r.media?.[0]?.gif?.dims?.[0] || 200,
+      height: r.media?.[0]?.gif?.dims?.[1] || 200,
     }));
 
     return new Response(
@@ -50,8 +46,8 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('GIF search error:', error);
     return new Response(
-      JSON.stringify({ error: 'Failed to search GIFs' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: 'Failed to search GIFs', gifs: [] }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
