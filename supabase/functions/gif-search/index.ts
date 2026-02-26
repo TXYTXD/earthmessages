@@ -9,38 +9,38 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { query, limit = 24 } = await req.json();
-    const apiKey = Deno.env.get('GIPHY_API_KEY');
+    const { query, limit = 20 } = await req.json();
+    const apiKey = Deno.env.get('TENOR_API_KEY');
 
     if (!apiKey) {
       return new Response(
-        JSON.stringify({ error: 'GIPHY_API_KEY not configured' }),
+        JSON.stringify({ error: 'TENOR_API_KEY not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const endpoint = query?.trim()
-      ? `https://api.giphy.com/v1/gifs/search?api_key=${apiKey}&q=${encodeURIComponent(query)}&limit=${limit}&rating=g`
-      : `https://api.giphy.com/v1/gifs/trending?api_key=${apiKey}&limit=${limit}&rating=g`;
+      ? `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(query)}&key=${apiKey}&client_key=earth_messages&limit=${limit}&media_filter=gif,tinygif`
+      : `https://tenor.googleapis.com/v2/featured?key=${apiKey}&client_key=earth_messages&limit=${limit}&media_filter=gif,tinygif`;
 
     const response = await fetch(endpoint);
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('GIPHY API error:', data);
+      console.error('Tenor API error:', data);
       return new Response(
-        JSON.stringify({ error: data.message || 'GIPHY API error' }),
+        JSON.stringify({ error: data.error?.message || 'Tenor API error' }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const gifs = (data.data || []).map((g: any) => ({
-      id: g.id,
-      title: g.title || '',
-      preview: g.images?.fixed_height_small?.url || g.images?.fixed_height?.url || '',
-      url: g.images?.original?.url || '',
-      width: parseInt(g.images?.original?.width) || 200,
-      height: parseInt(g.images?.original?.height) || 200,
+    const gifs = (data.results || []).map((r: any) => ({
+      id: r.id,
+      title: r.title || '',
+      preview: r.media_formats?.tinygif?.url || r.media_formats?.gif?.url || '',
+      url: r.media_formats?.gif?.url || '',
+      width: r.media_formats?.gif?.dims?.[0] || 200,
+      height: r.media_formats?.gif?.dims?.[1] || 200,
     }));
 
     return new Response(
