@@ -5,6 +5,17 @@ import { type Message } from "@/hooks/useMessages";
 import { useMediaUpload } from "@/hooks/useMediaUpload";
 import EmojiPicker, { Theme } from "emoji-picker-react";
 import { StickerPicker } from "./StickerPicker";
+import { GifPicker } from "./GifPicker";
+
+// Simple GIF icon as inline SVG component
+function GifIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <text x="12" y="15" textAnchor="middle" fontSize="8" fontWeight="bold" fill="currentColor" stroke="none">GIF</text>
+    </svg>
+  );
+}
 
 interface ChatInputProps {
   onSend: (content: string, type?: string, mediaUrl?: string, metadata?: any, replyToId?: string) => void;
@@ -17,6 +28,7 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply }: ChatInpu
   const [message, setMessage] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
   const [showStickers, setShowStickers] = useState(false);
+  const [showGifs, setShowGifs] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile, uploading } = useMediaUpload();
@@ -64,6 +76,18 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply }: ChatInpu
     setShowStickers(false);
   };
 
+  const handleGifSelect = (gifUrl: string) => {
+    onSend("GIF", "gif", gifUrl, undefined, replyTo?.id);
+    onCancelReply();
+    setShowGifs(false);
+  };
+
+  const closeAllPickers = () => {
+    setShowEmoji(false);
+    setShowStickers(false);
+    setShowGifs(false);
+  };
+
   return (
     <div className="px-3 py-2 border-t border-border relative">
       {/* Emoji Picker */}
@@ -84,6 +108,16 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply }: ChatInpu
           <StickerPicker
             onSelect={handleStickerSelect}
             onClose={() => setShowStickers(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* GIF Picker */}
+      <AnimatePresence>
+        {showGifs && (
+          <GifPicker
+            onSelect={handleGifSelect}
+            onClose={() => setShowGifs(false)}
           />
         )}
       </AnimatePresence>
@@ -131,16 +165,22 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply }: ChatInpu
           <Paperclip className="w-5 h-5" />
         </button>
         <button
-          onClick={() => setShowEmoji(!showEmoji)}
+          onClick={() => { setShowEmoji(!showEmoji); setShowStickers(false); setShowGifs(false); }}
           className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary flex-shrink-0"
         >
           <Smile className="w-5 h-5" />
         </button>
         <button
-          onClick={() => { setShowStickers(!showStickers); setShowEmoji(false); }}
+          onClick={() => { setShowStickers(!showStickers); setShowEmoji(false); setShowGifs(false); }}
           className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary flex-shrink-0"
         >
           <Sticker className="w-5 h-5" />
+        </button>
+        <button
+          onClick={() => { setShowGifs(!showGifs); setShowEmoji(false); setShowStickers(false); }}
+          className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary flex-shrink-0"
+        >
+          <GifIcon className="w-5 h-5" />
         </button>
 
         <div className="flex-1 relative">
