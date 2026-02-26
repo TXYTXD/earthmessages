@@ -10,37 +10,37 @@ Deno.serve(async (req) => {
 
   try {
     const { query, limit = 20 } = await req.json();
-    const API_KEY = Deno.env.get('TENOR_API_KEY');
+    const API_KEY = Deno.env.get('GIPHY_API_KEY');
 
     if (!API_KEY) {
       return new Response(
-        JSON.stringify({ error: 'TENOR_API_KEY not configured' }),
+        JSON.stringify({ error: 'GIPHY_API_KEY not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const endpoint = query?.trim()
-      ? `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(query)}&key=${API_KEY}&limit=${limit}&media_filter=tinygif,gif&client_key=lovable`
-      : `https://tenor.googleapis.com/v2/featured?key=${API_KEY}&limit=${limit}&media_filter=tinygif,gif&client_key=lovable`;
+      ? `https://api.giphy.com/v1/gifs/search?api_key=${API_KEY}&q=${encodeURIComponent(query)}&limit=${limit}&rating=g`
+      : `https://api.giphy.com/v1/gifs/trending?api_key=${API_KEY}&limit=${limit}&rating=g`;
 
     const response = await fetch(endpoint);
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('Tenor API error:', data);
+      console.error('GIPHY API error:', data);
       return new Response(
-        JSON.stringify({ error: 'Tenor API error', details: data }),
+        JSON.stringify({ error: 'GIPHY API error', details: data }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const gifs = (data.results || []).map((r: any) => ({
+    const gifs = (data.data || []).map((r: any) => ({
       id: r.id,
-      title: r.title || r.content_description || '',
-      preview: r.media_formats?.tinygif?.url || r.media_formats?.gif?.url || '',
-      url: r.media_formats?.gif?.url || '',
-      width: r.media_formats?.gif?.dims?.[0] || 200,
-      height: r.media_formats?.gif?.dims?.[1] || 200,
+      title: r.title || '',
+      preview: r.images?.fixed_width_small?.url || r.images?.fixed_width?.url || '',
+      url: r.images?.original?.url || r.images?.fixed_width?.url || '',
+      width: parseInt(r.images?.original?.width || '200'),
+      height: parseInt(r.images?.original?.height || '200'),
     }));
 
     return new Response(
