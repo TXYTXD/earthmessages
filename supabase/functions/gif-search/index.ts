@@ -9,12 +9,19 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { query, limit = 24 } = await req.json();
-    const ANON_KEY = 'LIVDSRZULELA';
+    const { query, limit = 20 } = await req.json();
+    const API_KEY = Deno.env.get('TENOR_API_KEY');
+
+    if (!API_KEY) {
+      return new Response(
+        JSON.stringify({ error: 'TENOR_API_KEY not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const endpoint = query?.trim()
-      ? `https://g.tenor.com/v1/search?q=${encodeURIComponent(query)}&key=${ANON_KEY}&limit=${limit}&media_filter=minimal`
-      : `https://g.tenor.com/v1/trending?key=${ANON_KEY}&limit=${limit}&media_filter=minimal`;
+      ? `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(query)}&key=${API_KEY}&limit=${limit}&media_filter=tinygif,gif&client_key=lovable`
+      : `https://tenor.googleapis.com/v2/featured?key=${API_KEY}&limit=${limit}&media_filter=tinygif,gif&client_key=lovable`;
 
     const response = await fetch(endpoint);
     const data = await response.json();
@@ -22,18 +29,18 @@ Deno.serve(async (req) => {
     if (!response.ok) {
       console.error('Tenor API error:', data);
       return new Response(
-        JSON.stringify({ error: 'Tenor API error' }),
+        JSON.stringify({ error: 'Tenor API error', details: data }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const gifs = (data.results || []).map((r: any) => ({
       id: r.id,
-      title: r.title || '',
-      preview: r.media?.[0]?.tinygif?.url || r.media?.[0]?.gif?.url || '',
-      url: r.media?.[0]?.gif?.url || '',
-      width: r.media?.[0]?.gif?.dims?.[0] || 200,
-      height: r.media?.[0]?.gif?.dims?.[1] || 200,
+      title: r.title || r.content_description || '',
+      preview: r.media_formats?.tinygif?.url || r.media_formats?.gif?.url || '',
+      url: r.media_formats?.gif?.url || '',
+      width: r.media_formats?.gif?.dims?.[0] || 200,
+      height: r.media_formats?.gif?.dims?.[1] || 200,
     }));
 
     return new Response(

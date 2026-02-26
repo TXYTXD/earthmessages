@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Search, X, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface GifResult {
   id: string;
@@ -16,34 +17,33 @@ interface GifPickerProps {
   onClose: () => void;
 }
 
-const TENOR_KEY = "LIVDSRZULELA";
-
 export function GifPicker({ onSelect, onClose }: GifPickerProps) {
   const [query, setQuery] = useState("");
   const [gifs, setGifs] = useState<GifResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   const fetchGifs = useCallback(async (searchQuery: string) => {
     setLoading(true);
+    setError(null);
     try {
-      const endpoint = searchQuery.trim()
-        ? `https://g.tenor.com/v1/search?q=${encodeURIComponent(searchQuery)}&key=${TENOR_KEY}&limit=12&media_filter=minimal`
-        : `https://g.tenor.com/v1/trending?key=${TENOR_KEY}&limit=12&media_filter=minimal`;
-      const res = await fetch(endpoint);
-      const data = await res.json();
-      const results = (data.results || []).map((r: any) => ({
-        id: r.id,
-        title: r.title || "",
-        preview: r.media?.[0]?.tinygif?.url || r.media?.[0]?.gif?.url || "",
-        url: r.media?.[0]?.gif?.url || "",
-        width: r.media?.[0]?.gif?.dims?.[0] || 200,
-        height: r.media?.[0]?.gif?.dims?.[1] || 200,
-      }));
-      setGifs(results);
-    } catch (e) {
+      const { data, error: fnError } = await supabase.functions.invoke("gif-search", {
+        body: { query: searchQuery, limit: 20 },
+      });
+      if (fnError) {
+        throw new Error(fnError.message);
+      }
+      if (data?.gifs) {
+        setGifs(data.gifs);
+      } else {
+        setGifs([]);
+      }
+    } catch (e: any) {
       console.error("GIF search error:", e);
+      setError("Failed to load GIFs");
+      setGifs([]);
     } finally {
       setLoading(false);
     }
@@ -55,12 +55,12 @@ export function GifPicker({ onSelect, onClose }: GifPickerProps) {
     inputRef.current?.focus();
   }, [fetchGifs]);
 
-  // Debounced search
+  // Debounced search - fast 200ms debounce
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       fetchGifs(query);
-    }, 400);
+    }, 200);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
@@ -99,6 +99,10 @@ export function GifPicker({ onSelect, onClose }: GifPickerProps) {
         {loading && gifs.length === 0 ? (
           <div className="flex items-center justify-center py-10">
             <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : error ? (
+          <div className="text-center py-10 text-sm text-destructive">
+            {error}
           </div>
         ) : gifs.length === 0 ? (
           <div className="text-center py-10 text-sm text-muted-foreground">
