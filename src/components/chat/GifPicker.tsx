@@ -114,13 +114,14 @@ export function GifPicker({ onSelect, onClose }: GifPickerProps) {
               <button
                 key={gif.id}
                 onClick={() => onSelect(gif.url)}
-                className="relative aspect-square overflow-hidden rounded-lg hover:ring-2 hover:ring-primary transition-all"
+                className="relative aspect-square overflow-hidden rounded-lg hover:ring-2 hover:ring-primary transition-all bg-muted"
               >
                 <img
                   src={gif.preview || gif.url}
                   alt={gif.title}
                   className="w-full h-full object-cover"
                   loading="lazy"
+                  decoding="async"
                 />
               </button>
             ))}

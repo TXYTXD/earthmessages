@@ -137,7 +137,7 @@ export function MessageBubble({ message, onReact, onReply, onEdit, onDelete, onF
               📎 {message.media_metadata?.name || "File"}
             </a>
           ) : message.type === "gif" ? (
-            <img src={message.media_url || ""} alt="GIF" className="rounded-lg max-w-full max-h-48" />
+            <img src={message.media_url || ""} alt="GIF" className="rounded-lg max-w-full max-h-48" loading="lazy" decoding="async" />
           ) : message.type === "voice" ? (
             <audio controls src={message.media_url || ""} className="max-w-full" />
           ) : (
