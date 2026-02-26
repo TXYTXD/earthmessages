@@ -14,8 +14,8 @@ Deno.serve(async (req) => {
     const ANON_KEY = 'LIVDSRZULELA';
 
     const endpoint = query?.trim()
-      ? `https://g.tenor.com/v1/search?q=${encodeURIComponent(query)}&key=${ANON_KEY}&limit=${limit}&media_filter=minimal`
-      : `https://g.tenor.com/v1/trending?key=${ANON_KEY}&limit=${limit}&media_filter=minimal`;
+      ? `https://g.tenor.com/v1/search?q=${encodeURIComponent(query)}&key=${ANON_KEY}&limit=${limit}&media_filter=basic`
+      : `https://g.tenor.com/v1/trending?key=${ANON_KEY}&limit=${limit}&media_filter=basic`;
 
     const response = await fetch(endpoint);
     
@@ -33,10 +33,10 @@ Deno.serve(async (req) => {
     const gifs = (data.results || []).map((r: any) => ({
       id: r.id,
       title: r.title || '',
-      preview: r.media?.[0]?.tinygif?.url || r.media?.[0]?.gif?.url || '',
-      url: r.media?.[0]?.gif?.url || '',
-      width: r.media?.[0]?.gif?.dims?.[0] || 200,
-      height: r.media?.[0]?.gif?.dims?.[1] || 200,
+      preview: r.media?.[0]?.nanogif?.url || r.media?.[0]?.tinygif?.url || '',
+      url: r.media?.[0]?.mediumgif?.url || r.media?.[0]?.gif?.url || '',
+      width: r.media?.[0]?.mediumgif?.dims?.[0] || 200,
+      height: r.media?.[0]?.mediumgif?.dims?.[1] || 200,
     }));
 
     return new Response(
