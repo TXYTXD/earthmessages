@@ -117,7 +117,7 @@ export function GifPicker({ onSelect, onClose }: GifPickerProps) {
 
       {/* Tenor attribution */}
       <div className="px-2 py-1 border-t border-border">
-        <span className="text-[10px] text-muted-foreground">Powered by Tenor</span>
+        <span className="text-[10px] text-muted-foreground">Powered by GIPHY</span>
       </div>
     </motion.div>
   );
