@@ -59,7 +59,7 @@ async function streamChat({
   onDone();
 }
 
-export default function AIChatPage() {
+export default function AIChatPage({ onBack }: { onBack?: () => void }) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
