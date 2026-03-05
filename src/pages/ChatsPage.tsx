@@ -105,14 +105,18 @@ export default function ChatsPage() {
           <ContactList
             conversations={conversations}
             selectedId={activeConv?.id || null}
-            onSelect={setSelectedConversation}
+            onSelect={(conv) => { setShowAI(false); setSelectedConversation(conv); }}
+            onSelectAI={() => { setSelectedConversation(null); setShowAI(true); }}
+            isAISelected={showAI}
             loading={loading}
           />
         </div>
       )}
 
       {/* Chat Area */}
-      {showChatArea || (!isMobile && activeConv) ? (
+      {showAI ? (
+        <AIChatPage onBack={isMobile ? () => setShowAI(false) : undefined} />
+      ) : showChatArea || (!isMobile && activeConv) ? (
         <ChatArea
           conversation={activeConv!}
           conversations={conversations}
