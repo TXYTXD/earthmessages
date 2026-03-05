@@ -66,12 +66,9 @@ export function ContactList({ conversations, selectedId, onSelect, onSelectAI, i
             <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center px-6">
-            <div className="w-16 h-16 rounded-full bg-accent flex items-center justify-center mb-4">
-              <MessageCircle className="w-8 h-8 text-muted-foreground" />
-            </div>
+          <div className="flex flex-col items-center justify-center text-center px-6 py-8">
             <p className="text-sm text-muted-foreground">
-              {searchQuery ? "No conversations found" : "No conversations yet"}
+              {searchQuery ? "No conversations found" : "No other conversations yet"}
             </p>
             <p className="text-xs text-muted-foreground mt-1">Add friends to start chatting</p>
           </div>
