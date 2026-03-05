@@ -39,6 +39,28 @@ export function ContactList({ conversations, selectedId, onSelect, onSelectAI, i
 
       {/* Conversations */}
       <div className="flex-1 overflow-y-auto px-2 py-1">
+        {/* AI Assistant - Pinned at top */}
+        <button
+          onClick={onSelectAI}
+          className={`w-full p-2.5 flex items-center gap-3 rounded-lg transition-colors ${
+            isAISelected ? "bg-accent" : "hover:bg-accent/50"
+          }`}
+        >
+          <div className="relative flex-shrink-0">
+            <div className="w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center">
+              <Bot className="w-6 h-6 text-primary" />
+            </div>
+            <div className="absolute bottom-0 right-0 w-3 h-3 bg-success rounded-full border-2 border-card" />
+          </div>
+          <div className="flex-1 text-left min-w-0">
+            <div className="flex items-center gap-1">
+              <span className="text-[15px] font-semibold">AI Assistant</span>
+              <BadgeCheck className="w-4 h-4 text-primary flex-shrink-0" />
+            </div>
+            <p className="text-[13px] text-muted-foreground truncate">Ask me anything · Always online</p>
+          </div>
+        </button>
+
         {loading ? (
           <div className="flex items-center justify-center h-32">
             <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
