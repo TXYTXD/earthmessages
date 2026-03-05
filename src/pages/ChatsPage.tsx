@@ -21,18 +21,14 @@ export default function ChatsPage() {
   const isMobile = useIsMobile();
 
   const handleSelectFriend = async (friend: Friend) => {
-    // First, immediately show the chat UI with friend info while we create/find the conversation
+    setShowAI(false);
     const convId = await createDirectConversation(friend.user_id);
     if (!convId) {
       console.error("Failed to create conversation with", friend.display_name);
       return;
     }
-    
-    // Try to get the full conversation data
     const updated = await refetch();
     const conv = updated.find((c) => c.id === convId);
-    
-    // Use the real conversation data, or build one with the real convId
     setSelectedConversation(conv || {
       id: convId,
       type: "direct",
