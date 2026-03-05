@@ -7,6 +7,7 @@ import { StoriesBar } from "@/components/chat/StoriesBar";
 import { FriendsList } from "@/components/chat/FriendsList";
 import { NewChatDialog } from "@/components/chat/NewChatDialog";
 import { NewGroupDialog } from "@/components/chat/NewGroupDialog";
+import AIChatPage from "@/pages/AIChatPage";
 import { useConversations, type Conversation } from "@/hooks/useConversations";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { type Friend } from "@/hooks/useFriends";
@@ -14,23 +15,20 @@ import { type Friend } from "@/hooks/useFriends";
 export default function ChatsPage() {
   const { conversations, loading, createDirectConversation, createGroupConversation, refetch } = useConversations();
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [showAI, setShowAI] = useState(false);
   const [showNewChat, setShowNewChat] = useState(false);
   const [showNewGroup, setShowNewGroup] = useState(false);
   const isMobile = useIsMobile();
 
   const handleSelectFriend = async (friend: Friend) => {
-    // First, immediately show the chat UI with friend info while we create/find the conversation
+    setShowAI(false);
     const convId = await createDirectConversation(friend.user_id);
     if (!convId) {
       console.error("Failed to create conversation with", friend.display_name);
       return;
     }
-    
-    // Try to get the full conversation data
     const updated = await refetch();
     const conv = updated.find((c) => c.id === convId);
-    
-    // Use the real conversation data, or build one with the real convId
     setSelectedConversation(conv || {
       id: convId,
       type: "direct",
@@ -72,8 +70,8 @@ export default function ChatsPage() {
     ? conversations.find((c) => c.id === selectedConversation.id) || selectedConversation
     : null;
 
-  const showChatArea = isMobile && activeConv;
-  const showSidebar = !isMobile || !activeConv;
+  const showChatArea = isMobile && (activeConv || showAI);
+  const showSidebar = !isMobile || (!activeConv && !showAI);
 
   return (
     <div className="flex flex-1 h-screen">
@@ -107,14 +105,18 @@ export default function ChatsPage() {
           <ContactList
             conversations={conversations}
             selectedId={activeConv?.id || null}
-            onSelect={setSelectedConversation}
+            onSelect={(conv) => { setShowAI(false); setSelectedConversation(conv); }}
+            onSelectAI={() => { setSelectedConversation(null); setShowAI(true); }}
+            isAISelected={showAI}
             loading={loading}
           />
         </div>
       )}
 
       {/* Chat Area */}
-      {showChatArea || (!isMobile && activeConv) ? (
+      {showAI ? (
+        <AIChatPage onBack={isMobile ? () => setShowAI(false) : undefined} />
+      ) : showChatArea || (!isMobile && activeConv) ? (
         <ChatArea
           conversation={activeConv!}
           conversations={conversations}
