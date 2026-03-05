@@ -23,6 +23,7 @@ import AuthPage from "@/pages/AuthPage";
 import LandingPage from "@/pages/LandingPage";
 import NotFound from "./pages/NotFound";
 import InstallPage from "@/pages/InstallPage";
+import AIChatPage from "@/pages/AIChatPage";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +58,7 @@ function ProtectedLayout() {
             <Route path="/stories" element={<StoriesPage />} />
             <Route path="/video" element={<VideoCallPage />} />
             <Route path="/calls" element={<CallsPage />} />
+            <Route path="/ai" element={<AIChatPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/account" element={<AccountPage />} />
             <Route path="*" element={<NotFound />} />
