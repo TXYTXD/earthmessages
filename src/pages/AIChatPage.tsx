@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Bot, Send, Trash2, ArrowLeft } from "lucide-react";
+import { Bot, Send, Trash2, ArrowLeft, BadgeCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
