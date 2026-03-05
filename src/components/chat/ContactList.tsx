@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, MessageCircle, Users } from "lucide-react";
+import { Search, MessageCircle, Users, Bot, BadgeCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import { type Conversation } from "@/hooks/useConversations";
 import { formatDistanceToNow } from "date-fns";
@@ -8,6 +8,8 @@ interface ContactListProps {
   conversations: Conversation[];
   selectedId: string | null;
   onSelect: (conversation: Conversation) => void;
+  onSelectAI?: () => void;
+  isAISelected?: boolean;
   loading: boolean;
 }
 
