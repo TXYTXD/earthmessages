@@ -70,8 +70,8 @@ export default function ChatsPage() {
     ? conversations.find((c) => c.id === selectedConversation.id) || selectedConversation
     : null;
 
-  const showChatArea = isMobile && activeConv;
-  const showSidebar = !isMobile || !activeConv;
+  const showChatArea = isMobile && (activeConv || showAI);
+  const showSidebar = !isMobile || (!activeConv && !showAI);
 
   return (
     <div className="flex flex-1 h-screen">
