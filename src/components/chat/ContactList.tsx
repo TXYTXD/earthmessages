@@ -13,7 +13,7 @@ interface ContactListProps {
   loading: boolean;
 }
 
-export function ContactList({ conversations, selectedId, onSelect, loading }: ContactListProps) {
+export function ContactList({ conversations, selectedId, onSelect, onSelectAI, isAISelected, loading }: ContactListProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
   const filtered = searchQuery
