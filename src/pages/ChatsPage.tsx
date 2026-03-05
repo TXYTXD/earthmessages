@@ -7,6 +7,7 @@ import { StoriesBar } from "@/components/chat/StoriesBar";
 import { FriendsList } from "@/components/chat/FriendsList";
 import { NewChatDialog } from "@/components/chat/NewChatDialog";
 import { NewGroupDialog } from "@/components/chat/NewGroupDialog";
+import AIChatPage from "@/pages/AIChatPage";
 import { useConversations, type Conversation } from "@/hooks/useConversations";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { type Friend } from "@/hooks/useFriends";
@@ -14,6 +15,7 @@ import { type Friend } from "@/hooks/useFriends";
 export default function ChatsPage() {
   const { conversations, loading, createDirectConversation, createGroupConversation, refetch } = useConversations();
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [showAI, setShowAI] = useState(false);
   const [showNewChat, setShowNewChat] = useState(false);
   const [showNewGroup, setShowNewGroup] = useState(false);
   const isMobile = useIsMobile();
