@@ -112,12 +112,23 @@ export default function AIChatPage({ onBack }: { onBack?: () => void }) {
   return (
     <div className="flex-1 flex flex-col bg-background h-full">
       {/* Header */}
-      <div className="h-14 px-4 flex items-center gap-3 border-b border-border shrink-0">
+      <div className="h-14 px-4 flex items-center gap-2 border-b border-border shrink-0">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-foreground"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+        )}
         <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center">
           <Bot className="w-5 h-5 text-primary" />
         </div>
         <div className="flex-1">
-          <h3 className="text-[15px] font-semibold leading-tight">AI Assistant</h3>
+          <h3 className="text-[15px] font-semibold leading-tight flex items-center gap-1">
+            AI Assistant
+            <BadgeCheck className="w-4 h-4 text-primary" />
+          </h3>
           <span className="text-[11px] text-muted-foreground">Powered by AI · Always available</span>
         </div>
         {messages.length > 0 && (
