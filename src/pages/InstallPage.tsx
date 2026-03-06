@@ -47,7 +47,7 @@ export default function InstallPage() {
         </div>
 
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold text-foreground">Install Earth Messages</h1>
+          <h1 className="text-3xl font-bold text-foreground">Install UMS Messages</h1>
           <p className="text-muted-foreground">
             Get the full app experience — fast, offline-ready, and always one tap away.
           </p>

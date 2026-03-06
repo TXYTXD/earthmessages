@@ -24,8 +24,8 @@ export default defineConfig(({ mode }) => ({
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
       },
       manifest: {
-        name: "Earth Messages",
-        short_name: "EarthMsg",
+        name: "UMS Messages",
+        short_name: "UMSMsg",
         description: "A modern messaging application",
         theme_color: "#1a1a2e",
         background_color: "#1a1a2e",
