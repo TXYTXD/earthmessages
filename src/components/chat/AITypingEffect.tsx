@@ -1,4 +1,4 @@
-import { useMemo, useRef, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 
@@ -8,60 +8,44 @@ interface AITypingEffectProps {
 }
 
 export function AITypingEffect({ content, isStreaming }: AITypingEffectProps) {
-  const prevLenRef = useRef(0);
+  const [displayedLen, setDisplayedLen] = useState(content.length);
+  const rafRef = useRef<number>();
 
-  // Track how much content we've already shown (for fade-in only on new parts)
   useEffect(() => {
     if (!isStreaming) {
-      prevLenRef.current = 0;
+      setDisplayedLen(content.length);
+      return;
     }
-  }, [isStreaming]);
 
-  if (!isStreaming) {
-    return (
-      <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 [&>ul]:my-1 [&>ol]:my-1">
-        <ReactMarkdown>{content}</ReactMarkdown>
-      </div>
-    );
-  }
+    // Animate catching up to full content length, char by char
+    if (displayedLen < content.length) {
+      rafRef.current = window.setTimeout(() => {
+        // Reveal multiple chars per tick for fast streaming
+        const remaining = content.length - displayedLen;
+        const step = remaining > 20 ? 3 : remaining > 10 ? 2 : 1;
+        setDisplayedLen((prev) => Math.min(prev + step, content.length));
+      }, 15);
+      return () => clearTimeout(rafRef.current);
+    }
+  }, [content, displayedLen, isStreaming]);
 
-  // Split content into words, animate each new word
-  const words = content.split(/(\s+)/);
-  const alreadySeen = prevLenRef.current;
+  // Reset when conversation clears
+  useEffect(() => {
+    if (content.length === 0) setDisplayedLen(0);
+  }, [content]);
 
-  // Update seen count after render
-  requestAnimationFrame(() => {
-    prevLenRef.current = words.length;
-  });
+  const shown = isStreaming ? content.slice(0, displayedLen) : content;
 
   return (
-    <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 [&>ul]:my-1 [&>ol]:my-1 leading-relaxed">
-      {words.map((word, i) => {
-        const isNew = i >= alreadySeen;
-        if (!word) return null;
-
-        // Whitespace
-        if (/^\s+$/.test(word)) return <span key={i}>{word}</span>;
-
-        return isNew ? (
-          <motion.span
-            key={`${i}-${word}`}
-            initial={{ opacity: 0, filter: "blur(4px)", y: 2 }}
-            animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="inline"
-          >
-            {word}
-          </motion.span>
-        ) : (
-          <span key={i} className="inline">{word}</span>
-        );
-      })}
-      <motion.span
-        className="inline-block w-[3px] h-[18px] bg-primary rounded-full ml-0.5 align-middle"
-        animate={{ opacity: [1, 0] }}
-        transition={{ duration: 0.5, repeat: Infinity, repeatType: "reverse" }}
-      />
+    <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 [&>ul]:my-1 [&>ol]:my-1">
+      <ReactMarkdown>{shown}</ReactMarkdown>
+      {isStreaming && (
+        <motion.span
+          className="inline-block w-[3px] h-[18px] bg-primary rounded-full ml-0.5 align-middle"
+          animate={{ opacity: [1, 0] }}
+          transition={{ duration: 0.5, repeat: Infinity, repeatType: "reverse" }}
+        />
+      )}
     </div>
   );
 }
