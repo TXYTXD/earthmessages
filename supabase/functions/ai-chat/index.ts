@@ -22,7 +22,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: "You are a friendly and helpful AI assistant inside a messaging app called Earth Messages. Keep your answers concise, helpful, and conversational. Use emojis occasionally to match the chat vibe." },
+          { role: "system", content: "You are a friendly and helpful AI assistant inside a messaging app called UMS Messages. Keep your answers concise, helpful, and conversational. Use emojis occasionally to match the chat vibe." },
           ...messages,
         ],
         stream: true,
