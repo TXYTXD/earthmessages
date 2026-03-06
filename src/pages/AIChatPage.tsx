@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Bot, Send, Trash2, ArrowLeft, BadgeCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
-import ReactMarkdown from "react-markdown";
+import { AITypingEffect, AIThinkingIndicator } from "@/components/chat/AITypingEffect";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -188,9 +188,10 @@ export default function AIChatPage({ onBack }: { onBack?: () => void }) {
                 }`}
               >
                 {msg.role === "assistant" ? (
-                  <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 [&>ul]:my-1 [&>ol]:my-1">
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
-                  </div>
+                  <AITypingEffect
+                    content={msg.content}
+                    isStreaming={loading && i === messages.length - 1}
+                  />
                 ) : (
                   <span>{msg.content}</span>
                 )}
@@ -200,14 +201,7 @@ export default function AIChatPage({ onBack }: { onBack?: () => void }) {
         </AnimatePresence>
 
         {loading && messages[messages.length - 1]?.role !== "assistant" && (
-          <div className="flex items-center gap-2 text-[13px] text-muted-foreground px-3 py-1">
-            <div className="flex gap-1">
-              <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-              <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-              <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-            </div>
-            <span>AI is thinking...</span>
-          </div>
+          <AIThinkingIndicator />
         )}
 
         <div ref={endRef} />
