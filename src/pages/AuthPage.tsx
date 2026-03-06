@@ -103,8 +103,8 @@ export default function AuthPage() {
           options: { data: { display_name: displayName }, emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
-        toast({ title: "Check your email", description: "Click the verification link we sent to activate your account." });
-        setView("login");
+        toast({ title: "Check your email", description: "Enter the 6-digit code we sent to verify your account." });
+        setView("verify");
       }
     } catch (error: any) {
       toast({ variant: "destructive", title: "Error", description: error.message });
