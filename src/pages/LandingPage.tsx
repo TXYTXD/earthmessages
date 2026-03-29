@@ -201,6 +201,11 @@ export default function LandingPage() {
             ))}
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground text-[13px] gap-1.5">
+              <a href="https://umsmesagesdownloads.lovable.app" target="_blank" rel="noopener noreferrer">
+                <Download className="w-3.5 h-3.5" /> Download
+              </a>
+            </Button>
             <Button variant="ghost" size="sm" onClick={goAuth} className="text-muted-foreground hover:text-foreground text-[13px]">
               Log in
             </Button>
@@ -262,10 +267,8 @@ export default function LandingPage() {
               <Button size="lg" className="rounded-full px-8 text-sm h-11 gap-2 shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all" onClick={goAuth}>
                 Create free account <ArrowRight className="w-4 h-4" />
               </Button>
-              <Button variant="outline" size="lg" className="rounded-full px-8 text-sm h-11 border-border/50 text-muted-foreground" asChild>
-                <a href="https://umsmesagesdownloads.lovable.app" target="_blank" rel="noopener noreferrer">
-                  <Download className="w-4 h-4 mr-1.5" /> Download App
-                </a>
+              <Button variant="outline" size="lg" className="rounded-full px-8 text-sm h-11 border-border/50 text-muted-foreground" onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}>
+                Explore features
               </Button>
             </motion.div>
           </motion.div>
