@@ -201,6 +201,11 @@ export default function LandingPage() {
             ))}
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground text-[13px] gap-1.5">
+              <a href="https://umsmesagesdownloads.lovable.app" target="_blank" rel="noopener noreferrer">
+                <Download className="w-3.5 h-3.5" /> Download
+              </a>
+            </Button>
             <Button variant="ghost" size="sm" onClick={goAuth} className="text-muted-foreground hover:text-foreground text-[13px]">
               Log in
             </Button>
