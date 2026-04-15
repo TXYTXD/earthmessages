@@ -6,6 +6,7 @@ import { ChatInput } from "./ChatInput";
 import { ForwardDialog } from "./ForwardDialog";
 import { useMessages, type Message } from "@/hooks/useMessages";
 import { useStarredMessages } from "@/hooks/useStarredMessages";
+import { useScheduledMessages } from "@/hooks/useScheduledMessages";
 import { type Conversation } from "@/hooks/useConversations";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCall } from "@/contexts/CallContext";
