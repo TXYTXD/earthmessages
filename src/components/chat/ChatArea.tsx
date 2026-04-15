@@ -6,6 +6,7 @@ import { ChatInput } from "./ChatInput";
 import { ForwardDialog } from "./ForwardDialog";
 import { useMessages, type Message } from "@/hooks/useMessages";
 import { useStarredMessages } from "@/hooks/useStarredMessages";
+import { useScheduledMessages } from "@/hooks/useScheduledMessages";
 import { type Conversation } from "@/hooks/useConversations";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCall } from "@/contexts/CallContext";
@@ -29,6 +30,8 @@ export function ChatArea({ conversation, conversations, onBack }: ChatAreaProps)
     addReaction,
     setTyping,
   } = useMessages(conversation.id);
+
+  const { scheduleMessage } = useScheduledMessages(conversation.id);
 
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [forwardMsg, setForwardMsg] = useState<Message | null>(null);
@@ -188,6 +191,7 @@ export function ChatArea({ conversation, conversations, onBack }: ChatAreaProps)
         onTyping={setTyping}
         replyTo={replyTo}
         onCancelReply={() => setReplyTo(null)}
+        onSchedule={scheduleMessage}
       />
 
       <ForwardDialog
