@@ -31,6 +31,8 @@ export function ChatArea({ conversation, conversations, onBack }: ChatAreaProps)
     setTyping,
   } = useMessages(conversation.id);
 
+  const { scheduleMessage } = useScheduledMessages(conversation.id);
+
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [forwardMsg, setForwardMsg] = useState<Message | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -189,6 +191,7 @@ export function ChatArea({ conversation, conversations, onBack }: ChatAreaProps)
         onTyping={setTyping}
         replyTo={replyTo}
         onCancelReply={() => setReplyTo(null)}
+        onSchedule={scheduleMessage}
       />
 
       <ForwardDialog
