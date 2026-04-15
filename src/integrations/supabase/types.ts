@@ -394,6 +394,66 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_messages: {
+        Row: {
+          content: string | null
+          conversation_id: string
+          created_at: string
+          id: string
+          media_metadata: Json | null
+          media_url: string | null
+          reply_to_id: string | null
+          scheduled_at: string
+          sender_id: string
+          sent_at: string | null
+          status: string
+          type: string
+        }
+        Insert: {
+          content?: string | null
+          conversation_id: string
+          created_at?: string
+          id?: string
+          media_metadata?: Json | null
+          media_url?: string | null
+          reply_to_id?: string | null
+          scheduled_at: string
+          sender_id: string
+          sent_at?: string | null
+          status?: string
+          type?: string
+        }
+        Update: {
+          content?: string | null
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          media_metadata?: Json | null
+          media_url?: string | null
+          reply_to_id?: string | null
+          scheduled_at?: string
+          sender_id?: string
+          sent_at?: string | null
+          status?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       starred_messages: {
         Row: {
           conversation_id: string
