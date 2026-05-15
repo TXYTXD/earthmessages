@@ -41,14 +41,36 @@ Deno.serve(async (req) => {
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
     const { type, otherUserId, name, memberIds } = await req.json();
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    // Helper: confirm two users are friends (accepted friend_request)
+    const areFriends = async (a: string, b: string) => {
+      const { data } = await adminClient
+        .from("friend_requests")
+        .select("id")
+        .eq("status", "accepted")
+        .or(
+          `and(sender_id.eq.${a},receiver_id.eq.${b}),and(sender_id.eq.${b},receiver_id.eq.${a})`
+        )
+        .maybeSingle();
+      return !!data;
+    };
 
     if (type === "direct") {
-      if (!otherUserId) {
-        return new Response(JSON.stringify({ error: "otherUserId required" }), {
+      if (!otherUserId || !uuidRegex.test(otherUserId) || otherUserId === user.id) {
+        return new Response(JSON.stringify({ error: "Invalid otherUserId" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
+      if (!(await areFriends(user.id, otherUserId))) {
+        return new Response(JSON.stringify({ error: "Users must be friends" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
 
       // Check if direct conversation already exists between these two users
       const { data: myMemberships } = await adminClient
@@ -108,11 +130,32 @@ Deno.serve(async (req) => {
       });
 
     } else if (type === "group") {
-      if (!name || !memberIds || !Array.isArray(memberIds)) {
-        return new Response(JSON.stringify({ error: "name and memberIds required" }), {
+      if (!name || typeof name !== "string" || name.length === 0 || name.length > 100) {
+        return new Response(JSON.stringify({ error: "Invalid group name" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      }
+      if (!memberIds || !Array.isArray(memberIds) || memberIds.length === 0 || memberIds.length > 50) {
+        return new Response(JSON.stringify({ error: "Invalid memberIds" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // All memberIds must be valid UUIDs and friends of the creator
+      for (const mid of memberIds) {
+        if (typeof mid !== "string" || !uuidRegex.test(mid) || mid === user.id) {
+          return new Response(JSON.stringify({ error: "Invalid member id" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (!(await areFriends(user.id, mid))) {
+          return new Response(JSON.stringify({ error: "Can only add friends to groups" }), {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
       }
 
       const { data: newConv, error: convErr } = await adminClient
