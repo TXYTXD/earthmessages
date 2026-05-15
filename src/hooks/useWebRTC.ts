@@ -125,32 +125,51 @@ export function useWebRTC() {
 
   const setupPeerConnection = useCallback(
     (callId: string) => {
-      const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+      const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, iceCandidatePoolSize: 4 });
       peerConnection.current = pc;
+      remoteDescSet.current = false;
+      pendingCandidates.current = [];
 
       pc.onicecandidate = async (event) => {
         if (event.candidate && user) {
-          await (supabase.from("call_signaling") as any).insert({
-            call_id: callId,
-            sender_id: user.id,
-            type: "ice-candidate",
-            payload: { candidate: event.candidate.toJSON() },
-          });
+          try {
+            await (supabase.from("call_signaling") as any).insert({
+              call_id: callId,
+              sender_id: user.id,
+              type: "ice-candidate",
+              payload: { candidate: event.candidate.toJSON() },
+            });
+          } catch (e) {
+            console.warn("[Call] Failed to send ICE candidate:", e);
+          }
         }
       };
 
       pc.ontrack = (event) => {
+        console.log("[Call] ontrack received, streams:", event.streams.length);
         remoteStream.current = event.streams[0];
-        // Try to assign immediately, but also rely on the effect in the overlay
         if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = event.streams[0];
+          remoteVideoRef.current.play().catch(() => {});
         }
         // Force a re-render so the overlay effect can pick up the stream
         setCallState((prev) => ({ ...prev }));
       };
 
+      pc.oniceconnectionstatechange = () => {
+        console.log("[Call] ICE state:", pc.iceConnectionState);
+        if (pc.iceConnectionState === "connected" || pc.iceConnectionState === "completed") {
+          setCallState((prev) => {
+            if (prev.status === "connected") return prev;
+            startDurationTimer();
+            return { ...prev, status: "connected" };
+          });
+        }
+      };
+
       pc.onconnectionstatechange = () => {
-        if (pc.connectionState === "disconnected" || pc.connectionState === "failed") {
+        console.log("[Call] Connection state:", pc.connectionState);
+        if (pc.connectionState === "failed") {
           doHangUp();
         }
       };
@@ -162,8 +181,21 @@ export function useWebRTC() {
 
       return pc;
     },
-    [user, doHangUp]
+    [user, doHangUp, startDurationTimer]
   );
+
+  const flushPendingCandidates = useCallback(async () => {
+    const pc = peerConnection.current;
+    if (!pc || !remoteDescSet.current) return;
+    const queued = pendingCandidates.current.splice(0);
+    for (const c of queued) {
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(c));
+      } catch (e) {
+        console.warn("[Call] Failed to add buffered ICE:", e);
+      }
+    }
+  }, []);
 
   const subscribeToSignaling = useCallback(
     (callId: string) => {
