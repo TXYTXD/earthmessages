@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock, User, Eye, EyeOff, ArrowRight, MessageCircle, ArrowLeft, Shield, Zap, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
@@ -108,6 +109,21 @@ export default function AuthPage() {
       }
     } catch (error: any) {
       toast({ variant: "destructive", title: "Error", description: error.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOAuth = async (provider: "google" | "apple") => {
+    setLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth(provider, {
+        redirect_uri: window.location.origin,
+      });
+      if (result.redirected) return;
+      if (result.error) throw result.error;
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Sign-in failed", description: error?.message ?? "Please try again." });
     } finally {
       setLoading(false);
     }
@@ -276,6 +292,26 @@ export default function AuthPage() {
                     )}
                     <SubmitButton loading={loading} text={view === "login" ? "Sign In" : "Create Account"} />
                   </form>
+
+                  <div className="my-5 flex items-center gap-3">
+                    <div className="h-px flex-1 bg-border" />
+                    <span className="text-xs text-muted-foreground">or continue with</span>
+                    <div className="h-px flex-1 bg-border" />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <SocialButton
+                      provider="google"
+                      loading={loading}
+                      onClick={() => handleOAuth("google")}
+                    />
+                    <SocialButton
+                      provider="apple"
+                      loading={loading}
+                      onClick={() => handleOAuth("apple")}
+                    />
+                  </div>
+
                   <div className="mt-6 text-center">
                     <button onClick={() => setView(view === "login" ? "signup" : "login")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                       {view === "login" ? "Don't have an account? " : "Already have an account? "}
@@ -330,5 +366,36 @@ function BackLink({ onClick }: { onClick: () => void }) {
         Back to sign in
       </button>
     </div>
+  );
+}
+
+function SocialButton({
+  provider,
+  loading,
+  onClick,
+}: {
+  provider: "google" | "apple";
+  loading: boolean;
+  onClick: () => void;
+}) {
+  const label = provider === "google" ? "Google" : "Apple";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={loading}
+      className="h-11 rounded-xl border border-border bg-background hover:bg-muted/50 transition-colors flex items-center justify-center gap-2 text-sm font-medium disabled:opacity-50"
+    >
+      {provider === "google" ? (
+        <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.24 1.4-1.7 4.1-5.5 4.1-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.2.8 3.9 1.5l2.7-2.6C16.9 3.3 14.7 2.4 12 2.4 6.7 2.4 2.4 6.7 2.4 12s4.3 9.6 9.6 9.6c5.5 0 9.2-3.9 9.2-9.4 0-.6-.07-1.1-.16-1.6H12z" />
+        </svg>
+      ) : (
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M16.365 1.43c0 1.14-.42 2.22-1.18 3.04-.83.9-2.18 1.6-3.3 1.5-.13-1.1.43-2.27 1.18-3.04.83-.86 2.27-1.5 3.3-1.5zM20.5 17.4c-.55 1.27-.81 1.84-1.52 2.96-.99 1.55-2.39 3.49-4.13 3.5-1.55.02-1.95-1.01-4.05-1-2.1.01-2.54 1.02-4.09 1.01-1.74-.01-3.07-1.76-4.06-3.31C-.13 17.05-.4 11.94 1.74 9.21c1.52-1.94 3.92-3.07 6.18-3.07 2.3 0 3.74 1.26 5.64 1.26 1.84 0 2.96-1.26 5.62-1.26 2.01 0 4.14 1.1 5.66 3-4.97 2.72-4.16 9.83-4.34 8.26z" />
+        </svg>
+      )}
+      {label}
+    </button>
   );
 }
