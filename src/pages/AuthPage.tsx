@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock, User, Eye, EyeOff, ArrowRight, MessageCircle, ArrowLeft, Shield, Zap, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
