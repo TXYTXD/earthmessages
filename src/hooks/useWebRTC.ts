@@ -349,11 +349,8 @@ export function useWebRTC() {
 
       const pc = setupPeerConnection(call.id);
 
-      // Subscribe to signaling FIRST, then send offer
-      subscribeToSignaling(call.id);
-
-      // Wait a moment for the channel to be ready
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Subscribe to signaling and WAIT until the channel is ready before sending offer
+      await subscribeToSignaling(call.id);
 
       // Create and send offer
       const offer = await pc.createOffer();
