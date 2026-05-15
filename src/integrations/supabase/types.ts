@@ -370,7 +370,6 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
-          pin_hash: string | null
           updated_at: string
           user_id: string
         }
@@ -379,7 +378,6 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
-          pin_hash?: string | null
           updated_at?: string
           user_id: string
         }
@@ -388,7 +386,6 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
-          pin_hash?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -581,6 +578,27 @@ export type Database = {
           },
         ]
       }
+      user_pins: {
+        Row: {
+          created_at: string
+          pin_hash: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          pin_hash: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          pin_hash?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_status: {
         Row: {
           is_online: boolean
@@ -616,6 +634,9 @@ export type Database = {
         Args: { _target_user_id: string; _viewer_id: string }
         Returns: boolean
       }
+      set_user_pin: { Args: { _pin: string }; Returns: undefined }
+      user_has_pin: { Args: never; Returns: boolean }
+      verify_user_pin: { Args: { _pin: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
