@@ -388,12 +388,11 @@ export function useWebRTC() {
         .eq("id", callId);
 
       const pc = setupPeerConnection(callId);
-      subscribeToSignaling(callId);
 
-      // Wait a moment for the channel to be ready
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Subscribe and wait until the realtime channel is actually ready
+      await subscribeToSignaling(callId);
 
-      // Fetch existing signals (offer + ICE candidates)
+      // Fetch existing signals (offer + ICE that arrived before subscribe)
       const { data: signals } = await supabase
         .from("call_signaling")
         .select("*")
@@ -402,39 +401,40 @@ export function useWebRTC() {
 
       if (!pc || !signals) return;
 
-      // Process offer first, then ICE candidates
       const offerSignal = signals.find((s: any) => s.type === "offer" && s.sender_id !== user.id);
       const iceCandidates = signals.filter((s: any) => s.type === "ice-candidate" && s.sender_id !== user.id);
 
-      if (offerSignal) {
-        try {
-          await pc.setRemoteDescription(new RTCSessionDescription((offerSignal.payload as any).sdp));
-          const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
-          await (supabase.from("call_signaling") as any).insert({
-            call_id: callId,
-            sender_id: user.id,
-            type: "answer",
-            payload: { sdp: answer },
-          });
+      if (!offerSignal) {
+        console.warn("[Call] No offer found for callId", callId);
+        return;
+      }
 
-          // Add ICE candidates after setting remote description
-          for (const signal of iceCandidates) {
-            try {
-              await pc.addIceCandidate(new RTCIceCandidate((signal.payload as any).candidate));
-            } catch (e) {
-              console.warn("Failed to add ICE candidate:", e);
-            }
+      try {
+        await pc.setRemoteDescription(new RTCSessionDescription((offerSignal.payload as any).sdp));
+        remoteDescSet.current = true;
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        await (supabase.from("call_signaling") as any).insert({
+          call_id: callId,
+          sender_id: user.id,
+          type: "answer",
+          payload: { sdp: answer },
+        });
+
+        // Add the ICE candidates we already have, plus any that were buffered
+        for (const signal of iceCandidates) {
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate((signal.payload as any).candidate));
+          } catch (e) {
+            console.warn("[Call] Failed to add ICE candidate:", e);
           }
-
-          setCallState((prev) => ({ ...prev, status: "connected" }));
-          startDurationTimer();
-        } catch (e) {
-          console.error("Error processing offer:", e);
         }
+        await flushPendingCandidates();
+      } catch (e) {
+        console.error("[Call] Error processing offer:", e);
       }
     },
-    [user, setupPeerConnection, subscribeToSignaling, startDurationTimer]
+    [user, setupPeerConnection, subscribeToSignaling, flushPendingCandidates]
   );
 
   const declineCall = useCallback(
