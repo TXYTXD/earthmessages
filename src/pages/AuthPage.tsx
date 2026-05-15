@@ -114,6 +114,21 @@ export default function AuthPage() {
     }
   };
 
+  const handleOAuth = async (provider: "google" | "apple") => {
+    setLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth(provider, {
+        redirect_uri: window.location.origin,
+      });
+      if (result.redirected) return;
+      if (result.error) throw result.error;
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Sign-in failed", description: error?.message ?? "Please try again." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const titles: Record<AuthView, string> = {
     login: "Welcome back",
     signup: "Create account",
