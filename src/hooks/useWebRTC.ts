@@ -77,6 +77,8 @@ export function useWebRTC() {
     localStream.current?.getTracks().forEach((t) => t.stop());
     localStream.current = null;
     remoteStream.current = null;
+    pendingCandidates.current = [];
+    remoteDescSet.current = false;
     if (durationInterval.current) clearInterval(durationInterval.current);
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current);
