@@ -277,6 +277,26 @@ export default function AuthPage() {
                     )}
                     <SubmitButton loading={loading} text={view === "login" ? "Sign In" : "Create Account"} />
                   </form>
+
+                  <div className="my-5 flex items-center gap-3">
+                    <div className="h-px flex-1 bg-border" />
+                    <span className="text-xs text-muted-foreground">or continue with</span>
+                    <div className="h-px flex-1 bg-border" />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <SocialButton
+                      provider="google"
+                      loading={loading}
+                      onClick={() => handleOAuth("google")}
+                    />
+                    <SocialButton
+                      provider="apple"
+                      loading={loading}
+                      onClick={() => handleOAuth("apple")}
+                    />
+                  </div>
+
                   <div className="mt-6 text-center">
                     <button onClick={() => setView(view === "login" ? "signup" : "login")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                       {view === "login" ? "Don't have an account? " : "Already have an account? "}
