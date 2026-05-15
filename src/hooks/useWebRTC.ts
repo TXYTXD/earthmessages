@@ -60,6 +60,8 @@ export function useWebRTC() {
   const channelRef = useRef<any>(null);
   const callStateRef = useRef(callState);
   const startingCall = useRef(false); // Guard against double-clicks
+  const pendingCandidates = useRef<RTCIceCandidateInit[]>([]);
+  const remoteDescSet = useRef(false);
 
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
