@@ -130,11 +130,32 @@ Deno.serve(async (req) => {
       });
 
     } else if (type === "group") {
-      if (!name || !memberIds || !Array.isArray(memberIds)) {
-        return new Response(JSON.stringify({ error: "name and memberIds required" }), {
+      if (!name || typeof name !== "string" || name.length === 0 || name.length > 100) {
+        return new Response(JSON.stringify({ error: "Invalid group name" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      }
+      if (!memberIds || !Array.isArray(memberIds) || memberIds.length === 0 || memberIds.length > 50) {
+        return new Response(JSON.stringify({ error: "Invalid memberIds" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // All memberIds must be valid UUIDs and friends of the creator
+      for (const mid of memberIds) {
+        if (typeof mid !== "string" || !uuidRegex.test(mid) || mid === user.id) {
+          return new Response(JSON.stringify({ error: "Invalid member id" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (!(await areFriends(user.id, mid))) {
+          return new Response(JSON.stringify({ error: "Can only add friends to groups" }), {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
       }
 
       const { data: newConv, error: convErr } = await adminClient
