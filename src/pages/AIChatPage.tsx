@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Bot, Send, Trash2, ArrowLeft, BadgeCheck } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { AITypingEffect, AIThinkingIndicator } from "@/components/chat/AITypingEffect";
@@ -19,11 +20,14 @@ async function streamChat({
   onDone: () => void;
   onError: (status: number) => void;
 }) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) { onError(401); return; }
   const resp = await fetch(CHAT_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      Authorization: `Bearer ${session.access_token}`,
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
     },
     body: JSON.stringify({ messages }),
   });
