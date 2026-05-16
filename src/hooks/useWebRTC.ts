@@ -369,6 +369,8 @@ export function useWebRTC() {
     async (callId: string, type: "voice" | "video") => {
       if (!user) return;
 
+      const currentCall = callStateRef.current;
+
       try {
         localStream.current = await navigator.mediaDevices.getUserMedia({
           audio: true,
@@ -377,15 +379,33 @@ export function useWebRTC() {
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = localStream.current;
         }
-      } catch {
-        console.error("Failed to get media devices");
+      } catch (err) {
+        console.error("[Call] Failed to get media devices while answering:", err);
+        toast({ title: "Media access denied", description: "Please allow microphone/camera access to answer calls", variant: "destructive" });
         return;
       }
 
-      await supabase
+      setCallState((prev) => ({
+        ...prev,
+        callId,
+        type,
+        status: "calling",
+        isIncoming: false,
+        remoteName: prev.remoteName || currentCall.remoteName,
+        remoteAvatar: prev.remoteAvatar || currentCall.remoteAvatar,
+      }));
+
+      const { error: updateError } = await supabase
         .from("call_records")
         .update({ status: "answered", started_at: new Date().toISOString() })
         .eq("id", callId);
+
+      if (updateError) {
+        console.error("[Call] Failed to mark call answered:", updateError);
+        toast({ title: "Could not accept call", description: updateError.message, variant: "destructive" });
+        cleanup();
+        return;
+      }
 
       const pc = setupPeerConnection(callId);
 
@@ -406,6 +426,8 @@ export function useWebRTC() {
 
       if (!offerSignal) {
         console.warn("[Call] No offer found for callId", callId);
+        toast({ title: "Could not connect", description: "The caller's connection offer was not found", variant: "destructive" });
+        cleanup();
         return;
       }
 
@@ -432,9 +454,11 @@ export function useWebRTC() {
         await flushPendingCandidates();
       } catch (e) {
         console.error("[Call] Error processing offer:", e);
+        toast({ title: "Could not connect", description: "There was a problem accepting the call", variant: "destructive" });
+        cleanup();
       }
     },
-    [user, setupPeerConnection, subscribeToSignaling, flushPendingCandidates]
+    [user, setupPeerConnection, subscribeToSignaling, flushPendingCandidates, cleanup]
   );
 
   const declineCall = useCallback(
