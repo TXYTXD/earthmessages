@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TranslationSettings {
   primaryLang: string;
