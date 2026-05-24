@@ -38,23 +38,26 @@ export function ContactList({ conversations, selectedId, onSelect, onSelectAI, i
       </div>
 
       {/* Conversations */}
-      <div className="flex-1 overflow-y-auto px-2 py-1">
+      <div className="flex-1 overflow-y-auto px-2 py-1 space-y-0.5">
         {/* AI Assistant - Pinned at top */}
         <button
           onClick={onSelectAI}
-          className={`w-full p-2.5 flex items-center gap-3 rounded-lg transition-colors ${
-            isAISelected ? "bg-accent" : "hover:bg-accent/50"
+          className={`w-full p-2.5 flex items-center gap-3 rounded-2xl premium-hover ${
+            isAISelected ? "bg-accent shadow-soft" : ""
           }`}
         >
           <div className="relative flex-shrink-0">
-            <div className="w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center">
-              <Bot className="w-6 h-6 text-primary" />
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center text-white shadow-soft"
+              style={{ background: "var(--messenger-gradient)" }}
+            >
+              <Bot className="w-6 h-6" />
             </div>
             <div className="absolute bottom-0 right-0 w-3 h-3 bg-success rounded-full border-2 border-card" />
           </div>
           <div className="flex-1 text-left min-w-0">
             <div className="flex items-center gap-1">
-              <span className="text-[15px] font-semibold">AI Assistant</span>
+              <span className="text-[15px] font-semibold tracking-tight">AI Assistant</span>
               <BadgeCheck className="w-4 h-4 text-primary flex-shrink-0" />
             </div>
             <p className="text-[13px] text-muted-foreground truncate">Ask me anything · Always online</p>
@@ -77,12 +80,12 @@ export function ContactList({ conversations, selectedId, onSelect, onSelectAI, i
             <button
               key={conv.id}
               onClick={() => onSelect(conv)}
-              className={`w-full p-2.5 flex items-center gap-3 rounded-lg transition-colors ${
-                selectedId === conv.id ? "bg-accent" : "hover:bg-accent/50"
+              className={`w-full p-2.5 flex items-center gap-3 rounded-2xl premium-hover ${
+                selectedId === conv.id ? "bg-accent shadow-soft" : ""
               }`}
             >
               <div className="relative flex-shrink-0">
-                <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center text-sm font-semibold text-foreground">
+                <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center text-sm font-semibold text-foreground ring-1 ring-border/60">
                   {conv.type === "group" ? (
                     <Users className="w-5 h-5 text-muted-foreground" />
                   ) : (
@@ -94,27 +97,30 @@ export function ContactList({ conversations, selectedId, onSelect, onSelectAI, i
                 )}
               </div>
               <div className="flex-1 text-left min-w-0">
-                <div className="flex items-center justify-between">
-                  <span className={`text-[15px] ${conv.unread_count > 0 ? "font-semibold" : "font-normal"}`}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`text-[15px] tracking-tight truncate ${conv.unread_count > 0 ? "font-semibold" : "font-medium"}`}>
                     {conv.display_name}
                   </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <p className={`text-[13px] truncate ${conv.unread_count > 0 ? "text-foreground font-medium" : "text-muted-foreground"}`}>
-                    {conv.last_message || "No messages yet"}
-                  </p>
                   {conv.last_message_time && (
-                    <span className="text-[11px] text-muted-foreground flex-shrink-0 ml-2">
+                    <span className="text-[11px] text-muted-foreground flex-shrink-0">
                       {formatDistanceToNow(new Date(conv.last_message_time), { addSuffix: false })}
                     </span>
                   )}
                 </div>
-              </div>
-              {conv.unread_count > 0 && (
-                <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                  <span className="text-[10px] font-bold text-primary-foreground">{conv.unread_count}</span>
+                <div className="flex items-center justify-between gap-2 mt-0.5">
+                  <p className={`text-[13px] truncate ${conv.unread_count > 0 ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                    {conv.last_message || "No messages yet"}
+                  </p>
+                  {conv.unread_count > 0 && (
+                    <div
+                      className="min-w-5 h-5 px-1.5 rounded-full flex items-center justify-center flex-shrink-0 text-white shadow-soft"
+                      style={{ background: "var(--messenger-gradient)" }}
+                    >
+                      <span className="text-[10px] font-bold">{conv.unread_count}</span>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </button>
           ))
         )}

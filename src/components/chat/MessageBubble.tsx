@@ -194,7 +194,7 @@ export function MessageBubble({ message, onReact, onReply, onEdit, onDelete, onF
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className={`absolute top-0 ${isMe ? "right-full mr-1" : "left-full ml-1"} flex items-center gap-0.5 bg-card border border-border rounded-lg shadow-md p-0.5 z-10`}
+              className={`absolute top-0 ${isMe ? "right-full mr-1" : "left-full ml-1"} flex items-center gap-0.5 glass rounded-xl shadow-premium p-0.5 z-10`}
             >
               <button
                 onClick={() => setShowReactions(!showReactions)}
@@ -260,7 +260,7 @@ export function MessageBubble({ message, onReact, onReply, onEdit, onDelete, onF
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 4 }}
-              className={`absolute bottom-full mb-1 ${isMe ? "right-0" : "left-0"} flex gap-0.5 bg-card border border-border rounded-full shadow-lg px-1.5 py-1 z-20`}
+              className={`absolute bottom-full mb-1 ${isMe ? "right-0" : "left-0"} flex gap-0.5 glass rounded-full shadow-premium px-1.5 py-1 z-20`}
             >
               {QUICK_REACTIONS.map((emoji) => (
                 <button
