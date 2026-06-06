@@ -388,6 +388,8 @@ export function useWebRTC() {
       } catch (err) {
         console.error("[Call] Failed to get media devices while answering:", err);
         toast({ title: "Media access denied", description: "Please allow microphone/camera access to answer calls", variant: "destructive" });
+        await supabase.from("call_records").update({ status: "declined" }).eq("id", callId);
+        cleanup();
         return;
       }
 
