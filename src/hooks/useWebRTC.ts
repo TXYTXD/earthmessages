@@ -148,10 +148,15 @@ export function useWebRTC() {
 
       pc.ontrack = (event) => {
         console.log("[Call] ontrack received, streams:", event.streams.length);
-        remoteStream.current = event.streams[0];
+        const stream = event.streams[0];
+        remoteStream.current = stream;
         if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = event.streams[0];
+          remoteVideoRef.current.srcObject = stream;
           remoteVideoRef.current.play().catch(() => {});
+        }
+        if (remoteAudioRef.current) {
+          remoteAudioRef.current.srcObject = stream;
+          remoteAudioRef.current.play().catch(() => {});
         }
         // Force a re-render so the overlay effect can pick up the stream
         setCallState((prev) => ({ ...prev }));
