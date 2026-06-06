@@ -56,6 +56,7 @@ export function useWebRTC() {
   const remoteStream = useRef<MediaStream | null>(null);
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
+  const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const durationInterval = useRef<ReturnType<typeof setInterval>>();
   const channelRef = useRef<any>(null);
   const callStateRef = useRef(callState);
