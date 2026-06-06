@@ -126,6 +126,8 @@ export function ActiveCallOverlay() {
       animate={{ opacity: 1 }}
       className="fixed inset-0 z-[99] bg-background flex flex-col"
     >
+      {/* Always-mounted remote audio element — required for voice calls to be heard */}
+      <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
       {/* Remote video / avatar */}
       <div className="flex-1 relative flex items-center justify-center bg-gradient-to-br from-secondary to-muted">
         {callState.type === "video" ? (
