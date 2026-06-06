@@ -619,6 +619,7 @@ export function useWebRTC() {
     isVideoOff,
     localVideoRef,
     remoteVideoRef,
+    remoteAudioRef,
     localStream,
     remoteStream,
     startCall,
