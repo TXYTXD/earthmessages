@@ -80,7 +80,7 @@ export function IncomingCallOverlay() {
 }
 
 export function ActiveCallOverlay() {
-  const { callState, hangUp, toggleMute, toggleVideo, isMuted, isVideoOff, localVideoRef, remoteVideoRef, localStream, remoteStream } = useCall();
+  const { callState, hangUp, toggleMute, toggleVideo, isMuted, isVideoOff, localVideoRef, remoteVideoRef, remoteAudioRef, localStream, remoteStream } = useCall();
 
   // Sync local stream to video element
   useEffect(() => {
@@ -101,6 +101,16 @@ export function ActiveCallOverlay() {
       el.play().catch(() => {});
     }
   }, [callState.status, callState.duration, remoteVideoRef, remoteStream]);
+
+  // Sync remote stream to audio element (CRITICAL for voice calls — without this no audio plays)
+  useEffect(() => {
+    const el = remoteAudioRef.current;
+    const stream = remoteStream.current;
+    if (el && stream && el.srcObject !== stream) {
+      el.srcObject = stream;
+      el.play().catch(() => {});
+    }
+  }, [callState.status, callState.duration, remoteAudioRef, remoteStream]);
 
   if (callState.status !== "calling" && callState.status !== "connected") return null;
 
