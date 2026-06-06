@@ -8,6 +8,7 @@ interface CallContextType {
   isVideoOff: boolean;
   localVideoRef: React.RefObject<HTMLVideoElement>;
   remoteVideoRef: React.RefObject<HTMLVideoElement>;
+  remoteAudioRef: React.RefObject<HTMLAudioElement>;
   localStream: MutableRefObject<MediaStream | null>;
   remoteStream: MutableRefObject<MediaStream | null>;
   startCall: (receiverId: string, type: "voice" | "video") => Promise<void>;
