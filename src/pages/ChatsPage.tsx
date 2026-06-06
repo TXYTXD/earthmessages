@@ -77,7 +77,7 @@ export default function ChatsPage() {
     <div className="flex flex-1 h-screen">
       {/* Contact List Sidebar */}
       {showSidebar && (
-        <div className={`${isMobile ? 'w-full' : 'w-[360px]'} flex flex-col border-r border-border bg-card`}>
+        <div className={`${isMobile ? 'w-full' : 'w-[360px]'} flex flex-col border-r border-border/60 glass-nav`}>
           <div className="px-4 pt-4 pb-2">
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-2xl font-bold">Chats</h1>
