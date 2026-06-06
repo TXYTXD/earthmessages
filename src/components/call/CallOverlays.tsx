@@ -80,7 +80,7 @@ export function IncomingCallOverlay() {
 }
 
 export function ActiveCallOverlay() {
-  const { callState, hangUp, toggleMute, toggleVideo, isMuted, isVideoOff, localVideoRef, remoteVideoRef, localStream, remoteStream } = useCall();
+  const { callState, hangUp, toggleMute, toggleVideo, isMuted, isVideoOff, localVideoRef, remoteVideoRef, remoteAudioRef, localStream, remoteStream } = useCall();
 
   // Sync local stream to video element
   useEffect(() => {
@@ -102,6 +102,16 @@ export function ActiveCallOverlay() {
     }
   }, [callState.status, callState.duration, remoteVideoRef, remoteStream]);
 
+  // Sync remote stream to audio element (CRITICAL for voice calls — without this no audio plays)
+  useEffect(() => {
+    const el = remoteAudioRef.current;
+    const stream = remoteStream.current;
+    if (el && stream && el.srcObject !== stream) {
+      el.srcObject = stream;
+      el.play().catch(() => {});
+    }
+  }, [callState.status, callState.duration, remoteAudioRef, remoteStream]);
+
   if (callState.status !== "calling" && callState.status !== "connected") return null;
 
   const formatDuration = (s: number) => {
@@ -116,6 +126,8 @@ export function ActiveCallOverlay() {
       animate={{ opacity: 1 }}
       className="fixed inset-0 z-[99] bg-background flex flex-col"
     >
+      {/* Always-mounted remote audio element — required for voice calls to be heard */}
+      <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
       {/* Remote video / avatar */}
       <div className="flex-1 relative flex items-center justify-center bg-gradient-to-br from-secondary to-muted">
         {callState.type === "video" ? (

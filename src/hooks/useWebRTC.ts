@@ -56,6 +56,7 @@ export function useWebRTC() {
   const remoteStream = useRef<MediaStream | null>(null);
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
+  const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
   const durationInterval = useRef<ReturnType<typeof setInterval>>();
   const channelRef = useRef<any>(null);
   const callStateRef = useRef(callState);
@@ -147,10 +148,15 @@ export function useWebRTC() {
 
       pc.ontrack = (event) => {
         console.log("[Call] ontrack received, streams:", event.streams.length);
-        remoteStream.current = event.streams[0];
+        const stream = event.streams[0];
+        remoteStream.current = stream;
         if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = event.streams[0];
+          remoteVideoRef.current.srcObject = stream;
           remoteVideoRef.current.play().catch(() => {});
+        }
+        if (remoteAudioRef.current) {
+          remoteAudioRef.current.srcObject = stream;
+          remoteAudioRef.current.play().catch(() => {});
         }
         // Force a re-render so the overlay effect can pick up the stream
         setCallState((prev) => ({ ...prev }));
@@ -382,6 +388,8 @@ export function useWebRTC() {
       } catch (err) {
         console.error("[Call] Failed to get media devices while answering:", err);
         toast({ title: "Media access denied", description: "Please allow microphone/camera access to answer calls", variant: "destructive" });
+        await supabase.from("call_records").update({ status: "declined" }).eq("id", callId);
+        cleanup();
         return;
       }
 
@@ -611,6 +619,7 @@ export function useWebRTC() {
     isVideoOff,
     localVideoRef,
     remoteVideoRef,
+    remoteAudioRef,
     localStream,
     remoteStream,
     startCall,
