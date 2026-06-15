@@ -238,6 +238,55 @@ export default function SettingsPage() {
           </div>
         </div>
 
+        {/* Discord Calls (Beta) */}
+        <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#5865F2]/15 flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-[#5865F2]" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="text-[15px] font-medium">Calls through Discord</p>
+                  <span className="text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-[#5865F2] to-primary text-white px-2 py-0.5 rounded-full">Beta</span>
+                </div>
+                <p className="text-[13px] text-muted-foreground">Route voice & video calls through your Discord account</p>
+              </div>
+            </div>
+            <button
+              onClick={() => handleDiscordToggle(!discordEnabled)}
+              className={`w-11 h-6 rounded-full transition-colors relative ${discordEnabled ? "bg-[#5865F2]" : "bg-muted"}`}
+            >
+              <motion.div
+                animate={{ x: discordEnabled ? 20 : 2 }}
+                className="absolute top-1 w-4 h-4 rounded-full bg-white"
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+              />
+            </button>
+          </div>
+
+          {discordEnabled && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              className="space-y-2 pt-1"
+            >
+              <label className="text-[13px] font-medium text-muted-foreground">Your Discord username</label>
+              <Input
+                value={discordUser}
+                onChange={(e) => handleDiscordUserChange(e.target.value)}
+                placeholder="username#0000 or @handle"
+                className="rounded-lg"
+              />
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                ⚡ Beta feature — when both you and your friend have linked Discord, calls open directly in the Discord app.
+                Otherwise the regular UMS call flow is used.
+              </p>
+            </motion.div>
+          )}
+        </div>
+
+
         {/* Theme Picker */}
         <div className="bg-card rounded-xl border border-border p-5">
           <div className="flex items-center gap-3 mb-4">
