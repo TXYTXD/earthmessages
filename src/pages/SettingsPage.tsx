@@ -59,6 +59,21 @@ export default function SettingsPage() {
   const [newPin, setNewPin] = useState("");
   const [confirmNewPin, setConfirmNewPin] = useState("");
   const [pinLoading, setPinLoading] = useState(false);
+  const [discordEnabled, setDiscordEnabled] = useState(() => localStorage.getItem("discord_calls_enabled") === "true");
+  const [discordUser, setDiscordUser] = useState(() => localStorage.getItem("discord_username") || "");
+
+  const handleDiscordToggle = (v: boolean) => {
+    setDiscordEnabled(v);
+    localStorage.setItem("discord_calls_enabled", String(v));
+    if (v && !discordUser) {
+      toast({ title: "Discord calls enabled (Beta)", description: "Add your Discord username so friends can reach you." });
+    }
+  };
+
+  const handleDiscordUserChange = (v: string) => {
+    setDiscordUser(v);
+    localStorage.setItem("discord_username", v);
+  };
 
   const handleStaySignedIn = (value: boolean) => {
     setStaySignedIn(value);
