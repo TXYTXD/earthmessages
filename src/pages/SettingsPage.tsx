@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Globe, Volume2, Languages, Zap, Check, Shield, Bell, Palette, Sun, Moon, Lock } from "lucide-react";
+import { Globe, Volume2, Languages, Zap, Check, Shield, Bell, Palette, Sun, Moon, Lock, Sparkles } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { useThemeContext, ThemeName } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { usePin } from "@/hooks/usePin";
