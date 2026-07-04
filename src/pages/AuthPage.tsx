@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock, User, Eye, EyeOff, ArrowRight, MessageCircle, ArrowLeft, Shield, Zap, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
@@ -117,14 +116,17 @@ export default function AuthPage() {
   const handleOAuth = async (provider: "google" | "apple") => {
     setLoading(true);
     try {
-      const result = await lovable.auth.signInWithOAuth(provider, {
-        redirect_uri: window.location.origin,
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: window.location.origin,
+        },
       });
-      if (result.redirected) return;
-      if (result.error) throw result.error;
+      if (error) throw error;
+      // On success Supabase redirects the browser to the provider,
+      // so execution stops here. Loading is only reset on error.
     } catch (error: any) {
       toast({ variant: "destructive", title: "Sign-in failed", description: error?.message ?? "Please try again." });
-    } finally {
       setLoading(false);
     }
   };
