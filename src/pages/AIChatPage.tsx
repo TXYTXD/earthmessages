@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { AITypingEffect, AIThinkingIndicator } from "@/components/chat/AITypingEffect";
+import { AIMessageContent } from "@/components/chat/AIMessageContent";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -192,10 +193,11 @@ export default function AIChatPage({ onBack }: { onBack?: () => void }) {
                 }`}
               >
                 {msg.role === "assistant" ? (
-                  <AITypingEffect
-                    content={msg.content}
-                    isStreaming={loading && i === messages.length - 1}
-                  />
+                  loading && i === messages.length - 1 ? (
+                    <AITypingEffect content={msg.content} isStreaming />
+                  ) : (
+                    <AIMessageContent content={msg.content} />
+                  )
                 ) : (
                   <span>{msg.content}</span>
                 )}
