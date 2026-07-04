@@ -1,11 +1,23 @@
 import { useState, useRef, useEffect } from "react";
-import { Bot, Send, Trash2, ArrowLeft, BadgeCheck } from "lucide-react";
+import {
+  Bot,
+  Send,
+  Trash2,
+  ArrowLeft,
+  BadgeCheck,
+  History,
+  Plus,
+  Pencil,
+  X,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { AITypingEffect, AIThinkingIndicator } from "@/components/chat/AITypingEffect";
+import { AIMessageContent } from "@/components/chat/AIMessageContent";
+import { useAIChats, type AIMsg, type AIChat } from "@/hooks/useAIChats";
 
-type Msg = { role: "user" | "assistant"; content: string };
+type Msg = AIMsg;
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 
@@ -63,16 +75,76 @@ async function streamChat({
   onDone();
 }
 
+function deriveTitle(messages: Msg[]): string {
+  const firstUser = messages.find((m) => m.role === "user");
+  const raw = (firstUser?.content || "New chat").replace(/\[gif:[^\]]*\]/gi, "").trim();
+  return raw.length > 40 ? `${raw.slice(0, 40)}…` : raw || "New chat";
+}
+
+function relativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  const diff = Date.now() - then;
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return "just now";
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const day = Math.floor(hr / 24);
+  if (day < 7) return `${day}d ago`;
+  return new Date(iso).toLocaleDateString();
+}
+
 export default function AIChatPage({ onBack }: { onBack?: () => void }) {
+  const { chats, createChat, saveMessages, renameChat, deleteChat } = useAIChats();
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const initedRef = useRef(false);
   const { toast } = useToast();
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // On first load, open the most recent saved chat (if any)
+  useEffect(() => {
+    if (initedRef.current) return;
+    if (chats.length > 0) {
+      initedRef.current = true;
+      setActiveChatId(chats[0].id);
+      setMessages(chats[0].messages);
+    }
+  }, [chats]);
+
+  const openChat = (chat: AIChat) => {
+    setActiveChatId(chat.id);
+    setMessages(chat.messages);
+    setShowHistory(false);
+  };
+
+  const newChat = () => {
+    setActiveChatId(null);
+    setMessages([]);
+    setShowHistory(false);
+    initedRef.current = true;
+  };
+
+  const handleRename = async (chat: AIChat) => {
+    const next = window.prompt("Rename chat", chat.title);
+    if (next != null) await renameChat(chat.id, next);
+  };
+
+  const handleDelete = async (chat: AIChat) => {
+    if (!window.confirm("Delete this chat? This can't be undone.")) return;
+    await deleteChat(chat.id);
+    if (chat.id === activeChatId) {
+      setActiveChatId(null);
+      setMessages([]);
+    }
+  };
 
   const send = async () => {
     const text = input.trim();
@@ -80,8 +152,22 @@ export default function AIChatPage({ onBack }: { onBack?: () => void }) {
     setInput("");
 
     const userMsg: Msg = { role: "user", content: text };
-    setMessages((prev) => [...prev, userMsg]);
+    const base = [...messages, userMsg];
+    setMessages(base);
     setLoading(true);
+
+    // Ensure a persisted chat exists to save into
+    let chatId = activeChatId;
+    if (!chatId) {
+      const created = await createChat();
+      if (created) {
+        chatId = created.id;
+        setActiveChatId(created.id);
+      }
+    }
+    const isNewTitle =
+      !chats.find((c) => c.id === chatId) ||
+      chats.find((c) => c.id === chatId)?.title === "New chat";
 
     let soFar = "";
     const upsert = (chunk: string) => {
@@ -97,9 +183,15 @@ export default function AIChatPage({ onBack }: { onBack?: () => void }) {
 
     try {
       await streamChat({
-        messages: [...messages, userMsg],
+        messages: base,
         onDelta: upsert,
-        onDone: () => setLoading(false),
+        onDone: () => {
+          setLoading(false);
+          if (chatId) {
+            const final: Msg[] = [...base, { role: "assistant", content: soFar }];
+            saveMessages(chatId, final, isNewTitle ? deriveTitle(final) : undefined);
+          }
+        },
         onError: (status) => {
           setLoading(false);
           if (status === 429) toast({ title: "Rate limited", description: "Please wait a moment and try again.", variant: "destructive" });
@@ -114,7 +206,7 @@ export default function AIChatPage({ onBack }: { onBack?: () => void }) {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-background h-full">
+    <div className="flex-1 flex flex-col bg-background h-full relative">
       {/* Header */}
       <div className="h-14 px-4 flex items-center gap-2 border-b border-border shrink-0">
         {onBack && (
@@ -128,23 +220,104 @@ export default function AIChatPage({ onBack }: { onBack?: () => void }) {
         <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center">
           <Bot className="w-5 h-5 text-primary" />
         </div>
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <h3 className="text-[15px] font-semibold leading-tight flex items-center gap-1">
             AI Assistant
             <BadgeCheck className="w-4 h-4 text-primary" />
           </h3>
           <span className="text-[11px] text-muted-foreground">Powered by AI · Always available</span>
         </div>
-        {messages.length > 0 && (
-          <button
-            onClick={() => setMessages([])}
-            className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-muted-foreground"
-            title="Clear chat"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        )}
+        <button
+          onClick={() => setShowHistory((v) => !v)}
+          className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-muted-foreground"
+          title="Previous chats"
+        >
+          <History className="w-4 h-4" />
+        </button>
+        <button
+          onClick={newChat}
+          className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-muted-foreground"
+          title="New chat"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
       </div>
+
+      {/* History panel */}
+      <AnimatePresence>
+        {showHistory && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 z-10 bg-black/20"
+              onClick={() => setShowHistory(false)}
+            />
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "tween", duration: 0.2 }}
+              className="absolute top-0 right-0 z-20 h-full w-[300px] max-w-[85%] bg-background border-l border-border flex flex-col shadow-xl"
+            >
+              <div className="h-14 px-4 flex items-center justify-between border-b border-border shrink-0">
+                <span className="font-semibold">Previous chats</span>
+                <button
+                  onClick={() => setShowHistory(false)}
+                  className="w-8 h-8 rounded-full hover:bg-accent flex items-center justify-center text-muted-foreground"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto py-2">
+                {chats.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center px-4 py-8">
+                    No previous chats yet.
+                  </p>
+                ) : (
+                  chats.map((chat) => (
+                    <div
+                      key={chat.id}
+                      className={`group flex items-center gap-2 px-3 py-2 mx-1 rounded-lg cursor-pointer hover:bg-accent transition-colors ${
+                        chat.id === activeChatId ? "bg-accent" : ""
+                      }`}
+                      onClick={() => openChat(chat)}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{chat.title}</p>
+                        <p className="text-[11px] text-muted-foreground">{relativeTime(chat.updated_at)}</p>
+                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleRename(chat); }}
+                        className="w-7 h-7 rounded-full hover:bg-background flex items-center justify-center text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Rename"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDelete(chat); }}
+                        className="w-7 h-7 rounded-full hover:bg-background flex items-center justify-center text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+              <div className="p-3 border-t border-border shrink-0">
+                <button
+                  onClick={newChat}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+                >
+                  <Plus className="w-4 h-4" /> New chat
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
@@ -192,10 +365,11 @@ export default function AIChatPage({ onBack }: { onBack?: () => void }) {
                 }`}
               >
                 {msg.role === "assistant" ? (
-                  <AITypingEffect
-                    content={msg.content}
-                    isStreaming={loading && i === messages.length - 1}
-                  />
+                  loading && i === messages.length - 1 ? (
+                    <AITypingEffect content={msg.content} isStreaming />
+                  ) : (
+                    <AIMessageContent content={msg.content} />
+                  )
                 ) : (
                   <span>{msg.content}</span>
                 )}
