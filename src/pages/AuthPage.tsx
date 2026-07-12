@@ -113,13 +113,14 @@ export default function AuthPage() {
     }
   };
 
-  const handleOAuth = async (provider: "google" | "apple") => {
+  const handleOAuth = async (provider: "google" | "apple" | "azure") => {
     setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo: window.location.origin,
+          ...(provider === "azure" ? { scopes: "email" } : {}),
         },
       });
       if (error) throw error;
@@ -301,7 +302,7 @@ export default function AuthPage() {
                     <div className="h-px flex-1 bg-border" />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <SocialButton
                       provider="google"
                       loading={loading}
@@ -311,6 +312,11 @@ export default function AuthPage() {
                       provider="apple"
                       loading={loading}
                       onClick={() => handleOAuth("apple")}
+                    />
+                    <SocialButton
+                      provider="azure"
+                      loading={loading}
+                      onClick={() => handleOAuth("azure")}
                     />
                   </div>
 
@@ -376,28 +382,36 @@ function SocialButton({
   loading,
   onClick,
 }: {
-  provider: "google" | "apple";
+  provider: "google" | "apple" | "azure";
   loading: boolean;
   onClick: () => void;
 }) {
-  const label = provider === "google" ? "Google" : "Apple";
+  const label = provider === "google" ? "Google" : provider === "apple" ? "Apple" : "Microsoft";
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={loading}
-      className="h-11 rounded-xl border border-border bg-background hover:bg-muted/50 transition-colors flex items-center justify-center gap-2 text-sm font-medium disabled:opacity-50"
+      title={`Continue with ${label}`}
+      aria-label={`Continue with ${label}`}
+      className="h-11 rounded-xl border border-border bg-background hover:bg-muted/50 transition-colors flex items-center justify-center disabled:opacity-50"
     >
       {provider === "google" ? (
-        <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">
+        <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
           <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.24 1.4-1.7 4.1-5.5 4.1-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.2.8 3.9 1.5l2.7-2.6C16.9 3.3 14.7 2.4 12 2.4 6.7 2.4 2.4 6.7 2.4 12s4.3 9.6 9.6 9.6c5.5 0 9.2-3.9 9.2-9.4 0-.6-.07-1.1-.16-1.6H12z" />
         </svg>
-      ) : (
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      ) : provider === "apple" ? (
+        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
           <path d="M16.365 1.43c0 1.14-.42 2.22-1.18 3.04-.83.9-2.18 1.6-3.3 1.5-.13-1.1.43-2.27 1.18-3.04.83-.86 2.27-1.5 3.3-1.5zM20.5 17.4c-.55 1.27-.81 1.84-1.52 2.96-.99 1.55-2.39 3.49-4.13 3.5-1.55.02-1.95-1.01-4.05-1-2.1.01-2.54 1.02-4.09 1.01-1.74-.01-3.07-1.76-4.06-3.31C-.13 17.05-.4 11.94 1.74 9.21c1.52-1.94 3.92-3.07 6.18-3.07 2.3 0 3.74 1.26 5.64 1.26 1.84 0 2.96-1.26 5.62-1.26 2.01 0 4.14 1.1 5.66 3-4.97 2.72-4.16 9.83-4.34 8.26z" />
         </svg>
+      ) : (
+        <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="#F25022" d="M2 2h9.5v9.5H2z" />
+          <path fill="#7FBA00" d="M12.5 2H22v9.5h-9.5z" />
+          <path fill="#00A4EF" d="M2 12.5h9.5V22H2z" />
+          <path fill="#FFB900" d="M12.5 12.5H22V22h-9.5z" />
+        </svg>
       )}
-      {label}
     </button>
   );
 }
