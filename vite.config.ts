@@ -18,6 +18,11 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
+      // Ship a self-destroying service worker so previously-installed
+      // service workers unregister themselves and clear their caches.
+      // This flushes stale app bundles (e.g. ones pinned to an old server)
+      // from users' devices on their next visit.
+      selfDestroying: true,
       includeAssets: ["favicon.png", "favicon.ico"],
       workbox: {
         navigateFallbackDenylist: [/^\/~oauth/],
