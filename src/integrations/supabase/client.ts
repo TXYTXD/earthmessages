@@ -2,8 +2,11 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+// Hardcoded to the "earth" project (wamprxszh) so the deployed app always
+// connects to this Supabase project, regardless of any host environment
+// variables that might otherwise override it. These are public keys.
+const SUPABASE_URL = "https://wamprxswumzvianzbhxh.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_pak3BE32-molooT_8ABuUQ_MqSxwpUi";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
