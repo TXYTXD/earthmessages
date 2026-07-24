@@ -1,6 +1,19 @@
 <!doctype html>
 <html lang="en" class="scroll-smooth">
   <head>
+    <script>
+      // Redirect the old Lovable-hosted copy to the main site.
+      (function () {
+        if (window.location.hostname === "umsmessages.lovable.app") {
+          window.location.replace(
+            "https://umsmessages.net" +
+              window.location.pathname +
+              window.location.search +
+              window.location.hash
+          );
+        }
+      })();
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <link rel="icon" href="/favicon.png" type="image/png" />
