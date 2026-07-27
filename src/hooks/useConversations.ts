@@ -14,6 +14,7 @@ export interface Conversation {
   // Derived
   display_name: string;
   display_avatar: string;
+  display_verified?: boolean;
   last_message?: string;
   last_message_time?: string;
   last_message_sender?: string;
@@ -30,6 +31,7 @@ export interface ConversationMember {
   avatar_url: string | null;
   is_muted: boolean;
   is_pinned: boolean;
+  verified?: boolean;
 }
 
 export function useConversations() {
@@ -76,7 +78,7 @@ export function useConversations() {
     const allUserIds = [...new Set(allMembers?.map((m) => m.user_id) || [])];
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("user_id, display_name, avatar_url")
+      .select("user_id, display_name, avatar_url, is_verified")
       .in("user_id", allUserIds);
 
     const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
@@ -125,6 +127,7 @@ export function useConversations() {
             avatar_url: profile?.avatar_url || null,
             is_muted: m.is_muted,
             is_pinned: m.is_pinned,
+            verified: profile?.is_verified || false,
           };
         });
 
@@ -135,12 +138,14 @@ export function useConversations() {
       let displayName = conv.name || "Group Chat";
       let displayAvatar = "";
       let isOnline = false;
+      let displayVerified = false;
 
       if (conv.type === "direct" && otherMembers.length > 0) {
         const other = otherMembers[0];
         displayName = other.nickname || other.display_name || "Unknown";
         displayAvatar = (other.display_name || "?").slice(0, 2).toUpperCase();
         isOnline = statusMap.get(other.user_id) || false;
+        displayVerified = other.verified || false;
       } else {
         displayAvatar = (displayName || "G").slice(0, 2).toUpperCase();
       }
@@ -169,6 +174,7 @@ export function useConversations() {
         type: conv.type as "direct" | "group",
         display_name: displayName,
         display_avatar: displayAvatar,
+        display_verified: displayVerified,
         last_message: lastMessageText,
         last_message_time: lastMsg?.created_at,
         last_message_sender: lastMsg?.sender_id,
