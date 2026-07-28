@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from "react";
-import { Phone, Video, Info, Search as SearchIcon, ArrowLeft, Lock } from "lucide-react";
+import { Phone, Video, Info, Search as SearchIcon, ArrowLeft, Lock, BadgeCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import { MessageBubble } from "./MessageBubble";
 import { ChatInput } from "./ChatInput";
@@ -72,7 +72,12 @@ export function ChatArea({ conversation, conversations, onBack }: ChatAreaProps)
             )}
           </div>
           <div>
-            <h3 className="text-[15px] font-semibold leading-tight">{conversation.display_name}</h3>
+            <h3 className="text-[15px] font-semibold leading-tight flex items-center gap-1">
+              {conversation.display_name}
+              {conversation.display_verified && (
+                <BadgeCheck className="w-4 h-4 text-primary flex-shrink-0" />
+              )}
+            </h3>
             <span className="text-[11px] text-muted-foreground flex items-center gap-1">
               <Lock className="w-2.5 h-2.5" />
               {conversation.type === "direct"

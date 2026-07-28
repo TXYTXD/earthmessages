@@ -98,8 +98,11 @@ export function ContactList({ conversations, selectedId, onSelect, onSelectAI, i
               </div>
               <div className="flex-1 text-left min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                  <span className={`text-[15px] tracking-tight truncate ${conv.unread_count > 0 ? "font-semibold" : "font-medium"}`}>
-                    {conv.display_name}
+                  <span className={`text-[15px] tracking-tight truncate flex items-center gap-1 ${conv.unread_count > 0 ? "font-semibold" : "font-medium"}`}>
+                    <span className="truncate">{conv.display_name}</span>
+                    {conv.display_verified && (
+                      <BadgeCheck className="w-4 h-4 text-primary flex-shrink-0" />
+                    )}
                   </span>
                   {conv.last_message_time && (
                     <span className="text-[11px] text-muted-foreground flex-shrink-0">
