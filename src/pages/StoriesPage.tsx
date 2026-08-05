@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Plus, Camera, X, Search, Play } from "lucide-react";
+import { Plus, Camera, X, Search, Play, Users, Globe } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStories, type StoryGroup } from "@/hooks/useStories";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,6 +18,7 @@ export default function StoriesPage() {
   // Caption dialog state
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [caption, setCaption] = useState("");
+  const [visibility, setVisibility] = useState<"private" | "public">("private");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -26,6 +27,7 @@ export default function StoriesPage() {
     if (!file) return;
     setPendingFile(file);
     setCaption("");
+    setVisibility("private");
     setPreviewUrl(URL.createObjectURL(file));
     e.target.value = "";
   };
@@ -33,7 +35,7 @@ export default function StoriesPage() {
   const handlePublish = async () => {
     if (!pendingFile) return;
     setUploading(true);
-    await createStory(pendingFile, caption || undefined);
+    await createStory(pendingFile, caption || undefined, visibility);
     setUploading(false);
     setPendingFile(null);
     setPreviewUrl(null);
@@ -215,6 +217,37 @@ export default function StoriesPage() {
               onChange={(e) => setCaption(e.target.value)}
               maxLength={200}
             />
+            {/* Visibility choice */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setVisibility("private")}
+                className={`p-3 rounded-xl border text-left transition-colors ${
+                  visibility === "private"
+                    ? "border-primary bg-primary/10"
+                    : "border-border hover:bg-muted/50"
+                }`}
+              >
+                <div className="flex items-center gap-2 font-medium text-sm">
+                  <Users className="w-4 h-4" /> Private
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1">Only friends can see it</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => setVisibility("public")}
+                className={`p-3 rounded-xl border text-left transition-colors ${
+                  visibility === "public"
+                    ? "border-primary bg-primary/10"
+                    : "border-border hover:bg-muted/50"
+                }`}
+              >
+                <div className="flex items-center gap-2 font-medium text-sm">
+                  <Globe className="w-4 h-4" /> Public
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1">Anyone can see it</p>
+              </button>
+            </div>
             <div className="flex gap-2 justify-end">
               <Button variant="outline" onClick={handleCancelCreate}>Cancel</Button>
               <Button onClick={handlePublish} disabled={uploading}>
