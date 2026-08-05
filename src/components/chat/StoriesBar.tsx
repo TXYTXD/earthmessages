@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Plus, Camera } from "lucide-react";
+import { Plus, Play } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStories, type StoryGroup } from "@/hooks/useStories";
 import { useAuth } from "@/contexts/AuthContext";
@@ -90,9 +90,27 @@ export function StoriesBar() {
               className="flex flex-col items-center gap-1 flex-shrink-0"
             >
               <div className={`w-14 h-14 rounded-full p-[2px] ${group.all_viewed ? "bg-muted" : "bg-gradient-to-tr from-primary to-purple-500"}`}>
-                <div className="w-full h-full rounded-full bg-card flex items-center justify-center text-xs font-semibold p-[2px]">
-                  <div className="w-full h-full rounded-full bg-secondary flex items-center justify-center">
-                    {group.user_avatar}
+                <div className="w-full h-full rounded-full bg-card p-[2px]">
+                  <div className="w-full h-full rounded-full bg-secondary overflow-hidden relative flex items-center justify-center">
+                    {group.stories[0].media_type === "video" ? (
+                      <>
+                        <video
+                          src={group.stories[0].media_url}
+                          className="w-full h-full object-cover"
+                          preload="metadata"
+                          muted
+                          playsInline
+                        />
+                        <Play className="w-3.5 h-3.5 text-white absolute drop-shadow" />
+                      </>
+                    ) : (
+                      <img
+                        src={group.stories[0].media_url}
+                        alt={group.user_name}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    )}
                   </div>
                 </div>
               </div>
@@ -134,11 +152,23 @@ export function StoriesBar() {
             </div>
 
             {/* Story content */}
-            <img
-              src={viewingGroup.stories[currentIndex]?.media_url}
-              alt="Story"
-              className="max-w-full max-h-[80vh] object-contain rounded-lg"
-            />
+            {viewingGroup.stories[currentIndex]?.media_type === "video" ? (
+              <video
+                key={viewingGroup.stories[currentIndex].id}
+                src={viewingGroup.stories[currentIndex].media_url}
+                className="max-w-full max-h-[80vh] object-contain rounded-lg"
+                autoPlay
+                playsInline
+                onClick={(e) => e.stopPropagation()}
+                onEnded={nextStory}
+              />
+            ) : (
+              <img
+                src={viewingGroup.stories[currentIndex]?.media_url}
+                alt="Story"
+                className="max-w-full max-h-[80vh] object-contain rounded-lg"
+              />
+            )}
 
             {/* Caption */}
             {viewingGroup.stories[currentIndex]?.caption && (
