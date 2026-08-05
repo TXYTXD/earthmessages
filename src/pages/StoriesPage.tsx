@@ -1,7 +1,8 @@
 import { useState, useRef } from "react";
-import { Plus, Camera, X, Search, Play, Users, Globe } from "lucide-react";
+import { Plus, Camera, X, Search, Play, Users, Globe, Heart, MessageCircle, Send, UserPlus, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStories, type StoryGroup } from "@/hooks/useStories";
+import { useStoryEngagement, useFollowUser } from "@/hooks/useStoryEngagement";
 import { useAuth } from "@/contexts/AuthContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,8 @@ export default function StoriesPage() {
   const [viewingGroup, setViewingGroup] = useState<StoryGroup | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showComments, setShowComments] = useState(false);
+  const [commentText, setCommentText] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Caption dialog state
@@ -52,6 +55,8 @@ export default function StoriesPage() {
   const openStory = async (group: StoryGroup) => {
     setViewingGroup(group);
     setCurrentIndex(0);
+    setShowComments(false);
+    setCommentText("");
     if (!group.stories[0].viewed) {
       await viewStory(group.stories[0].id);
     }
@@ -59,6 +64,8 @@ export default function StoriesPage() {
 
   const nextStory = async () => {
     if (!viewingGroup) return;
+    setShowComments(false);
+    setCommentText("");
     if (currentIndex < viewingGroup.stories.length - 1) {
       const next = currentIndex + 1;
       setCurrentIndex(next);
@@ -76,6 +83,14 @@ export default function StoriesPage() {
 
   const currentStory = viewingGroup?.stories[currentIndex];
   const isVideo = currentStory?.media_type === "video";
+  const { likeCount, liked, comments, toggleLike, addComment } = useStoryEngagement(currentStory?.id ?? null);
+  const { status: followStatus, follow } = useFollowUser(viewingGroup?.user_id ?? null);
+
+  const handleSendComment = async () => {
+    if (!commentText.trim()) return;
+    await addComment(commentText);
+    setCommentText("");
+  };
 
   return (
     <div className="flex-1 flex flex-col h-screen overflow-hidden">
@@ -158,9 +173,27 @@ export default function StoriesPage() {
                   className="flex items-center gap-4 w-full p-3 rounded-xl hover:bg-accent transition-colors"
                 >
                   <div className={`w-16 h-16 rounded-full p-[2px] ${group.all_viewed ? "bg-muted" : "bg-gradient-to-tr from-primary to-purple-500"}`}>
-                    <div className="w-full h-full rounded-full bg-card flex items-center justify-center p-[2px]">
-                      <div className="w-full h-full rounded-full bg-secondary flex items-center justify-center text-sm font-semibold">
-                        {group.user_avatar}
+                    <div className="w-full h-full rounded-full bg-card p-[2px]">
+                      <div className="w-full h-full rounded-full bg-secondary overflow-hidden relative flex items-center justify-center">
+                        {group.stories[0].media_type === "video" ? (
+                          <>
+                            <video
+                              src={group.stories[0].media_url}
+                              className="w-full h-full object-cover"
+                              preload="metadata"
+                              muted
+                              playsInline
+                            />
+                            <Play className="w-4 h-4 text-white absolute drop-shadow" />
+                          </>
+                        ) : (
+                          <img
+                            src={group.stories[0].media_url}
+                            alt={group.user_name}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        )}
                       </div>
                     </div>
                   </div>
@@ -277,12 +310,25 @@ export default function StoriesPage() {
               ))}
             </div>
 
-            {/* Header */}
-            <div className="absolute top-8 left-4 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-[10px] font-semibold text-foreground">
+            {/* Header: creator + follow */}
+            <div className="absolute top-8 left-4 right-14 flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+              <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center text-[10px] font-semibold text-foreground flex-shrink-0">
                 {viewingGroup.user_avatar}
               </div>
-              <span className="text-white text-sm font-medium">{viewingGroup.user_name}</span>
+              <span className="text-white text-sm font-medium truncate">{viewingGroup.user_name}</span>
+              {followStatus === "none" && (
+                <button
+                  onClick={follow}
+                  className="ml-1 px-3 py-1.5 rounded-full bg-white text-black text-xs font-semibold flex items-center gap-1.5 flex-shrink-0"
+                >
+                  <UserPlus className="w-3.5 h-3.5" /> Follow
+                </button>
+              )}
+              {followStatus === "pending" && (
+                <span className="ml-1 px-3 py-1.5 rounded-full bg-white/20 text-white text-xs font-medium flex items-center gap-1.5 flex-shrink-0">
+                  <Check className="w-3.5 h-3.5" /> Requested
+                </span>
+              )}
             </div>
 
             {/* Story content: image or video */}
@@ -307,12 +353,97 @@ export default function StoriesPage() {
 
             {/* Caption */}
             {currentStory.caption && (
-              <div className="absolute bottom-8 left-4 right-4 text-center">
+              <div className="absolute bottom-24 left-4 right-4 text-center pointer-events-none">
                 <span className="text-white text-sm bg-black/50 px-4 py-2 rounded-full">
                   {currentStory.caption}
                 </span>
               </div>
             )}
+
+            {/* Like + comment bar */}
+            <div
+              className="absolute bottom-6 left-4 right-4 flex items-center gap-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={toggleLike}
+                className="flex items-center gap-1.5 text-white"
+              >
+                <Heart
+                  className={`w-7 h-7 transition-colors ${liked ? "fill-red-500 text-red-500" : ""}`}
+                />
+                {likeCount > 0 && <span className="text-sm font-medium">{likeCount}</span>}
+              </button>
+              <button
+                onClick={() => setShowComments(true)}
+                className="flex items-center gap-1.5 text-white"
+              >
+                <MessageCircle className="w-7 h-7" />
+                {comments.length > 0 && <span className="text-sm font-medium">{comments.length}</span>}
+              </button>
+            </div>
+
+            {/* Comments panel */}
+            <AnimatePresence>
+              {showComments && (
+                <motion.div
+                  initial={{ y: "100%" }}
+                  animate={{ y: 0 }}
+                  exit={{ y: "100%" }}
+                  transition={{ type: "tween", duration: 0.2 }}
+                  className="absolute bottom-0 left-0 right-0 max-h-[55vh] bg-background rounded-t-2xl flex flex-col z-10"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="px-4 py-3 border-b border-border flex items-center justify-between shrink-0">
+                    <span className="font-semibold text-sm">
+                      Comments{comments.length > 0 ? ` (${comments.length})` : ""}
+                    </span>
+                    <button
+                      onClick={() => setShowComments(false)}
+                      className="w-8 h-8 rounded-full hover:bg-accent flex items-center justify-center text-muted-foreground"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+                    {comments.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-6">
+                        No comments yet. Be the first!
+                      </p>
+                    ) : (
+                      comments.map((c) => (
+                        <div key={c.id} className="flex items-start gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-[10px] font-semibold flex-shrink-0">
+                            {c.user_name.slice(0, 2).toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold">{c.user_name}</p>
+                            <p className="text-sm text-foreground break-words">{c.content}</p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <div className="px-3 py-2 border-t border-border flex items-center gap-2 shrink-0">
+                    <input
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") handleSendComment(); }}
+                      placeholder="Add a comment..."
+                      maxLength={500}
+                      className="flex-1 px-4 py-2.5 bg-accent rounded-full text-sm text-foreground placeholder:text-muted-foreground outline-none"
+                    />
+                    <button
+                      onClick={handleSendComment}
+                      disabled={!commentText.trim()}
+                      className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground disabled:opacity-40"
+                    >
+                      <Send className="w-4 h-4" />
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Close */}
             <button
