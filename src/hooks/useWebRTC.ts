@@ -63,6 +63,8 @@ export function useWebRTC() {
   const startingCall = useRef(false); // Guard against double-clicks
   const pendingCandidates = useRef<RTCIceCandidateInit[]>([]);
   const remoteDescSet = useRef(false);
+  const seenSignalIds = useRef<Set<string>>(new Set());
+  const signalPollRef = useRef<ReturnType<typeof setInterval>>();
 
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
@@ -80,7 +82,9 @@ export function useWebRTC() {
     remoteStream.current = null;
     pendingCandidates.current = [];
     remoteDescSet.current = false;
+    seenSignalIds.current.clear();
     if (durationInterval.current) clearInterval(durationInterval.current);
+    if (signalPollRef.current) clearInterval(signalPollRef.current);
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
@@ -203,6 +207,84 @@ export function useWebRTC() {
     }
   }, []);
 
+  // Process one signaling row (used by both the realtime channel and the
+  // polling fallback). Deduped by row id so the same signal never runs twice.
+  const processSignal = useCallback(
+    async (callId: string, signal: any) => {
+      if (!signal || signal.sender_id === user?.id) return;
+      if (seenSignalIds.current.has(signal.id)) return;
+      seenSignalIds.current.add(signal.id);
+
+      const pc = peerConnection.current;
+      if (!pc) return;
+
+      try {
+        if (signal.type === "offer") {
+          await pc.setRemoteDescription(new RTCSessionDescription((signal.payload as any).sdp));
+          remoteDescSet.current = true;
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          await (supabase.from("call_signaling") as any).insert({
+            call_id: callId,
+            sender_id: user!.id,
+            type: "answer",
+            payload: { sdp: answer },
+          });
+          await flushPendingCandidates();
+        } else if (signal.type === "answer") {
+          if (pc.signalingState === "have-local-offer") {
+            await pc.setRemoteDescription(new RTCSessionDescription((signal.payload as any).sdp));
+            remoteDescSet.current = true;
+            await flushPendingCandidates();
+          }
+        } else if (signal.type === "ice-candidate") {
+          const cand = (signal.payload as any).candidate;
+          if (!remoteDescSet.current) {
+            pendingCandidates.current.push(cand);
+          } else {
+            try {
+              await pc.addIceCandidate(new RTCIceCandidate(cand));
+            } catch (e) {
+              console.warn("[Call] Failed to add ICE candidate:", e);
+            }
+          }
+        } else if (signal.type === "hangup") {
+          doHangUp();
+        }
+      } catch (e) {
+        console.error("[Call] Signaling error:", e);
+      }
+    },
+    [user, doHangUp, flushPendingCandidates]
+  );
+
+  // Polling fallback: realtime events may not be delivered (e.g. the table
+  // isn't in the realtime publication, or the socket drops). Poll the
+  // signaling table so calls still connect without realtime.
+  const startSignalPolling = useCallback(
+    (callId: string) => {
+      if (signalPollRef.current) clearInterval(signalPollRef.current);
+      signalPollRef.current = setInterval(async () => {
+        if (!peerConnection.current) return;
+        const [{ data: signals }, { data: record }] = await Promise.all([
+          supabase
+            .from("call_signaling")
+            .select("*")
+            .eq("call_id", callId)
+            .order("created_at", { ascending: true }),
+          supabase.from("call_records").select("status").eq("id", callId).maybeSingle(),
+        ]);
+        for (const s of signals || []) {
+          await processSignal(callId, s);
+        }
+        if (record && (record.status === "declined" || record.status === "missed")) {
+          cleanup();
+        }
+      }, 2000);
+    },
+    [processSignal, cleanup]
+  );
+
   const subscribeToSignaling = useCallback(
     (callId: string) =>
       new Promise<void>((resolve) => {
@@ -217,46 +299,7 @@ export function useWebRTC() {
               filter: `call_id=eq.${callId}`,
             },
             async (payload: any) => {
-              const signal = payload.new;
-              if (signal.sender_id === user?.id) return;
-
-              const pc = peerConnection.current;
-              if (!pc) return;
-
-              try {
-                if (signal.type === "offer") {
-                  await pc.setRemoteDescription(new RTCSessionDescription((signal.payload as any).sdp));
-                  remoteDescSet.current = true;
-                  const answer = await pc.createAnswer();
-                  await pc.setLocalDescription(answer);
-                  await (supabase.from("call_signaling") as any).insert({
-                    call_id: callId,
-                    sender_id: user!.id,
-                    type: "answer",
-                    payload: { sdp: answer },
-                  });
-                  await flushPendingCandidates();
-                } else if (signal.type === "answer") {
-                  await pc.setRemoteDescription(new RTCSessionDescription((signal.payload as any).sdp));
-                  remoteDescSet.current = true;
-                  await flushPendingCandidates();
-                } else if (signal.type === "ice-candidate") {
-                  const cand = (signal.payload as any).candidate;
-                  if (!remoteDescSet.current) {
-                    pendingCandidates.current.push(cand);
-                  } else {
-                    try {
-                      await pc.addIceCandidate(new RTCIceCandidate(cand));
-                    } catch (e) {
-                      console.warn("[Call] Failed to add ICE candidate:", e);
-                    }
-                  }
-                } else if (signal.type === "hangup") {
-                  doHangUp();
-                }
-              } catch (e) {
-                console.error("[Call] Signaling error:", e);
-              }
+              await processSignal(callId, payload.new);
             }
           )
           .on(
@@ -276,12 +319,23 @@ export function useWebRTC() {
           )
           .subscribe((status: string) => {
             console.log("[Call] Signaling channel status:", status);
-            if (status === "SUBSCRIBED") resolve();
+            if (
+              status === "SUBSCRIBED" ||
+              status === "CHANNEL_ERROR" ||
+              status === "TIMED_OUT" ||
+              status === "CLOSED"
+            ) {
+              resolve();
+            }
           });
 
         channelRef.current = channel;
+        // Polling fallback covers signaling even when realtime is unavailable,
+        // and the timeout guarantees the call setup never hangs on the channel.
+        startSignalPolling(callId);
+        setTimeout(resolve, 3000);
       }),
-    [user, cleanup, doHangUp, flushPendingCandidates]
+    [cleanup, processSignal, startSignalPolling]
   );
 
   const startCall = useCallback(
@@ -440,6 +494,7 @@ export function useWebRTC() {
       }
 
       try {
+        seenSignalIds.current.add(offerSignal.id);
         await pc.setRemoteDescription(new RTCSessionDescription((offerSignal.payload as any).sdp));
         remoteDescSet.current = true;
         const answer = await pc.createAnswer();
@@ -453,6 +508,7 @@ export function useWebRTC() {
 
         // Add the ICE candidates we already have, plus any that were buffered
         for (const signal of iceCandidates) {
+          seenSignalIds.current.add(signal.id);
           try {
             await pc.addIceCandidate(new RTCIceCandidate((signal.payload as any).candidate));
           } catch (e) {
