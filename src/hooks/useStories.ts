@@ -10,6 +10,7 @@ export interface Story {
   caption: string | null;
   created_at: string;
   expires_at: string;
+  visibility: "private" | "public";
   user_name: string;
   user_avatar: string;
   viewed: boolean;
@@ -74,6 +75,7 @@ export function useStories() {
       const profile = profileMap.get(s.user_id);
       return {
         ...s,
+        visibility: (s.visibility === "public" ? "public" : "private") as "private" | "public",
         media_url: signedUrls.get(s.id) || s.media_url,
         user_name: profile?.display_name || "Unknown",
         user_avatar: (profile?.display_name || "?").slice(0, 2).toUpperCase(),
@@ -113,7 +115,7 @@ export function useStories() {
     fetchStories();
   }, [fetchStories]);
 
-  const createStory = async (file: File, caption?: string) => {
+  const createStory = async (file: File, caption?: string, visibility: "private" | "public" = "private") => {
     if (!user) return;
 
     const filePath = `${user.id}/${Date.now()}-${file.name}`;
@@ -129,6 +131,7 @@ export function useStories() {
       media_url: filePath,
       media_type: file.type.startsWith("video") ? "video" : "image",
       caption: caption || null,
+      visibility,
     });
 
     await fetchStories();
