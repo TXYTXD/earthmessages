@@ -137,7 +137,7 @@ export function ActiveCallOverlay() {
     if (remoteVideoRef.current) remoteVideoRef.current.muted = speakerOff;
   }, [speakerOff, remoteAudioRef, remoteVideoRef]);
 
-  if (callState.status !== "calling" && callState.status !== "connected") return null;
+  if (callState.status !== "calling" && callState.status !== "connecting" && callState.status !== "connected") return null;
 
   const formatDuration = (s: number) => {
     const m = Math.floor(s / 60);
