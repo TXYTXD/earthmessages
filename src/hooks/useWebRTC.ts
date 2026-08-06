@@ -27,11 +27,27 @@ const ICE_SERVERS: RTCIceServer[] = [
     username: "e8dd65b92c8bfc78d8de7f18",
     credential: "30YDVssHi/YUpxlY",
   },
+  // Open Relay public TURN — fallback in case the credentials above stop working
+  {
+    urls: "turn:openrelay.metered.ca:80",
+    username: "openrelayproject",
+    credential: "openrelayproject",
+  },
+  {
+    urls: "turn:openrelay.metered.ca:443",
+    username: "openrelayproject",
+    credential: "openrelayproject",
+  },
+  {
+    urls: "turn:openrelay.metered.ca:443?transport=tcp",
+    username: "openrelayproject",
+    credential: "openrelayproject",
+  },
 ];
 
 export interface CallState {
   callId: string | null;
-  status: "idle" | "calling" | "ringing" | "connected" | "ended";
+  status: "idle" | "calling" | "connecting" | "ringing" | "connected" | "ended";
   type: "voice" | "video";
   remoteName: string;
   remoteAvatar: string;
@@ -65,6 +81,7 @@ export function useWebRTC() {
   const remoteDescSet = useRef(false);
   const seenSignalIds = useRef<Set<string>>(new Set());
   const signalPollRef = useRef<ReturnType<typeof setInterval>>();
+  const connectTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
@@ -85,6 +102,7 @@ export function useWebRTC() {
     seenSignalIds.current.clear();
     if (durationInterval.current) clearInterval(durationInterval.current);
     if (signalPollRef.current) clearInterval(signalPollRef.current);
+    if (connectTimeoutRef.current) clearTimeout(connectTimeoutRef.current);
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
@@ -169,11 +187,15 @@ export function useWebRTC() {
       pc.oniceconnectionstatechange = () => {
         console.log("[Call] ICE state:", pc.iceConnectionState);
         if (pc.iceConnectionState === "connected" || pc.iceConnectionState === "completed") {
+          if (connectTimeoutRef.current) clearTimeout(connectTimeoutRef.current);
           setCallState((prev) => {
             if (prev.status === "connected") return prev;
             startDurationTimer();
             return { ...prev, status: "connected" };
           });
+        } else if (pc.iceConnectionState === "failed") {
+          toast({ title: "Call failed", description: "Could not establish a connection between the two devices.", variant: "destructive" });
+          doHangUp();
         }
       };
 
@@ -188,6 +210,16 @@ export function useWebRTC() {
       localStream.current?.getTracks().forEach((track) => {
         pc.addTrack(track, localStream.current!);
       });
+
+      // Give the connection 30s to establish; bail out with a clear error
+      // instead of sitting on the calling/connecting screen forever.
+      if (connectTimeoutRef.current) clearTimeout(connectTimeoutRef.current);
+      connectTimeoutRef.current = setTimeout(() => {
+        if (callStateRef.current.status !== "connected" && callStateRef.current.callId === callId) {
+          toast({ title: "Could not connect", description: "The call did not connect. Check both devices' internet and try again.", variant: "destructive" });
+          doHangUp();
+        }
+      }, 30000);
 
       return pc;
     },
@@ -451,7 +483,7 @@ export function useWebRTC() {
         ...prev,
         callId,
         type,
-        status: "calling",
+        status: "connecting",
         isIncoming: false,
         remoteName: prev.remoteName || currentCall.remoteName,
         remoteAvatar: prev.remoteAvatar || currentCall.remoteAvatar,
