@@ -82,6 +82,8 @@ export function useWebRTC() {
   const seenSignalIds = useRef<Set<string>>(new Set());
   const signalPollRef = useRef<ReturnType<typeof setInterval>>();
   const connectTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const localCandCount = useRef(0);
+  const remoteCandCount = useRef(0);
 
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
@@ -152,9 +154,12 @@ export function useWebRTC() {
       peerConnection.current = pc;
       remoteDescSet.current = false;
       pendingCandidates.current = [];
+      localCandCount.current = 0;
+      remoteCandCount.current = 0;
 
       pc.onicecandidate = async (event) => {
         if (event.candidate && user) {
+          localCandCount.current++;
           try {
             await (supabase.from("call_signaling") as any).insert({
               call_id: callId,
@@ -216,7 +221,14 @@ export function useWebRTC() {
       if (connectTimeoutRef.current) clearTimeout(connectTimeoutRef.current);
       connectTimeoutRef.current = setTimeout(() => {
         if (callStateRef.current.status !== "connected" && callStateRef.current.callId === callId) {
-          toast({ title: "Could not connect", description: "The call did not connect. Check both devices' internet and try again.", variant: "destructive" });
+          // Diagnostic detail so a screenshot of this toast pinpoints where
+          // the connection stalled (signaling vs network traversal).
+          const detail = `state ${pc.iceConnectionState}/${pc.signalingState}, sent ${localCandCount.current}, received ${remoteCandCount.current}, answer ${remoteDescSet.current ? "yes" : "no"}`;
+          toast({
+            title: "Could not connect",
+            description: `The call did not connect (${detail}). Check both devices' internet and try again.`,
+            variant: "destructive",
+          });
           doHangUp();
         }
       }, 30000);
@@ -271,6 +283,7 @@ export function useWebRTC() {
           }
         } else if (signal.type === "ice-candidate") {
           const cand = (signal.payload as any).candidate;
+          remoteCandCount.current++;
           if (!remoteDescSet.current) {
             pendingCandidates.current.push(cand);
           } else {
@@ -541,6 +554,7 @@ export function useWebRTC() {
         // Add the ICE candidates we already have, plus any that were buffered
         for (const signal of iceCandidates) {
           seenSignalIds.current.add(signal.id);
+          remoteCandCount.current++;
           try {
             await pc.addIceCandidate(new RTCIceCandidate((signal.payload as any).candidate));
           } catch (e) {
