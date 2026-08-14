@@ -408,9 +408,9 @@ export default function LandingPage() {
       <section className="py-20 md:py-24 px-6">
         <div className="max-w-[1000px] mx-auto">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} custom={0} variants={fadeUp} className="text-center mb-14">
-            <p className="text-[11px] font-semibold text-primary uppercase tracking-[0.2em] mb-3">Trusted worldwide</p>
-            <h2 className="font-display text-2xl md:text-3xl font-bold tracking-tight mb-3 text-balance">Used by teams who care about privacy</h2>
-            <p className="text-muted-foreground text-base max-w-md mx-auto">From startups to universities — people rely on UMS daily.</p>
+            <p className="text-[11px] font-semibold text-primary uppercase tracking-[0.2em] mb-3">Who it's for</p>
+            <h2 className="font-display text-2xl md:text-3xl font-bold tracking-tight mb-3 text-balance">Built for people who care about privacy</h2>
+            <p className="text-muted-foreground text-base max-w-md mx-auto">Whether it's friends, a team, or a classroom — your conversations stay yours.</p>
           </motion.div>
 
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} custom={1} variants={fadeUp} className="flex flex-col items-center gap-3 mb-14">
@@ -425,27 +425,20 @@ export default function LandingPage() {
                 );
               })}
             </div>
-            <p className="text-[13px] text-muted-foreground"><span className="font-semibold text-foreground">2,400+</span> professionals already on UMS</p>
+            <p className="text-[13px] text-muted-foreground">Join the growing UMS community</p>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-4">
             {[
-              { emoji: "🏢", title: "Remote Teams", quote: "We replaced 3 tools with UMS. Encrypted group chats and instant video calls keep our distributed team in sync.", name: "Elena P.", role: "Engineering Lead" },
-              { emoji: "🎓", title: "Education", quote: "The built-in translation lets our international students communicate effortlessly across languages.", name: "Dr. Sarah K.", role: "University Professor" },
-              { emoji: "💼", title: "Agencies", quote: "I share files, hop on quick video calls, and know everything stays private. The only messenger I trust for client work.", name: "Marco T.", role: "Creative Director" },
+              { emoji: "🏢", title: "Teams", desc: "Encrypted group chats, file sharing, and instant video calls keep everyone in sync." },
+              { emoji: "🎓", title: "Classrooms", desc: "Built-in translation across 50+ languages helps international groups communicate effortlessly." },
+              { emoji: "👨‍👩‍👧", title: "Friends & family", desc: "Stories, GIFs, voice messages, and HD calls — stay close, with your privacy intact." },
             ].map((item, i) => (
               <motion.div key={item.title} initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-40px" }} custom={i + 1} variants={fadeUp}
                 className="group p-5 rounded-2xl border border-border/40 bg-card hover:border-primary/15 hover:shadow-lg hover:shadow-primary/5 transition-all duration-500">
                 <div className="text-2xl mb-2.5">{item.emoji}</div>
                 <h3 className="text-sm font-semibold font-display mb-1.5">{item.title}</h3>
-                <p className="text-[13px] text-muted-foreground leading-relaxed mb-4 italic">&ldquo;{item.quote}&rdquo;</p>
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ background: "var(--messenger-gradient)" }}>{item.name[0]}</div>
-                  <div>
-                    <div className="text-[13px] font-medium">{item.name}</div>
-                    <div className="text-[11px] text-muted-foreground">{item.role}</div>
-                  </div>
-                </div>
+                <p className="text-[13px] text-muted-foreground leading-relaxed">{item.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -579,7 +572,7 @@ export default function LandingPage() {
               Ready to switch to <span className="gradient-text">better messaging?</span>
             </h2>
             <p className="text-muted-foreground text-base mb-8 max-w-md mx-auto text-balance">
-              Join 2,400+ professionals who already made the move. Free forever for personal use.
+              Free, private messaging for everyone. No ads, no tracking.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Button size="lg" className="rounded-full px-8 text-sm h-11 gap-2 shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all" onClick={goAuth}>
@@ -611,8 +604,11 @@ export default function LandingPage() {
                   className="hover:text-foreground transition-colors">{label}</button>
               ))}
             </div>
-            <div className="flex items-center gap-4">
-              <p className="text-[11px] text-muted-foreground">© {new Date().getFullYear()} UMS Messages. All rights reserved.</p>
+            <div className="flex items-center gap-4 text-[12px] text-muted-foreground">
+              <a href="/download" className="hover:text-foreground transition-colors">Download</a>
+              <a href="/privacy" className="hover:text-foreground transition-colors">Privacy</a>
+              <a href="/terms" className="hover:text-foreground transition-colors">Terms</a>
+              <p className="text-[11px]">© {new Date().getFullYear()} UMS Messages. All rights reserved.</p>
             </div>
           </div>
         </div>
