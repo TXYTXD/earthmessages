@@ -1,7 +1,7 @@
 {
   "name": "ums-messages-desktop",
   "productName": "UMS Messages",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "UMS Messages \u2014 private, secure messaging for Windows",
   "main": "main.js",
   "author": "TXYTXD",
