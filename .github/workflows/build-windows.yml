@@ -38,3 +38,17 @@ jobs:
           gh release create desktop-latest desktop/dist/*.exe \
             -t "UMS Messages for Windows" \
             -n "Windows desktop app for UMS Messages. Download the Setup exe to install, or the portable exe to run without installing."
+
+      - name: Publish installers to the website
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          mkdir -p public/downloads
+          cp "desktop/dist/UMS-Messages-Setup.exe" public/downloads/
+          cp "desktop/dist/UMS-Messages-Portable.exe" public/downloads/
+          ls -la public/downloads
+          git add public/downloads
+          git commit -m "Publish desktop build to website downloads" || exit 0
+          git pull --rebase origin main
+          git push origin HEAD:main
