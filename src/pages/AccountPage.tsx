@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Mail, LogOut, Camera, Pencil, Trash2, Save, X, Loader2 } from "lucide-react";
+import { Mail, LogOut, Camera, Pencil, Trash2, Save, X, Loader2, LifeBuoy, Send } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +25,9 @@ export default function AccountPage() {
   const [deleting, setDeleting] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [pinAction, setPinAction] = useState<"signout" | "delete" | null>(null);
+  const [showSupport, setShowSupport] = useState(false);
+  const [supportMessage, setSupportMessage] = useState("");
+  const [sendingSupport, setSendingSupport] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -130,6 +133,24 @@ export default function AccountPage() {
     navigate("/auth");
   };
 
+  const handleSendSupport = async () => {
+    if (!user || !supportMessage.trim()) return;
+    setSendingSupport(true);
+    const { error } = await supabase.from("contact_messages").insert({
+      name: profile.display_name || user.email || "User",
+      email: user.email || "unknown",
+      message: supportMessage.trim(),
+    });
+    setSendingSupport(false);
+    if (error) {
+      toast.error("Failed to send your message. Please try again.");
+    } else {
+      toast.success("Message sent! We'll get back to you by email.");
+      setSupportMessage("");
+      setShowSupport(false);
+    }
+  };
+
   const displayName = profile.display_name || user?.email || "User";
   const initials = displayName.slice(0, 2).toUpperCase();
 
@@ -233,6 +254,23 @@ export default function AccountPage() {
 
       {/* Actions */}
       <div className="space-y-1">
+        {/* Help & Support */}
+        <motion.button
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.03 }}
+          onClick={() => setShowSupport(true)}
+          className="w-full p-3 flex items-center gap-4 rounded-lg hover:bg-accent transition-colors"
+        >
+          <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center">
+            <LifeBuoy className="w-5 h-5 text-primary" />
+          </div>
+          <div className="text-left">
+            <p className="text-[15px] font-medium">Help &amp; Support</p>
+            <p className="text-[12px] text-muted-foreground">Question or problem? Send us a message</p>
+          </div>
+        </motion.button>
+
         {/* Sign Out */}
         <motion.button
           initial={{ opacity: 0, y: 8 }}
@@ -264,6 +302,52 @@ export default function AccountPage() {
           </div>
         </motion.button>
       </div>
+
+      {/* Support Modal */}
+      {showSupport && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-card rounded-xl border border-border p-6 max-w-md w-full space-y-4"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center">
+                <LifeBuoy className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold">Help &amp; Support</h3>
+                <p className="text-[12px] text-muted-foreground">We'll reply to {user?.email}</p>
+              </div>
+            </div>
+            <textarea
+              value={supportMessage}
+              onChange={(e) => setSupportMessage(e.target.value)}
+              placeholder="Describe your question or problem..."
+              rows={5}
+              maxLength={2000}
+              className="w-full px-4 py-3 bg-accent rounded-lg text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+              autoFocus
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setShowSupport(false)}
+                className="px-4 py-2 rounded-lg bg-accent hover:bg-accent/80 text-sm font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSendSupport}
+                disabled={!supportMessage.trim() || sendingSupport}
+                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50 transition-colors flex items-center gap-2"
+              >
+                {sendingSupport ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                Send message
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
