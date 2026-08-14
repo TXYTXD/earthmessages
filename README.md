@@ -1,73 +1,54 @@
-# Welcome to your Lovable project
+# UMS Messages
 
-## Project info
+**Private, secure messaging for everyone.** End-to-end encrypted conversations, HD video calls, real-time translation, stories, and a built-in AI assistant — free, no ads, no tracking.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+🌐 **Live app:** [umsmessages.net](https://umsmessages.net)
+🖥️ **Windows app:** [umsmessages.net/download](https://umsmessages.net/download)
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- 💬 **Messaging** — direct and group chats with reactions, replies, GIFs, stickers, voice messages, and file sharing
+- 📞 **Voice & video calls** — peer-to-peer WebRTC calls with encryption
+- 🌍 **Real-time translation** — chat across 50+ languages
+- 📸 **Stories** — share moments with friends (private) or everyone (public), with likes and comments
+- 🤖 **AI assistant** — built-in chat assistant with saved conversation history
+- ⏰ **Scheduled messages**, ⭐ starred messages, 🔒 PIN lock, and more
+- 🖥️ **Windows desktop app** with automatic updates
 
-**Use Lovable**
+## Tech stack
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+- **Frontend:** React + TypeScript + Vite, Tailwind CSS, shadcn/ui, Framer Motion
+- **Backend:** [Supabase](https://supabase.com) — Postgres with row-level security, Auth, Storage, Realtime, and Edge Functions (Deno)
+- **Desktop:** Electron (thin wrapper around the live app with a built-in mandatory updater)
+- **Hosting:** Vercel; Windows builds via GitHub Actions
 
-Changes made via Lovable will be committed automatically to this repo.
+## Project structure
 
-**Use your preferred IDE**
+```
+src/                    # React app (pages, components, hooks)
+supabase/functions/     # Edge functions: ai-chat, create-conversation,
+                        # gif-search, translate, send-scheduled-messages
+supabase/migrations/    # Database schema + row-level security policies
+desktop/                # Electron desktop app
+.github/workflows/      # Windows build + publish pipeline
+```
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## Running locally
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Set your own Supabase project connection in `.env` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`) and apply the migrations in `supabase/migrations/` to it. These are public client-side values; all server secrets live in Supabase function secrets and are not part of this repository.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Security
 
-**Use GitHub Codespaces**
+- All database tables are protected by row-level security — users can only read what they're allowed to see (their conversations, friends' stories, etc.)
+- Storage uploads are restricted to each user's own folder
+- Edge functions require an authenticated user
+- Found a vulnerability? Please report it privately via the contact form at [umsmessages.net](https://umsmessages.net) rather than opening a public issue.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## License
 
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+[MIT](./LICENSE)
