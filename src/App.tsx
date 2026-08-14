@@ -23,6 +23,7 @@ import AuthPage from "@/pages/AuthPage";
 import LandingPage from "@/pages/LandingPage";
 import NotFound from "./pages/NotFound";
 import InstallPage from "@/pages/InstallPage";
+import DownloadPage from "@/pages/DownloadPage";
 import AIChatPage from "@/pages/AIChatPage";
 
 const queryClient = new QueryClient();
@@ -106,6 +107,7 @@ const App = () => (
               <Route path="/welcome" element={<LandingPage />} />
               <Route path="/auth" element={<AuthGuard />} />
               <Route path="/install" element={<InstallPage />} />
+              <Route path="/download" element={<DownloadPage />} />
               <Route path="/*" element={<ProtectedLayout />} />
             </Routes>
           </BrowserRouter>
