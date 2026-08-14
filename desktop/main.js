@@ -33,25 +33,85 @@ async function checkForRequiredUpdate() {
 
 function showDownloadingWindow() {
   const win = new BrowserWindow({
-    width: 380,
-    height: 150,
+    width: 420,
+    height: 190,
     resizable: false,
     minimizable: false,
     maximizable: false,
-    title: "UMS Messages",
+    title: "UMS Messages — Downloading update",
     autoHideMenuBar: true,
   });
   const html = `
     <body style="font-family:sans-serif;background:#1a1a2e;color:#fff;display:flex;
       flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0">
       <div style="font-size:15px;font-weight:600">Downloading update…</div>
-      <div style="font-size:12px;opacity:.7;margin-top:6px">The installer will start automatically.</div>
+      <div style="width:300px;height:8px;background:#333;border-radius:4px;margin-top:14px;overflow:hidden">
+        <div id="bar" style="width:0%;height:100%;background:#4f8cff;border-radius:4px;transition:width .2s"></div>
+      </div>
+      <div id="p" style="font-size:12px;opacity:.8;margin-top:10px">Starting…</div>
+      <div style="font-size:11px;opacity:.55;margin-top:6px">The installer will start automatically when done.</div>
     </body>`;
   win.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(html));
   return win;
 }
 
+// Stream the installer to disk with live progress (no giant memory buffer,
+// no frozen-looking window on slow connections).
+async function downloadWithProgress(url, dest, win) {
+  const res = await net.fetch(url, { cache: "no-store" });
+  if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+  const total = Number(res.headers.get("content-length")) || 0;
+  const file = fs.createWriteStream(dest);
+  const reader = res.body.getReader();
+  let received = 0;
+  let lastPct = -1;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      file.write(Buffer.from(value));
+      received += value.length;
+      if (win && !win.isDestroyed()) {
+        const pct = total ? Math.floor((received / total) * 100) : 0;
+        if (pct !== lastPct) {
+          lastPct = pct;
+          const mb = (received / 1048576).toFixed(0);
+          const totalMb = total ? (total / 1048576).toFixed(0) : "?";
+          win.setProgressBar(total ? received / total : 2);
+          win.webContents
+            .executeJavaScript(
+              `document.getElementById('bar').style.width='${pct}%';` +
+                `document.getElementById('p').textContent='${pct}% — ${mb} MB of ${totalMb} MB';`
+            )
+            .catch(() => {});
+        }
+      }
+    }
+  } finally {
+    await new Promise((resolve) => file.end(resolve));
+  }
+  if (total && received < total) throw new Error("Download incomplete");
+}
+
 async function runRequiredUpdate(info) {
+  // The portable exe can't be replaced by the installer (users would keep
+  // launching their old file forever) — send them to grab the new portable.
+  const isPortable = !!process.env.PORTABLE_EXECUTABLE_DIR;
+  if (isPortable) {
+    dialog.showMessageBoxSync({
+      type: "info",
+      title: "Update required",
+      message: `A new version of UMS Messages (${info.version}) is available.`,
+      detail:
+        "You are using the portable version. Your browser will open the downloads page — download the new portable file and replace the old one.",
+      buttons: ["Open downloads page"],
+      defaultId: 0,
+    });
+    shell.openExternal(info.page || "https://umsmessages.net/download");
+    app.quit();
+    return;
+  }
+
   const choice = dialog.showMessageBoxSync({
     type: "info",
     title: "Update required",
@@ -68,19 +128,32 @@ async function runRequiredUpdate(info) {
   }
 
   const dlWin = showDownloadingWindow();
+  const dest = path.join(app.getPath("temp"), "UMS-Messages-Setup.exe");
   try {
-    const res = await net.fetch(info.url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const buf = Buffer.from(await res.arrayBuffer());
-    const dest = path.join(app.getPath("temp"), "UMS-Messages-Setup.exe");
-    fs.writeFileSync(dest, buf);
-    spawn(dest, [], { detached: true, stdio: "ignore" }).unref();
+    await downloadWithProgress(info.url, dest, dlWin);
+    if (!dlWin.isDestroyed()) {
+      dlWin.setProgressBar(-1);
+      dlWin.webContents
+        .executeJavaScript(`document.getElementById('p').textContent='Starting installer…';`)
+        .catch(() => {});
+    }
+    const child = spawn(dest, [], { detached: true, stdio: "ignore" });
+    child.unref();
+    // Give the installer a moment to actually start before this app exits,
+    // so the file replacement isn't racing a live process.
+    await new Promise((r) => setTimeout(r, 2000));
   } catch (e) {
     console.error("[Updater] Download failed:", e);
-    // Fall back to the downloads page in the browser
+    dialog.showMessageBoxSync({
+      type: "warning",
+      title: "Update download failed",
+      message: "The update could not be downloaded automatically.",
+      detail: "Your browser will open the downloads page so you can install the update manually.",
+      buttons: ["OK"],
+    });
     shell.openExternal(info.page || info.url);
   } finally {
-    dlWin.destroy();
+    if (!dlWin.isDestroyed()) dlWin.destroy();
     app.quit();
   }
 }
