@@ -1,0 +1,40 @@
+name: Build Windows app
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "desktop/**"
+      - ".github/workflows/build-windows.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: desktop
+        run: npm install
+
+      - name: Build Windows executables
+        working-directory: desktop
+        run: npx electron-builder --win --publish never
+
+      - name: Publish release
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete desktop-latest -y --cleanup-tag || true
+          gh release create desktop-latest desktop/dist/*.exe \
+            -t "UMS Messages for Windows" \
+            -n "Windows desktop app for UMS Messages. Download the Setup exe to install, or the portable exe to run without installing."

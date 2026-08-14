@@ -1,0 +1,31 @@
+{
+  "name": "ums-messages-desktop",
+  "productName": "UMS Messages",
+  "version": "1.0.0",
+  "description": "UMS Messages — private, secure messaging for Windows",
+  "main": "main.js",
+  "author": "TXYTXD",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^31.3.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "net.umsmessages.desktop",
+    "productName": "UMS Messages",
+    "icon": "icon.png",
+    "files": ["main.js", "icon.png", "package.json"],
+    "win": {
+      "target": ["nsis", "portable"]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "deleteAppDataOnUninstall": true
+    }
+  }
+}
