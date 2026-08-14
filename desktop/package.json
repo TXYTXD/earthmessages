@@ -1,7 +1,7 @@
 {
   "name": "ums-messages-desktop",
   "productName": "UMS Messages",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "UMS Messages — private, secure messaging for Windows",
   "main": "main.js",
   "author": "TXYTXD",
@@ -25,7 +25,11 @@
     "nsis": {
       "oneClick": true,
       "perMachine": false,
-      "deleteAppDataOnUninstall": true
+      "deleteAppDataOnUninstall": true,
+      "artifactName": "UMS-Messages-Setup.exe"
+    },
+    "portable": {
+      "artifactName": "UMS-Messages-Portable.exe"
     }
   }
 }
