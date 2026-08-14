@@ -17,6 +17,7 @@
   "build": {
     "appId": "net.umsmessages.desktop",
     "productName": "UMS Messages",
+    "compression": "maximum",
     "icon": "icon.png",
     "files": ["main.js", "icon.png", "package.json"],
     "win": {

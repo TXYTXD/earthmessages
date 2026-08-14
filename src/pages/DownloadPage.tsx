@@ -3,10 +3,8 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
-const SETUP_URL =
-  "https://github.com/TXYTXD/earthmessages/releases/download/desktop-latest/UMS-Messages-Setup.exe";
-const PORTABLE_URL =
-  "https://github.com/TXYTXD/earthmessages/releases/download/desktop-latest/UMS-Messages-Portable.exe";
+const SETUP_URL = "/downloads/UMS-Messages-Setup.exe";
+const PORTABLE_URL = "/downloads/UMS-Messages-Portable.exe";
 
 export default function DownloadPage() {
   const navigate = useNavigate();
