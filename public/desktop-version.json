@@ -1,5 +1,6 @@
 {
-  "version": "1.1.3",
+  "version": "1.1.4",
   "url": "https://umsmessages.net/downloads/UMS-Messages-Setup.exe",
-  "page": "https://umsmessages.net/download"
+  "page": "https://umsmessages.net/download",
+  "portableUrl": "https://umsmessages.net/downloads/UMS-Messages-Portable.exe"
 }

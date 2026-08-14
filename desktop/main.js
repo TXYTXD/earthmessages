@@ -93,24 +93,22 @@ async function downloadWithProgress(url, dest, win) {
   if (total && received < total) throw new Error("Download incomplete");
 }
 
-async function runRequiredUpdate(info) {
-  // The portable exe can't be replaced by the installer (users would keep
-  // launching their old file forever) — send them to grab the new portable.
-  const isPortable = !!process.env.PORTABLE_EXECUTABLE_DIR;
-  if (isPortable) {
-    dialog.showMessageBoxSync({
-      type: "info",
-      title: "Update required",
-      message: `A new version of UMS Messages (${info.version}) is available.`,
-      detail:
-        "You are using the portable version. Your browser will open the downloads page — download the new portable file and replace the old one.",
-      buttons: ["Open downloads page"],
-      defaultId: 0,
-    });
-    shell.openExternal(info.page || "https://umsmessages.net/download");
-    app.quit();
-    return;
+// A real Windows executable starts with the "MZ" magic bytes. Guards against
+// running an HTML error page (e.g. mid-deploy) that got saved as an .exe.
+function looksLikeExe(file) {
+  try {
+    const fd = fs.openSync(file, "r");
+    const buf = Buffer.alloc(2);
+    fs.readSync(fd, buf, 0, 2, 0);
+    fs.closeSync(fd);
+    return buf.toString("ascii") === "MZ";
+  } catch {
+    return false;
   }
+}
+
+async function runRequiredUpdate(info) {
+  const isPortable = !!process.env.PORTABLE_EXECUTABLE_FILE || !!process.env.PORTABLE_EXECUTABLE_DIR;
 
   const choice = dialog.showMessageBoxSync({
     type: "info",
@@ -128,22 +126,52 @@ async function runRequiredUpdate(info) {
   }
 
   const dlWin = showDownloadingWindow();
-  const dest = path.join(app.getPath("temp"), "UMS-Messages-Setup.exe");
   try {
-    await downloadWithProgress(info.url, dest, dlWin);
-    if (!dlWin.isDestroyed()) {
-      dlWin.setProgressBar(-1);
-      dlWin.webContents
-        .executeJavaScript(`document.getElementById('p').textContent='Starting installer…';`)
-        .catch(() => {});
+    if (isPortable && process.env.PORTABLE_EXECUTABLE_FILE) {
+      // Portable self-update: download the new portable exe, then hand off to
+      // a small script that waits for this app to exit, swaps the file in
+      // place, and relaunches it.
+      const selfPath = process.env.PORTABLE_EXECUTABLE_FILE;
+      const portableUrl = info.portableUrl || info.url;
+      const newExe = path.join(app.getPath("temp"), "UMS-Messages-Portable-new.exe");
+      await downloadWithProgress(portableUrl, newExe, dlWin);
+      if (!looksLikeExe(newExe)) throw new Error("Downloaded file is not a valid program");
+
+      const bat = path.join(app.getPath("temp"), "ums-portable-update.bat");
+      fs.writeFileSync(
+        bat,
+        [
+          "@echo off",
+          ":wait",
+          "timeout /t 1 /nobreak >nul",
+          `copy /y "${newExe}" "${selfPath}" >nul 2>&1`,
+          "if errorlevel 1 goto wait",
+          `del "${newExe}" >nul 2>&1`,
+          `start "" "${selfPath}"`,
+          'del "%~f0"',
+          "",
+        ].join("\r\n")
+      );
+      spawn("cmd.exe", ["/c", bat], { detached: true, stdio: "ignore", windowsHide: true }).unref();
+      await new Promise((r) => setTimeout(r, 500));
+    } else {
+      const dest = path.join(app.getPath("temp"), "UMS-Messages-Setup.exe");
+      await downloadWithProgress(info.url, dest, dlWin);
+      if (!looksLikeExe(dest)) throw new Error("Downloaded file is not a valid program");
+      if (!dlWin.isDestroyed()) {
+        dlWin.setProgressBar(-1);
+        dlWin.webContents
+          .executeJavaScript(`document.getElementById('p').textContent='Starting installer…';`)
+          .catch(() => {});
+      }
+      const child = spawn(dest, [], { detached: true, stdio: "ignore" });
+      child.unref();
+      // Give the installer a moment to actually start before this app exits,
+      // so the file replacement isn't racing a live process.
+      await new Promise((r) => setTimeout(r, 2000));
     }
-    const child = spawn(dest, [], { detached: true, stdio: "ignore" });
-    child.unref();
-    // Give the installer a moment to actually start before this app exits,
-    // so the file replacement isn't racing a live process.
-    await new Promise((r) => setTimeout(r, 2000));
   } catch (e) {
-    console.error("[Updater] Download failed:", e);
+    console.error("[Updater] Update failed:", e);
     dialog.showMessageBoxSync({
       type: "warning",
       title: "Update download failed",
