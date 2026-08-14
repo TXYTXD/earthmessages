@@ -102,10 +102,13 @@ function createWindow() {
 
   win.loadURL(APP_URL);
 
-  // Open external links in the user's default browser
+  // Open external links in the user's default browser (web links only —
+  // never file:, custom protocols, etc.)
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (!url.startsWith(APP_URL)) {
-      shell.openExternal(url);
+      if (url.startsWith("https://") || url.startsWith("http://")) {
+        shell.openExternal(url);
+      }
       return { action: "deny" };
     }
     return { action: "allow" };
