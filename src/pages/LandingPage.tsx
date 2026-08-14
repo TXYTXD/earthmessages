@@ -22,6 +22,8 @@ import {
   Mail,
   Loader2,
   Download,
+  Github,
+  Newspaper,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -201,6 +203,16 @@ export default function LandingPage() {
             ))}
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground text-[13px] gap-1.5">
+              <a href="/news">
+                <Newspaper className="w-3.5 h-3.5" /> News
+              </a>
+            </Button>
+            <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground w-9 px-0" title="View the source code on GitHub">
+              <a href="https://github.com/TXYTXD/earthmessages" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+                <Github className="w-4 h-4" />
+              </a>
+            </Button>
             <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground text-[13px] gap-1.5">
               <a href="/download">
                 <Download className="w-3.5 h-3.5" /> Download
@@ -605,6 +617,8 @@ export default function LandingPage() {
               ))}
             </div>
             <div className="flex items-center gap-4 text-[12px] text-muted-foreground">
+              <a href="https://github.com/TXYTXD/earthmessages" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors flex items-center gap-1"><Github className="w-3.5 h-3.5" /> GitHub</a>
+              <a href="/news" className="hover:text-foreground transition-colors">News</a>
               <a href="/download" className="hover:text-foreground transition-colors">Download</a>
               <a href="/privacy" className="hover:text-foreground transition-colors">Privacy</a>
               <a href="/terms" className="hover:text-foreground transition-colors">Terms</a>
