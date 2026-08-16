@@ -17,6 +17,7 @@ interface CallContextType {
   hangUp: () => Promise<void>;
   toggleMute: () => void;
   toggleVideo: () => void;
+  switchCamera: () => Promise<void>;
 }
 
 const CallContext = createContext<CallContextType | null>(null);
