@@ -85,6 +85,7 @@ export function useWebRTC() {
   const connectTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const localCandCount = useRef(0);
   const remoteCandCount = useRef(0);
+  const facingModeRef = useRef<"user" | "environment">("user");
 
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
@@ -111,6 +112,7 @@ export function useWebRTC() {
       channelRef.current = null;
     }
     startingCall.current = false;
+    facingModeRef.current = "user";
     setCallState({
       callId: null,
       status: "idle",
@@ -624,6 +626,58 @@ export function useWebRTC() {
     setIsVideoOff((prev) => !prev);
   }, []);
 
+  // Switch between the selfie (front) and back camera during a video call.
+  // The new track replaces the old one in the peer connection, so the other
+  // person sees the switch instantly without renegotiating.
+  const switchCamera = useCallback(async () => {
+    const stream = localStream.current;
+    const pc = peerConnection.current;
+    if (!stream) return;
+    const next = facingModeRef.current === "user" ? "environment" : "user";
+
+    let newStream: MediaStream;
+    try {
+      try {
+        newStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: next } } });
+      } catch {
+        newStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: next } });
+      }
+    } catch (e) {
+      console.warn("[Call] Could not switch camera:", e);
+      toast({ title: "Camera switch failed", description: "Could not find another camera on this device." });
+      return;
+    }
+
+    const newTrack = newStream.getVideoTracks()[0];
+    if (!newTrack) return;
+    newTrack.enabled = !isVideoOff;
+
+    const sender = pc?.getSenders().find((s) => s.track?.kind === "video");
+    if (sender) {
+      try {
+        await sender.replaceTrack(newTrack);
+      } catch (e) {
+        console.warn("[Call] replaceTrack failed:", e);
+        newTrack.stop();
+        return;
+      }
+    }
+
+    const oldTrack = stream.getVideoTracks()[0];
+    if (oldTrack) {
+      stream.removeTrack(oldTrack);
+      oldTrack.stop();
+    }
+    stream.addTrack(newTrack);
+    facingModeRef.current = next;
+
+    // Re-attach the preview so every browser picks up the new track
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = stream;
+      localVideoRef.current.play().catch(() => {});
+    }
+  }, [isVideoOff]);
+
   // Handle an incoming call (shared between realtime and polling)
   const handleIncomingCall = useCallback(
     async (call: any) => {
@@ -775,5 +829,6 @@ export function useWebRTC() {
     hangUp: doHangUp,
     toggleMute,
     toggleVideo,
+    switchCamera,
   };
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, Volume2, VolumeX, User } from "lucide-react";
+import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, Volume2, VolumeX, User, SwitchCamera } from "lucide-react";
 import { useCall } from "@/contexts/CallContext";
 
 export function IncomingCallOverlay() {
@@ -99,7 +99,7 @@ export function IncomingCallOverlay() {
 
 export function ActiveCallOverlay() {
   const {
-    callState, hangUp, toggleMute, toggleVideo, isMuted, isVideoOff,
+    callState, hangUp, toggleMute, toggleVideo, switchCamera, isMuted, isVideoOff,
     localVideoRef, remoteVideoRef, remoteAudioRef, localStream, remoteStream,
   } = useCall();
   const [speakerOff, setSpeakerOff] = useState(false);
@@ -255,13 +255,22 @@ export function ActiveCallOverlay() {
         />
 
         {callState.type === "video" && (
-          <ControlButton
-            active={isVideoOff}
-            onClick={toggleVideo}
-            activeIcon={<VideoOff className="w-6 h-6" />}
-            icon={<Video className="w-6 h-6" />}
-            label={isVideoOff ? "Camera off" : "Camera"}
-          />
+          <>
+            <ControlButton
+              active={isVideoOff}
+              onClick={toggleVideo}
+              activeIcon={<VideoOff className="w-6 h-6" />}
+              icon={<Video className="w-6 h-6" />}
+              label={isVideoOff ? "Camera off" : "Camera"}
+            />
+            <ControlButton
+              active={false}
+              onClick={switchCamera}
+              activeIcon={<SwitchCamera className="w-6 h-6" />}
+              icon={<SwitchCamera className="w-6 h-6" />}
+              label="Flip"
+            />
+          </>
         )}
 
         <motion.button
