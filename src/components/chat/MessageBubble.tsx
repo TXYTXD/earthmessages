@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Globe, Reply, Smile, Pencil, Trash2, Lock, Forward, Star, Share2 } from "lucide-react";
 import { type Message } from "@/hooks/useMessages";
+import { VoicePlayer } from "./VoicePlayer";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 
@@ -139,14 +140,10 @@ export function MessageBubble({ message, onReact, onReply, onEdit, onDelete, onF
           ) : message.type === "gif" ? (
             <img src={message.media_url || ""} alt="GIF" className="rounded-lg max-w-full max-h-48" loading="lazy" decoding="async" />
           ) : message.type === "voice" ? (
-            <div className="flex flex-col gap-0.5">
-              <audio controls preload="metadata" src={message.media_url || ""} className="max-w-[230px]" />
-              <span className="text-[11px] opacity-70">
-                🎤 Voice message
-                {typeof message.media_metadata?.duration === "number" &&
-                  ` · ${Math.floor(message.media_metadata.duration / 60)}:${(message.media_metadata.duration % 60).toString().padStart(2, "0")}`}
-              </span>
-            </div>
+            <VoicePlayer
+              src={message.media_url || ""}
+              duration={typeof message.media_metadata?.duration === "number" ? message.media_metadata.duration : undefined}
+            />
           ) : (
             <div>
               <span>{displayContent}</span>
