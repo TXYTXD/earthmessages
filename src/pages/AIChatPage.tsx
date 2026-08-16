@@ -225,7 +225,7 @@ export default function AIChatPage({ onBack }: { onBack?: () => void }) {
             AI Assistant
             <BadgeCheck className="w-4 h-4 text-primary" />
           </h3>
-          <span className="text-[11px] text-muted-foreground">Powered by AI · Always available</span>
+          <span className="text-[11px] text-muted-foreground">Powered by Claude · Always available</span>
         </div>
         <button
           onClick={() => setShowHistory((v) => !v)}
@@ -326,7 +326,7 @@ export default function AIChatPage({ onBack }: { onBack?: () => void }) {
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
               <Bot className="w-8 h-8 text-primary" />
             </div>
-            <h2 className="text-lg font-semibold text-foreground">Chat with AI</h2>
+            <h2 className="text-lg font-semibold text-foreground">Chat with Claude</h2>
             <p className="text-sm text-muted-foreground max-w-xs">
               Ask me anything — I can help with questions, ideas, writing, and more! 🤖
             </p>
@@ -392,7 +392,7 @@ export default function AIChatPage({ onBack }: { onBack?: () => void }) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-            placeholder="Message AI..."
+            placeholder="Message Claude..."
             className="flex-1 px-4 py-2.5 bg-accent rounded-full text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/20"
             disabled={loading}
           />

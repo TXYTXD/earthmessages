@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import Anthropic from "npm:@anthropic-ai/sdk";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -47,53 +48,36 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
 
     const targetName = LANG_NAMES[targetLang] || targetLang;
     const sourceHint = sourceLang ? `from ${LANG_NAMES[sourceLang] || sourceLang} ` : "";
 
-    const response = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash-lite",
-          messages: [
-            {
-              role: "system",
-              content: `You are a translator. Translate the user's message ${sourceHint}to ${targetName}. Return ONLY the translated text, nothing else. If the text is already in ${targetName}, return it unchanged. Preserve formatting, emojis, and special characters.`,
-            },
-            { role: "user", content: text },
-          ],
-        }),
-      }
-    );
+    const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
 
-    if (!response.ok) {
-      if (response.status === 429) {
+    let response;
+    try {
+      response = await anthropic.messages.create({
+        model: "claude-haiku-4-5",
+        max_tokens: 1024,
+        system: `You are a translator. Translate the user's message ${sourceHint}to ${targetName}. Return ONLY the translated text, nothing else. If the text is already in ${targetName}, return it unchanged. Preserve formatting, emojis, and special characters.`,
+        messages: [{ role: "user", content: text }],
+      });
+    } catch (err) {
+      const status = (err as { status?: number })?.status ?? 500;
+      console.error("Anthropic API error:", status, err);
+      if (status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded, try again later" }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "AI credits exhausted" }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
       throw new Error("AI translation failed");
     }
 
-    const data = await response.json();
-    const translatedText = data.choices?.[0]?.message?.content?.trim() || text;
+    const textBlock = response.content.find((b) => b.type === "text");
+    const translatedText = (textBlock && "text" in textBlock ? textBlock.text : "").trim() || text;
 
     // If translation is same as original, skip
     if (translatedText.toLowerCase() === text.toLowerCase()) {
