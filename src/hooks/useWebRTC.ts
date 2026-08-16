@@ -685,6 +685,13 @@ export function useWebRTC() {
       if (call.status !== "ringing") return;
       // Ignore stale rings (e.g. an unanswered call from before a reload)
       if (call.created_at && Date.now() - new Date(call.created_at).getTime() > 60_000) return;
+      // Calls from blocked users never ring
+      const { data: blockRow } = await (supabase.from("blocked_users") as any)
+        .select("id")
+        .eq("blocker_id", user.id)
+        .eq("blocked_id", call.caller_id)
+        .maybeSingle();
+      if (blockRow) return;
       if (callStateRef.current.status !== "idle") {
         await supabase
           .from("call_records")
