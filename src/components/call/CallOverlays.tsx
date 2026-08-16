@@ -104,31 +104,32 @@ export function ActiveCallOverlay() {
   } = useCall();
   const [speakerOff, setSpeakerOff] = useState(false);
 
+  // Attach streams and keep retrying play() while paused — a play() blocked
+  // by autoplay rules (common on iOS) would otherwise leave the call frozen
+  // with no sound/video even though media is arriving. Runs every second
+  // (duration tick) during the call.
   useEffect(() => {
     const el = localVideoRef.current;
     const stream = localStream.current;
-    if (el && stream && el.srcObject !== stream) {
-      el.srcObject = stream;
-      el.play().catch(() => {});
-    }
+    if (!el || !stream) return;
+    if (el.srcObject !== stream) el.srcObject = stream;
+    if (el.paused) el.play().catch(() => {});
   }, [callState.status, callState.duration, localVideoRef, localStream]);
 
   useEffect(() => {
     const el = remoteVideoRef.current;
     const stream = remoteStream.current;
-    if (el && stream && el.srcObject !== stream) {
-      el.srcObject = stream;
-      el.play().catch(() => {});
-    }
+    if (!el || !stream) return;
+    if (el.srcObject !== stream) el.srcObject = stream;
+    if (el.paused) el.play().catch(() => {});
   }, [callState.status, callState.duration, remoteVideoRef, remoteStream]);
 
   useEffect(() => {
     const el = remoteAudioRef.current;
     const stream = remoteStream.current;
-    if (el && stream && el.srcObject !== stream) {
-      el.srcObject = stream;
-      el.play().catch(() => {});
-    }
+    if (!el || !stream) return;
+    if (el.srcObject !== stream) el.srcObject = stream;
+    if (el.paused) el.play().catch(() => {});
   }, [callState.status, callState.duration, remoteAudioRef, remoteStream]);
 
   // Speaker toggle: mute remote audio output

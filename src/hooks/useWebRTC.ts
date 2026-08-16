@@ -291,6 +291,9 @@ export function useWebRTC() {
 
       try {
         if (signal.type === "offer") {
+          // Only the first offer negotiates; a duplicate would re-negotiate
+          // mid-setup and can break media in one direction.
+          if (remoteDescSet.current) return;
           await pc.setRemoteDescription(new RTCSessionDescription((signal.payload as any).sdp));
           remoteDescSet.current = true;
           const answer = await pc.createAnswer();
@@ -570,44 +573,30 @@ export function useWebRTC() {
       const offerSignal = signals.find((s: any) => s.type === "offer" && s.sender_id !== user.id);
       const iceCandidates = signals.filter((s: any) => s.type === "ice-candidate" && s.sender_id !== user.id);
 
-      if (!offerSignal) {
+      if (!offerSignal && !remoteDescSet.current) {
         console.warn("[Call] No offer found for callId", callId);
         toast({ title: "Could not connect", description: "The caller's connection offer was not found", variant: "destructive" });
         cleanup();
         return;
       }
 
+      // Process the offer + early ICE candidates through the same deduped
+      // path the realtime channel and polling use, so the offer can never be
+      // negotiated twice (double answers broke media in one direction).
       try {
-        seenSignalIds.current.add(offerSignal.id);
-        await pc.setRemoteDescription(new RTCSessionDescription((offerSignal.payload as any).sdp));
-        remoteDescSet.current = true;
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        await (supabase.from("call_signaling") as any).insert({
-          call_id: callId,
-          sender_id: user.id,
-          type: "answer",
-          payload: { sdp: answer },
-        });
-
-        // Add the ICE candidates we already have, plus any that were buffered
-        for (const signal of iceCandidates) {
-          seenSignalIds.current.add(signal.id);
-          remoteCandCount.current++;
-          try {
-            await pc.addIceCandidate(new RTCIceCandidate((signal.payload as any).candidate));
-          } catch (e) {
-            console.warn("[Call] Failed to add ICE candidate:", e);
-          }
+        for (const signal of [offerSignal, ...iceCandidates]) {
+          if (signal) await processSignal(callId, signal);
         }
-        await flushPendingCandidates();
+        if (!remoteDescSet.current) {
+          throw new Error("Offer was not processed");
+        }
       } catch (e) {
         console.error("[Call] Error processing offer:", e);
         toast({ title: "Could not connect", description: "There was a problem accepting the call", variant: "destructive" });
         cleanup();
       }
     },
-    [user, setupPeerConnection, subscribeToSignaling, flushPendingCandidates, cleanup]
+    [user, setupPeerConnection, subscribeToSignaling, processSignal, cleanup]
   );
 
   const declineCall = useCallback(
