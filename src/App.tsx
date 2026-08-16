@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { TranslationProvider } from "@/contexts/TranslationContext";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useAppUpdate } from "@/hooks/useAppUpdate";
+import { AndroidUpdateGate } from "@/components/AndroidUpdateGate";
 import { usePin } from "@/hooks/usePin";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
@@ -113,6 +114,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <UpdatePrompt />
+        <AndroidUpdateGate />
         <AuthProvider>
           <BrowserRouter>
             <Routes>
