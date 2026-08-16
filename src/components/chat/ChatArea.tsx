@@ -7,6 +7,8 @@ import { ForwardDialog } from "./ForwardDialog";
 import { useMessages, type Message } from "@/hooks/useMessages";
 import { useStarredMessages } from "@/hooks/useStarredMessages";
 import { useScheduledMessages } from "@/hooks/useScheduledMessages";
+import { useBlockedUsers } from "@/hooks/useBlockedUsers";
+import { UserSafetyDialog } from "./UserSafetyDialog";
 import { type Conversation } from "@/hooks/useConversations";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCall } from "@/contexts/CallContext";
@@ -37,6 +39,11 @@ export function ChatArea({ conversation, conversations, onBack }: ChatAreaProps)
   const [forwardMsg, setForwardMsg] = useState<Message | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
+  const [showSafety, setShowSafety] = useState(false);
+  const { blockedIds, blockUser, unblockUser, reportUser } = useBlockedUsers();
+  const otherMember = conversation.type === "direct"
+    ? conversation.members.find((m) => m.user_id !== user?.id)
+    : undefined;
   const { starredIds, toggleStar } = useStarredMessages(conversation.id);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -44,9 +51,11 @@ export function ChatArea({ conversation, conversations, onBack }: ChatAreaProps)
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Hide messages from blocked users, then apply search
+  const visibleMessages = messages.filter((m) => !blockedIds.has(m.sender_id));
   const filteredMessages = searchQuery
-    ? messages.filter((m) => m.content?.toLowerCase().includes(searchQuery.toLowerCase()))
-    : messages;
+    ? visibleMessages.filter((m) => m.content?.toLowerCase().includes(searchQuery.toLowerCase()))
+    : visibleMessages;
 
   const isGroup = conversation.type === "group";
 
@@ -117,9 +126,15 @@ export function ChatArea({ conversation, conversations, onBack }: ChatAreaProps)
               </button>
             </>
           )}
-          <button className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary">
-            <Info className="w-5 h-5" />
-          </button>
+          {otherMember && (
+            <button
+              onClick={() => setShowSafety(true)}
+              className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary"
+              title="Report or block"
+            >
+              <Info className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -205,6 +220,18 @@ export function ChatArea({ conversation, conversations, onBack }: ChatAreaProps)
         message={forwardMsg}
         conversations={conversations}
       />
+
+      {otherMember && (
+        <UserSafetyDialog
+          open={showSafety}
+          onClose={() => setShowSafety(false)}
+          userName={conversation.display_name}
+          isBlocked={blockedIds.has(otherMember.user_id)}
+          onBlock={() => blockUser(otherMember.user_id)}
+          onUnblock={() => unblockUser(otherMember.user_id)}
+          onReport={(reason, details) => reportUser(otherMember.user_id, reason, details)}
+        />
+      )}
     </div>
   );
 }
