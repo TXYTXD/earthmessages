@@ -8,6 +8,7 @@ import { CallProvider } from "@/contexts/CallContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { TranslationProvider } from "@/contexts/TranslationContext";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { useAppUpdate } from "@/hooks/useAppUpdate";
 import { usePin } from "@/hooks/usePin";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
@@ -99,6 +100,11 @@ function AuthGuard() {
   return <AuthPage />;
 }
 
+function UpdatePrompt() {
+  useAppUpdate();
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
@@ -106,6 +112,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <UpdatePrompt />
         <AuthProvider>
           <BrowserRouter>
             <Routes>
