@@ -5,13 +5,11 @@ on:
   push:
     branches: [main]
     paths:
+      # The app shell loads the live site, so web code changes don't require
+      # a rebuild — only native shell changes do.
       - "android/**"
-      - "src/**"
-      - "public/**"
-      - "index.html"
-      - "vite.config.ts"
+      - "android-shell/**"
       - "capacitor.config.ts"
-      - "package.json"
       - ".github/workflows/build-android.yml"
 
 # The workflow's own commit only touches public/downloads/*.apk via
@@ -27,7 +25,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: "!contains(github.event.head_commit.message, 'to website downloads')"
+    if: "!contains(github.event.head_commit.message, 'website downloads')"
     steps:
       - uses: actions/checkout@v4
 
@@ -42,9 +40,6 @@ jobs:
 
       - name: Install dependencies
         run: npm install
-
-      - name: Build web app
-        run: npm run build
 
       - name: Sync Capacitor
         run: npx cap sync android
@@ -66,14 +61,16 @@ jobs:
             -t "UMS Messages for Android" \
             -n "Android app for UMS Messages. Install the APK directly, or upload the AAB to Google Play."
 
-      - name: Publish APK to the website
+      # The APK is intentionally NOT published to the website — Android users
+      # get the app from Google Play only (sideload prompts look scary).
+      # The GitHub release above keeps the APK/AAB for Play Store uploads.
+      - name: Remove any previously published website APK
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          mkdir -p public/downloads
-          cp android/app/build/outputs/apk/release/app-release.apk public/downloads/UMS-Messages.apk
-          ls -la public/downloads
-          git add public/downloads
-          git commit -m "Publish Android build to website downloads" || exit 0
-          git pull --rebase origin main
-          git push origin HEAD:main
+          if [ -f public/downloads/UMS-Messages.apk ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git rm public/downloads/UMS-Messages.apk
+            git commit -m "Remove Android APK from website downloads"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi

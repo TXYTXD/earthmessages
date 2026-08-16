@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>UMS Messages</title>
+    <style>
+      html, body { height: 100%; margin: 0; background: #1a1a2e; color: #fff;
+        font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; }
+      .box { text-align: center; }
+      .spin { width: 34px; height: 34px; border: 3px solid rgba(255,255,255,.25);
+        border-top-color: #fff; border-radius: 50%; margin: 0 auto 14px;
+        animation: s 1s linear infinite; }
+      @keyframes s { to { transform: rotate(360deg); } }
+    </style>
+  </head>
+  <body>
+    <!-- The app loads umsmessages.net directly (capacitor.config server.url).
+         This placeholder only appears if that fails, e.g. with no internet. -->
+    <div class="box">
+      <div class="spin"></div>
+      <p>Connecting to UMS Messages…<br />Check your internet connection.</p>
+    </div>
+  </body>
+</html>
