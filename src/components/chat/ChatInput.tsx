@@ -3,6 +3,7 @@ import { Send, Smile, Image, Paperclip, Mic, ThumbsUp, X, Sticker, Clock, Calend
 import { AnimatePresence, motion } from "framer-motion";
 import { type Message } from "@/hooks/useMessages";
 import { useMediaUpload } from "@/hooks/useMediaUpload";
+import { useVoiceRecorder } from "@/hooks/useVoiceRecorder";
 import EmojiPicker, { Theme } from "emoji-picker-react";
 import { StickerPicker } from "./StickerPicker";
 import { GifPicker } from "./GifPicker";
@@ -43,6 +44,26 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply, onSchedule
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile, uploading } = useMediaUpload();
+  const { recording, seconds, start: startRecording, stop: stopRecording, cancel: cancelRecording } = useVoiceRecorder();
+
+  const handleStartRecording = async () => {
+    closeAllPickers();
+    setShowSchedule(false);
+    await startRecording();
+  };
+
+  const handleSendVoice = async () => {
+    const duration = seconds;
+    const file = await stopRecording();
+    if (!file) return;
+    const result = await uploadFile(file);
+    if (result) {
+      onSend("🎤 Voice message", "voice", result.url, { ...result.metadata, duration }, replyTo?.id);
+      onCancelReply();
+    }
+  };
+
+  const formatSeconds = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
   const handleSend = () => {
     if (!message.trim() && !replyTo) return;
@@ -216,6 +237,26 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply, onSchedule
         </div>
       )}
 
+      {recording ? (
+        <div className="flex items-center gap-3 px-2 py-1">
+          <span className="w-3 h-3 rounded-full bg-destructive animate-pulse flex-shrink-0" />
+          <span className="text-[15px] font-medium text-foreground tabular-nums">{formatSeconds(seconds)}</span>
+          <span className="text-sm text-muted-foreground flex-1">Recording…</span>
+          <button
+            onClick={cancelRecording}
+            className="px-3 py-1.5 rounded-full hover:bg-accent transition-colors text-sm text-muted-foreground flex-shrink-0"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSendVoice}
+            disabled={uploading}
+            className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground flex-shrink-0 disabled:opacity-50"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </div>
+      ) : (
       <div className="flex items-center gap-2">
         <input
           ref={imageInputRef}
@@ -297,14 +338,25 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply, onSchedule
             <Send className="w-5 h-5" />
           </button>
         ) : (
-          <button
-            onClick={handleThumbsUp}
-            className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary flex-shrink-0"
-          >
-            <ThumbsUp className="w-5 h-5" />
-          </button>
+          <>
+            <button
+              onClick={handleStartRecording}
+              disabled={uploading}
+              className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary flex-shrink-0"
+              title="Record a voice message"
+            >
+              <Mic className="w-5 h-5" />
+            </button>
+            <button
+              onClick={handleThumbsUp}
+              className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary flex-shrink-0"
+            >
+              <ThumbsUp className="w-5 h-5" />
+            </button>
+          </>
         )}
       </div>
+      )}
     </div>
   );
 }

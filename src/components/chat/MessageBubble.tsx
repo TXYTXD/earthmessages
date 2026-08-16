@@ -139,7 +139,14 @@ export function MessageBubble({ message, onReact, onReply, onEdit, onDelete, onF
           ) : message.type === "gif" ? (
             <img src={message.media_url || ""} alt="GIF" className="rounded-lg max-w-full max-h-48" loading="lazy" decoding="async" />
           ) : message.type === "voice" ? (
-            <audio controls src={message.media_url || ""} className="max-w-full" />
+            <div className="flex flex-col gap-0.5">
+              <audio controls preload="metadata" src={message.media_url || ""} className="max-w-[230px]" />
+              <span className="text-[11px] opacity-70">
+                🎤 Voice message
+                {typeof message.media_metadata?.duration === "number" &&
+                  ` · ${Math.floor(message.media_metadata.duration / 60)}:${(message.media_metadata.duration % 60).toString().padStart(2, "0")}`}
+              </span>
+            </div>
           ) : (
             <div>
               <span>{displayContent}</span>
