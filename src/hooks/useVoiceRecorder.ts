@@ -1,10 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 
-// Pick a recording format the current browser supports (Safari can't do
-// webm — it records audio/mp4 instead; both play fine in <audio>).
+// Pick a recording format every device can PLAY back. mp4/AAC first —
+// iPhones/iPads can't play webm, so recording webm made voice messages
+// silent for Apple users. webm remains the fallback for browsers that
+// can't record mp4 (e.g. Firefox).
 function pickMimeType(): string {
   if (typeof MediaRecorder === "undefined") return "";
-  for (const c of ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"]) {
+  for (const c of ["audio/mp4", "audio/mp4;codecs=mp4a.40.2", "audio/webm;codecs=opus", "audio/webm"]) {
     if (MediaRecorder.isTypeSupported(c)) return c;
   }
   return "";
