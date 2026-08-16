@@ -4,8 +4,15 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 
+// Unique id per build — the deployed version.json is compared against the
+// id baked into the running bundle to detect when a new version is live.
+const buildId = Date.now().toString(36);
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  define: {
+    __BUILD_ID__: JSON.stringify(buildId),
+  },
   server: {
     host: "::",
     port: 8080,
@@ -16,6 +23,17 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === "development" && componentTagger(),
+    {
+      name: "emit-version-json",
+      apply: "build" as const,
+      generateBundle() {
+        this.emitFile({
+          type: "asset",
+          fileName: "version.json",
+          source: JSON.stringify({ id: buildId }),
+        });
+      },
+    },
     VitePWA({
       registerType: "autoUpdate",
       // Ship a self-destroying service worker so previously-installed
