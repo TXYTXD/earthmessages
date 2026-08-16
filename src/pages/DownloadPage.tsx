@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 
 const SETUP_URL = "/downloads/UMS-Messages-Setup.exe";
 const PORTABLE_URL = "/downloads/UMS-Messages-Portable.exe";
+const ANDROID_APK_URL = "/downloads/UMS-Messages.apk";
 
 export default function DownloadPage() {
   const navigate = useNavigate();
@@ -69,24 +70,50 @@ export default function DownloadPage() {
             </div>
           </div>
 
-          {/* Phone / tablet */}
+          {/* Android */}
+          <div className="rounded-2xl border border-border p-6 mb-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Smartphone className="w-6 h-6 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-semibold">Android</h2>
+                <p className="text-sm text-muted-foreground mt-1 mb-4">
+                  The real Android app — chats, calls, stories, and voice messages, with its
+                  own icon on your home screen. Coming to Google Play soon.
+                </p>
+                <Button asChild className="rounded-full gap-2">
+                  <a href={ANDROID_APK_URL}>
+                    <Download className="w-4 h-4" /> Download for Android (APK)
+                  </a>
+                </Button>
+                <p className="text-[12px] text-muted-foreground mt-3 flex items-start gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                  Android will ask you to allow installing apps from your browser — that's
+                  normal for apps outside Google Play. Tap Settings, allow it, and install.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* iPhone / iPad */}
           <div className="rounded-2xl border border-border p-6">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
                 <Smartphone className="w-6 h-6 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <h2 className="text-lg font-semibold">Phone &amp; tablet</h2>
+                <h2 className="text-lg font-semibold">iPhone &amp; iPad</h2>
                 <p className="text-sm text-muted-foreground mt-1 mb-4">
-                  Install UMS Messages straight from your browser — it works like a native
-                  app on iPhone, iPad, and Android.
+                  Install UMS Messages straight from Safari — it works like a native app
+                  with its own icon, fullscreen, and notifications.
                 </p>
                 <Button
                   variant="outline"
                   className="rounded-full gap-2"
                   onClick={() => navigate("/install")}
                 >
-                  How to install on mobile
+                  How to install on iPhone &amp; iPad
                 </Button>
               </div>
             </div>
