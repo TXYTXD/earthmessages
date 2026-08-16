@@ -6,6 +6,7 @@ import { toast } from "@/hooks/use-toast";
 const ICE_SERVERS: RTCIceServer[] = [
   { urls: "stun:stun.l.google.com:19302" },
   { urls: "stun:stun1.l.google.com:19302" },
+  { urls: "stun:stun.cloudflare.com:3478" },
   { urls: "stun:stun.relay.metered.ca:80" },
   {
     urls: "turn:global.relay.metered.ca:80",
@@ -148,6 +149,45 @@ export function useWebRTC() {
     }, 1000);
   }, []);
 
+  // (Re-)arm the call setup timeout. While the call is still ringing the
+  // timeout means "no answer"; once an answer arrived it means the network
+  // connection itself failed. Re-armed with a fresh window when the answer
+  // comes in, so time spent ringing doesn't eat into connection time.
+  const armConnectTimeout = useCallback(
+    (callId: string, ms: number) => {
+      if (connectTimeoutRef.current) clearTimeout(connectTimeoutRef.current);
+      connectTimeoutRef.current = setTimeout(() => {
+        const state = callStateRef.current;
+        if (state.status === "connected" || state.callId !== callId) return;
+
+        if (state.status === "calling" && !remoteDescSet.current) {
+          toast({ title: "No answer", description: `${state.remoteName || "They"} didn't pick up.` });
+          supabase
+            .from("call_records")
+            .update({ status: "missed", ended_at: new Date().toISOString() })
+            .eq("id", callId)
+            .then(() => {});
+          cleanup();
+          return;
+        }
+
+        const pc = peerConnection.current;
+        // Diagnostic detail so a screenshot of this toast pinpoints where
+        // the connection stalled (signaling vs network traversal).
+        const detail = pc
+          ? `state ${pc.iceConnectionState}/${pc.signalingState}, sent ${localCandCount.current}, received ${remoteCandCount.current}, answer ${remoteDescSet.current ? "yes" : "no"}`
+          : "no connection";
+        toast({
+          title: "Could not connect",
+          description: `The call did not connect (${detail}). Check both devices' internet and try again.`,
+          variant: "destructive",
+        });
+        doHangUp();
+      }, ms);
+    },
+    [cleanup, doHangUp]
+  );
+
   const setupPeerConnection = useCallback(
     (callId: string) => {
       const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, iceCandidatePoolSize: 4 });
@@ -216,26 +256,13 @@ export function useWebRTC() {
         pc.addTrack(track, localStream.current!);
       });
 
-      // Give the connection 30s to establish; bail out with a clear error
-      // instead of sitting on the calling/connecting screen forever.
-      if (connectTimeoutRef.current) clearTimeout(connectTimeoutRef.current);
-      connectTimeoutRef.current = setTimeout(() => {
-        if (callStateRef.current.status !== "connected" && callStateRef.current.callId === callId) {
-          // Diagnostic detail so a screenshot of this toast pinpoints where
-          // the connection stalled (signaling vs network traversal).
-          const detail = `state ${pc.iceConnectionState}/${pc.signalingState}, sent ${localCandCount.current}, received ${remoteCandCount.current}, answer ${remoteDescSet.current ? "yes" : "no"}`;
-          toast({
-            title: "Could not connect",
-            description: `The call did not connect (${detail}). Check both devices' internet and try again.`,
-            variant: "destructive",
-          });
-          doHangUp();
-        }
-      }, 30000);
+      // Allow up to 45s for the callee to answer; once the answer arrives
+      // the timeout is re-armed with a fresh 30s connection window.
+      armConnectTimeout(callId, 45000);
 
       return pc;
     },
-    [user, doHangUp, startDurationTimer]
+    [user, doHangUp, startDurationTimer, armConnectTimeout]
   );
 
   const flushPendingCandidates = useCallback(async () => {
@@ -279,6 +306,8 @@ export function useWebRTC() {
           if (pc.signalingState === "have-local-offer") {
             await pc.setRemoteDescription(new RTCSessionDescription((signal.payload as any).sdp));
             remoteDescSet.current = true;
+            setCallState((prev) => (prev.status === "calling" ? { ...prev, status: "connecting" } : prev));
+            armConnectTimeout(callId, 30000);
             await flushPendingCandidates();
           }
         } else if (signal.type === "ice-candidate") {
@@ -300,7 +329,7 @@ export function useWebRTC() {
         console.error("[Call] Signaling error:", e);
       }
     },
-    [user, doHangUp, flushPendingCandidates]
+    [user, doHangUp, flushPendingCandidates, armConnectTimeout]
   );
 
   // Polling fallback: realtime events may not be delivered (e.g. the table
@@ -322,12 +351,19 @@ export function useWebRTC() {
         for (const s of signals || []) {
           await processSignal(callId, s);
         }
-        if (record && (record.status === "declined" || record.status === "missed")) {
-          cleanup();
+        if (record) {
+          if (record.status === "declined" || record.status === "missed" || record.status === "ended") {
+            cleanup();
+          } else if (record.status === "answered" && callStateRef.current.status === "calling") {
+            // Callee picked up — show "Connecting…" and give the network a
+            // fresh window even if the answer signal itself is still in flight.
+            setCallState((prev) => (prev.status === "calling" ? { ...prev, status: "connecting" } : prev));
+            armConnectTimeout(callId, 30000);
+          }
         }
       }, 2000);
     },
-    [processSignal, cleanup]
+    [processSignal, cleanup, armConnectTimeout]
   );
 
   const subscribeToSignaling = useCallback(
@@ -359,6 +395,9 @@ export function useWebRTC() {
               const record = payload.new;
               if (record.status === "declined" || record.status === "missed") {
                 cleanup();
+              } else if (record.status === "answered" && callStateRef.current.status === "calling") {
+                setCallState((prev) => (prev.status === "calling" ? { ...prev, status: "connecting" } : prev));
+                armConnectTimeout(callId, 30000);
               }
             }
           )
@@ -380,7 +419,7 @@ export function useWebRTC() {
         startSignalPolling(callId);
         setTimeout(resolve, 3000);
       }),
-    [cleanup, processSignal, startSignalPolling]
+    [cleanup, processSignal, startSignalPolling, armConnectTimeout]
   );
 
   const startCall = useCallback(
@@ -601,6 +640,8 @@ export function useWebRTC() {
     async (call: any) => {
       if (call.receiver_id !== user?.id) return;
       if (call.status !== "ringing") return;
+      // Ignore stale rings (e.g. an unanswered call from before a reload)
+      if (call.created_at && Date.now() - new Date(call.created_at).getTime() > 60_000) return;
       if (callStateRef.current.status !== "idle") {
         await supabase
           .from("call_records")
@@ -689,13 +730,28 @@ export function useWebRTC() {
 
     // Polling fallback: check for ringing calls every 3 seconds
     const pollInterval = setInterval(async () => {
-      if (callStateRef.current.status !== "idle") return;
+      const state = callStateRef.current;
+
+      // While our phone is ringing, watch the record: if the caller cancelled
+      // (or the call was handled elsewhere), stop ringing.
+      if (state.status === "ringing" && state.isIncoming && state.callId) {
+        const { data: rec } = await supabase
+          .from("call_records")
+          .select("status")
+          .eq("id", state.callId)
+          .maybeSingle();
+        if (rec && rec.status !== "ringing") cleanup();
+        return;
+      }
+
+      if (state.status !== "idle") return;
 
       const { data: pendingCalls } = await supabase
         .from("call_records")
         .select("*")
         .eq("receiver_id", user.id)
         .eq("status", "ringing")
+        .gte("created_at", new Date(Date.now() - 60_000).toISOString())
         .order("created_at", { ascending: false })
         .limit(1);
 
@@ -713,7 +769,7 @@ export function useWebRTC() {
       supabase.removeChannel(channel);
       clearInterval(pollInterval);
     };
-  }, [user, handleIncomingCall]);
+  }, [user, handleIncomingCall, cleanup]);
 
   return {
     callState,
