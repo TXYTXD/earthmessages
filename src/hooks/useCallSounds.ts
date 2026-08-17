@@ -1,37 +1,48 @@
 import { useRef, useCallback } from "react";
 
-// Google Meet-style ringtone using Web Audio API with looping
+// Marimba-style ringtone melody using Web Audio API with looping —
+// a warm plucked arpeggio with a soft echo, closer to a real phone
+// ringtone than the previous three-note chime.
 function createRingtonePlayer(ctx: AudioContext): { stop: () => void } {
   let stopped = false;
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-  const playChime = () => {
-    if (stopped) return;
-    const now = ctx.currentTime;
-    const notes = [523.25, 659.25, 783.99]; // C5, E5, G5 - major triad
-
-    notes.forEach((freq, i) => {
+  // One marimba-like pluck: fundamental + a quieter octave partial,
+  // fast attack and a natural exponential decay.
+  const pluck = (freq: number, t: number, vol: number) => {
+    [1, 2].forEach((mult, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = "sine";
-      osc.frequency.value = freq;
-
-      const noteStart = now + i * 0.15;
-      gain.gain.setValueAtTime(0, noteStart);
-      gain.gain.linearRampToValueAtTime(0.25, noteStart + 0.05);
-      gain.gain.setValueAtTime(0.25, noteStart + 0.15);
-      gain.gain.linearRampToValueAtTime(0, noteStart + 0.3);
-
+      osc.frequency.value = freq * mult;
+      const v = vol * (i === 0 ? 1 : 0.35);
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(v, t + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
       osc.connect(gain).connect(ctx.destination);
-      osc.start(noteStart);
-      osc.stop(noteStart + 0.35);
+      osc.start(t);
+      osc.stop(t + 0.6);
     });
-
-    // Repeat every 2 seconds
-    timeoutId = setTimeout(() => playChime(), 2000);
   };
 
-  playChime();
+  const playPhrase = () => {
+    if (stopped) return;
+    const now = ctx.currentTime + 0.05;
+    // D5 F#5 A5 D6 rise, answered by A5 F#5 — bright and friendly
+    const D5 = 587.33, Fs5 = 739.99, A5 = 880.0, D6 = 1174.66;
+    const melody: Array<[number, number]> = [
+      [0.0, D5], [0.13, Fs5], [0.26, A5], [0.39, D6],
+      [0.65, A5], [0.78, Fs5],
+    ];
+    melody.forEach(([dt, f]) => pluck(f, now + dt, 0.3));
+    // Soft echo of the phrase
+    melody.forEach(([dt, f]) => pluck(f, now + dt + 1.05, 0.12));
+
+    // Repeat like a real ring cadence
+    timeoutId = setTimeout(() => playPhrase(), 2600);
+  };
+
+  playPhrase();
 
   return {
     stop: () => {
@@ -82,6 +93,7 @@ function createDialingPlayer(ctx: AudioContext): { stop: () => void } {
 export function useCallSounds() {
   const ctxRef = useRef<AudioContext | null>(null);
   const playerRef = useRef<{ stop: () => void } | null>(null);
+  const vibrateRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const stopSound = useCallback(() => {
     playerRef.current?.stop();
@@ -90,6 +102,11 @@ export function useCallSounds() {
       ctxRef.current.close().catch(() => {});
     }
     ctxRef.current = null;
+    if (vibrateRef.current) {
+      clearInterval(vibrateRef.current);
+      vibrateRef.current = null;
+    }
+    if ("vibrate" in navigator) navigator.vibrate(0);
   }, []);
 
   const playIncomingRing = useCallback(() => {
@@ -100,6 +117,12 @@ export function useCallSounds() {
       playerRef.current = createRingtonePlayer(ctx);
     } catch (e) {
       console.warn("[CallSounds] Failed to play incoming ring:", e);
+    }
+    // Vibrate like a real phone call (Android; iPhones ignore this)
+    if ("vibrate" in navigator) {
+      const buzz = () => navigator.vibrate([450, 250, 450, 1450]);
+      buzz();
+      vibrateRef.current = setInterval(buzz, 2600);
     }
   }, [stopSound]);
 
