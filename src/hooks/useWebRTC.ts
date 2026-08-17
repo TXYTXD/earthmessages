@@ -85,6 +85,10 @@ export function useWebRTC() {
   const connectTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const localCandCount = useRef(0);
   const remoteCandCount = useRef(0);
+  const localRelayCount = useRef(0);
+  const remoteRelayCount = useRef(0);
+  const iceRestartedRef = useRef(false);
+  const disconnectTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const facingModeRef = useRef<"user" | "environment">("user");
 
   const [isMuted, setIsMuted] = useState(false);
@@ -116,6 +120,10 @@ export function useWebRTC() {
     if (durationInterval.current) clearInterval(durationInterval.current);
     if (signalPollRef.current) clearInterval(signalPollRef.current);
     if (connectTimeoutRef.current) clearTimeout(connectTimeoutRef.current);
+    if (disconnectTimerRef.current) clearTimeout(disconnectTimerRef.current);
+    iceRestartedRef.current = false;
+    localRelayCount.current = 0;
+    remoteRelayCount.current = 0;
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
@@ -184,9 +192,10 @@ export function useWebRTC() {
 
         const pc = peerConnection.current;
         // Diagnostic detail so a screenshot of this toast pinpoints where
-        // the connection stalled (signaling vs network traversal).
+        // the connection stalled (signaling vs network traversal). The
+        // relay counts show whether TURN servers are reachable at all.
         const detail = pc
-          ? `state ${pc.iceConnectionState}/${pc.signalingState}, sent ${localCandCount.current}, received ${remoteCandCount.current}, answer ${remoteDescSet.current ? "yes" : "no"}`
+          ? `state ${pc.iceConnectionState}/${pc.signalingState}, sent ${localCandCount.current} (${localRelayCount.current} relay), received ${remoteCandCount.current} (${remoteRelayCount.current} relay), answer ${remoteDescSet.current ? "yes" : "no"}`
           : "no connection";
         toast({
           title: "Could not connect",
@@ -200,17 +209,21 @@ export function useWebRTC() {
   );
 
   const setupPeerConnection = useCallback(
-    (callId: string) => {
+    (callId: string, isCaller: boolean) => {
       const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, iceCandidatePoolSize: 4 });
       peerConnection.current = pc;
       remoteDescSet.current = false;
       pendingCandidates.current = [];
       localCandCount.current = 0;
       remoteCandCount.current = 0;
+      localRelayCount.current = 0;
+      remoteRelayCount.current = 0;
+      iceRestartedRef.current = false;
 
       pc.onicecandidate = async (event) => {
         if (event.candidate && user) {
           localCandCount.current++;
+          if (event.candidate.candidate?.includes(" typ relay")) localRelayCount.current++;
           try {
             await (supabase.from("call_signaling") as any).insert({
               call_id: callId,
@@ -222,6 +235,53 @@ export function useWebRTC() {
             console.warn("[Call] Failed to send ICE candidate:", e);
           }
         }
+      };
+
+      // Renegotiation (only used for ICE restarts): the caller creates and
+      // sends a fresh offer. The initial offer is sent explicitly in
+      // startCall, so this is skipped until the first handshake completed.
+      pc.onnegotiationneeded = async () => {
+        if (!isCaller || !remoteDescSet.current || !user) return;
+        try {
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          await (supabase.from("call_signaling") as any).insert({
+            call_id: callId,
+            sender_id: user.id,
+            type: "offer",
+            payload: { sdp: offer },
+          });
+          console.log("[Call] Sent renegotiation offer (ICE restart)");
+        } catch (e) {
+          console.warn("[Call] Renegotiation failed:", e);
+        }
+      };
+
+      // One free rescue attempt: when the connection path dies, the caller
+      // triggers an ICE restart (find a new route) before we give up.
+      const tryIceRestart = () => {
+        if (callStateRef.current.callId !== callId) return;
+        const s = pc.iceConnectionState;
+        if (s === "connected" || s === "completed") return;
+        if (isCaller && !iceRestartedRef.current && typeof pc.restartIce === "function") {
+          iceRestartedRef.current = true;
+          console.log("[Call] Attempting ICE restart");
+          pc.restartIce();
+          if (callStateRef.current.status !== "connected") {
+            armConnectTimeout(callId, 25000);
+          }
+          return;
+        }
+        // Answerer (or restart already tried): give the caller's restart a
+        // moment to rescue the call before hanging up.
+        if (disconnectTimerRef.current) clearTimeout(disconnectTimerRef.current);
+        disconnectTimerRef.current = setTimeout(() => {
+          const st = pc.iceConnectionState;
+          if (callStateRef.current.callId === callId && st !== "connected" && st !== "completed") {
+            toast({ title: "Call failed", description: "The connection between the two devices was lost.", variant: "destructive" });
+            doHangUp();
+          }
+        }, 12000);
       };
 
       pc.ontrack = (event) => {
@@ -244,21 +304,28 @@ export function useWebRTC() {
         console.log("[Call] ICE state:", pc.iceConnectionState);
         if (pc.iceConnectionState === "connected" || pc.iceConnectionState === "completed") {
           if (connectTimeoutRef.current) clearTimeout(connectTimeoutRef.current);
+          if (disconnectTimerRef.current) clearTimeout(disconnectTimerRef.current);
           setCallState((prev) => {
             if (prev.status === "connected") return prev;
             startDurationTimer();
             return { ...prev, status: "connected" };
           });
         } else if (pc.iceConnectionState === "failed") {
-          toast({ title: "Call failed", description: "Could not establish a connection between the two devices.", variant: "destructive" });
-          doHangUp();
+          tryIceRestart();
+        } else if (pc.iceConnectionState === "disconnected") {
+          // Often transient — only act if it persists for a few seconds
+          if (disconnectTimerRef.current) clearTimeout(disconnectTimerRef.current);
+          disconnectTimerRef.current = setTimeout(() => {
+            const s = pc.iceConnectionState;
+            if (s === "disconnected" || s === "failed") tryIceRestart();
+          }, 5000);
         }
       };
 
       pc.onconnectionstatechange = () => {
         console.log("[Call] Connection state:", pc.connectionState);
         if (pc.connectionState === "failed") {
-          doHangUp();
+          tryIceRestart();
         }
       };
 
@@ -302,9 +369,10 @@ export function useWebRTC() {
 
       try {
         if (signal.type === "offer") {
-          // Only the first offer negotiates; a duplicate would re-negotiate
-          // mid-setup and can break media in one direction.
-          if (remoteDescSet.current) return;
+          // First offer negotiates the call. Later offers are accepted only
+          // as renegotiation (ICE restart) once the connection is stable —
+          // a duplicate mid-setup would break media in one direction.
+          if (remoteDescSet.current && pc.signalingState !== "stable") return;
           await pc.setRemoteDescription(new RTCSessionDescription((signal.payload as any).sdp));
           remoteDescSet.current = true;
           const answer = await pc.createAnswer();
@@ -327,6 +395,9 @@ export function useWebRTC() {
         } else if (signal.type === "ice-candidate") {
           const cand = (signal.payload as any).candidate;
           remoteCandCount.current++;
+          if (typeof cand?.candidate === "string" && cand.candidate.includes(" typ relay")) {
+            remoteRelayCount.current++;
+          }
           if (!remoteDescSet.current) {
             pendingCandidates.current.push(cand);
           } else {
@@ -505,7 +576,7 @@ export function useWebRTC() {
         duration: 0,
       });
 
-      const pc = setupPeerConnection(call.id);
+      const pc = setupPeerConnection(call.id, true);
 
       // Subscribe to signaling and WAIT until the channel is ready before sending offer
       await subscribeToSignaling(call.id);
@@ -567,7 +638,7 @@ export function useWebRTC() {
         return;
       }
 
-      const pc = setupPeerConnection(callId);
+      const pc = setupPeerConnection(callId, false);
 
       // Subscribe and wait until the realtime channel is actually ready
       await subscribeToSignaling(callId);
