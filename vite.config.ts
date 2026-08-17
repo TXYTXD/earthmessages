@@ -36,16 +36,15 @@ export default defineConfig(({ mode }) => ({
     },
     VitePWA({
       registerType: "autoUpdate",
-      // Ship a self-destroying service worker so previously-installed
-      // service workers unregister themselves and clear their caches.
-      // This flushes stale app bundles (e.g. ones pinned to an old server)
-      // from users' devices on their next visit.
-      selfDestroying: true,
+      // Custom minimal service worker (src/sw.js): call notifications with
+      // Accept/Decline actions, and nothing else. It has NO fetch handler,
+      // so it cannot cache anything or serve a stale app — the problem the
+      // old self-destroying worker was shipped to clean up.
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.js",
+      injectManifest: { injectionPoint: undefined },
       includeAssets: ["favicon.png", "favicon.ico"],
-      workbox: {
-        navigateFallbackDenylist: [/^\/~oauth/],
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
-      },
       manifest: {
         name: "UMS Messages",
         short_name: "UMSMsg",
