@@ -4,6 +4,7 @@ import { Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, Video, Clock } from "
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCall } from "@/contexts/CallContext";
+import { CallNetworkTest } from "@/components/call/CallNetworkTest";
 import { formatDistanceToNow } from "date-fns";
 
 interface CallRecord {
@@ -86,6 +87,7 @@ export default function CallsPage() {
   return (
     <div className="flex-1 p-6 max-w-2xl mx-auto overflow-y-auto">
       <h2 className="text-2xl font-bold mb-6">Calls</h2>
+      <CallNetworkTest />
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
