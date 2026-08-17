@@ -96,6 +96,15 @@ export function useWebRTC() {
   }, [callState]);
 
   const cleanup = useCallback(() => {
+    // Dismiss any call notification still showing for this call
+    const endedCallId = callStateRef.current.callId;
+    if (endedCallId && "serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .getRegistration()
+        .then((reg) => reg?.getNotifications({ tag: `call-${endedCallId}` }))
+        .then((ns) => ns?.forEach((n) => n.close()))
+        .catch(() => {});
+    }
     peerConnection.current?.close();
     peerConnection.current = null;
     localStream.current?.getTracks().forEach((t) => t.stop());
@@ -719,25 +728,70 @@ export function useWebRTC() {
         duration: 0,
       });
 
-      // Show browser notification if tab is not focused
+      // Show a call notification with Accept/Decline buttons when the tab
+      // is in the background (via the service worker — plain Notification
+      // can't have action buttons). Falls back to a simple notification.
       if (document.hidden && "Notification" in window && Notification.permission === "granted") {
-        try {
-          const notification = new Notification(`Incoming ${call.type} call`, {
-            body: `${remoteName} is calling you`,
-            tag: `call-${call.id}`,
-            requireInteraction: true,
-          });
-          notification.onclick = () => {
-            window.focus();
-            notification.close();
-          };
-        } catch (e) {
-          console.warn("[Call] Failed to show notification:", e);
+        let shown = false;
+        if ("serviceWorker" in navigator) {
+          try {
+            const reg = await navigator.serviceWorker.getRegistration();
+            if (reg) {
+              await reg.showNotification(`Incoming ${call.type} call`, {
+                body: `${remoteName} is calling you`,
+                tag: `call-${call.id}`,
+                requireInteraction: true,
+                data: { callId: call.id, callType: call.type },
+                actions: [
+                  { action: "accept", title: "✅ Accept" },
+                  { action: "decline", title: "❌ Decline" },
+                ],
+              } as NotificationOptions);
+              shown = true;
+            }
+          } catch (e) {
+            console.warn("[Call] SW notification failed:", e);
+          }
+        }
+        if (!shown) {
+          try {
+            const notification = new Notification(`Incoming ${call.type} call`, {
+              body: `${remoteName} is calling you`,
+              tag: `call-${call.id}`,
+              requireInteraction: true,
+            });
+            notification.onclick = () => {
+              window.focus();
+              notification.close();
+            };
+          } catch (e) {
+            console.warn("[Call] Failed to show notification:", e);
+          }
         }
       }
     },
     [user]
   );
+
+  // React to Accept/Decline pressed on a call notification (relayed by
+  // the service worker as a message).
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const onMessage = (event: MessageEvent) => {
+      const d = event.data;
+      if (!d || d.type !== "call-action") return;
+      const state = callStateRef.current;
+      if (!state.callId || d.callId !== state.callId || state.status !== "ringing") return;
+      if (d.action === "accept") {
+        answerCall(state.callId, state.type);
+      } else if (d.action === "decline") {
+        declineCall(state.callId);
+      }
+      // "open" (plain tap) just focuses the app — the ringing screen is there
+    };
+    navigator.serviceWorker.addEventListener("message", onMessage);
+    return () => navigator.serviceWorker.removeEventListener("message", onMessage);
+  }, [answerCall, declineCall]);
 
   // Request notification permission on mount
   useEffect(() => {
