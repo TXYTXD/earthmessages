@@ -31,6 +31,7 @@ import TermsPage from "@/pages/TermsPage";
 import NewsPage from "@/pages/NewsPage";
 import AIChatPage from "@/pages/AIChatPage";
 import CalendarPage from "@/pages/CalendarPage";
+import CommunitiesPage from "@/pages/CommunitiesPage";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +67,7 @@ function ProtectedLayout() {
             <Route path="/video" element={<VideoCallPage />} />
             <Route path="/calls" element={<CallsPage />} />
             <Route path="/ai" element={<AIChatPage />} />
+            <Route path="/communities" element={<CommunitiesPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/account" element={<AccountPage />} />
