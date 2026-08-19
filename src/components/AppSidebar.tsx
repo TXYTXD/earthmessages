@@ -1,10 +1,11 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { MessageCircle, Video, Phone, Settings, User, CircleDot, Bot, CalendarDays } from "lucide-react";
+import { MessageCircle, Video, Phone, Settings, User, CircleDot, Bot, CalendarDays, Globe2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { icon: MessageCircle, label: "Chats", path: "/" },
   { icon: CircleDot, label: "Stories", path: "/stories" },
+  { icon: Globe2, label: "Communities", path: "/communities" },
   { icon: Phone, label: "Calls", path: "/calls" },
   { icon: Video, label: "Video", path: "/video" },
   { icon: Bot, label: "AI Chat", path: "/ai" },
