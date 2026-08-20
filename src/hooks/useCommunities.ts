@@ -109,7 +109,7 @@ export function useCommunities() {
         toast.error("Could not join the community");
         return false;
       }
-      toast.success(`Welcome to ${community.name}! Find it in your Chats.`);
+      toast.success(`Welcome to ${community.name}! Tap Open to start chatting.`);
       await refresh();
       return true;
     },

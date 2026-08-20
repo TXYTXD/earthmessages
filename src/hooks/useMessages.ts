@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotificationSound } from "./useNotificationSound";
+import { toast } from "@/hooks/use-toast";
 import { encryptMessage, decryptMessage, getConversationKey, isEncrypted } from "@/lib/encryption";
 
 export interface Message {
@@ -358,7 +359,7 @@ export function useMessages(conversationId: string | null) {
       encryptedContent = await encryptMessage(content, encKey);
     }
 
-    await supabase.from("messages").insert({
+    const { error } = await supabase.from("messages").insert({
       conversation_id: conversationId,
       sender_id: user.id,
       content: encryptedContent,
@@ -367,6 +368,14 @@ export function useMessages(conversationId: string | null) {
       media_metadata: mediaMetadata || null,
       reply_to_id: replyToId || null,
     });
+    if (error) {
+      // Most common cause: muted in this community by its owner
+      toast({
+        title: "Message not sent",
+        description: "You may have been muted in this community.",
+        variant: "destructive",
+      });
+    }
 
     // Clear typing
     await supabase

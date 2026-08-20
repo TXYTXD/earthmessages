@@ -1,20 +1,22 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
-import { Globe2, Plus, Search, Users, LogOut, Trash2, MessageCircle, Crown } from "lucide-react";
+import { Globe2, Plus, Search, Users, LogOut, Trash2, MessageCircle, Crown, Shield } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useCommunities, type Community } from "@/hooks/useCommunities";
 import { useAuth } from "@/contexts/AuthContext";
+import { CommunityChat } from "@/components/chat/CommunityChat";
+import { ManageCommunityDialog } from "@/components/chat/ManageCommunityDialog";
 
 const EMOJI_CHOICES = ["🌍", "🎮", "⚽", "🎵", "🎬", "📚", "💻", "🍕", "🐾", "✈️", "🏋️", "🎨"];
 
 export default function CommunitiesPage() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const { communities, loading, createCommunity, joinCommunity, leaveCommunity, deleteCommunity } = useCommunities();
   const [query, setQuery] = useState("");
+  const [activeCommunity, setActiveCommunity] = useState<Community | null>(null);
+  const [manageCommunity, setManageCommunity] = useState<Community | null>(null);
 
   // Create dialog state
   const [showCreate, setShowCreate] = useState(false);
@@ -43,6 +45,15 @@ export default function CommunitiesPage() {
       setEmoji("🌍");
     }
   };
+
+  // Community chat opens inside this tab, not in Chats
+  if (activeCommunity) {
+    return (
+      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+        <CommunityChat community={activeCommunity} onBack={() => setActiveCommunity(null)} />
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col h-screen overflow-hidden">
@@ -99,12 +110,19 @@ export default function CommunitiesPage() {
                     deleteCommunity(c);
                   }
                 }}
-                onOpen={() => navigate("/")}
+                onOpen={() => setActiveCommunity(c)}
+                onManage={() => setManageCommunity(c)}
               />
             ))}
           </div>
         )}
       </div>
+
+      <ManageCommunityDialog
+        open={!!manageCommunity}
+        onClose={() => setManageCommunity(null)}
+        community={manageCommunity}
+      />
 
       {/* Create dialog */}
       <Dialog open={showCreate} onOpenChange={(o) => !o && setShowCreate(false)}>
@@ -157,7 +175,7 @@ export default function CommunitiesPage() {
 }
 
 function CommunityCard({
-  community, index, isOwner, onJoin, onLeave, onDelete, onOpen,
+  community, index, isOwner, onJoin, onLeave, onDelete, onOpen, onManage,
 }: {
   community: Community;
   index: number;
@@ -166,6 +184,7 @@ function CommunityCard({
   onLeave: () => void;
   onDelete: () => void;
   onOpen: () => void;
+  onManage: () => void;
 }) {
   return (
     <motion.div
@@ -197,9 +216,14 @@ function CommunityCard({
               <MessageCircle className="w-3.5 h-3.5" /> Open
             </Button>
             {isOwner ? (
-              <Button size="sm" variant="ghost" className="rounded-full gap-1.5 text-destructive hover:text-destructive" onClick={onDelete}>
-                <Trash2 className="w-3.5 h-3.5" /> Delete
-              </Button>
+              <>
+                <Button size="sm" variant="outline" className="rounded-full gap-1.5" onClick={onManage}>
+                  <Shield className="w-3.5 h-3.5" /> Manage
+                </Button>
+                <Button size="sm" variant="ghost" className="rounded-full gap-1.5 text-destructive hover:text-destructive" onClick={onDelete}>
+                  <Trash2 className="w-3.5 h-3.5" /> Delete
+                </Button>
+              </>
             ) : (
               <Button size="sm" variant="ghost" className="rounded-full gap-1.5 text-muted-foreground" onClick={onLeave}>
                 <LogOut className="w-3.5 h-3.5" /> Leave
