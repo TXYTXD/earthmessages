@@ -54,7 +54,18 @@ export function useConversations() {
       return [];
     }
 
-    const convIds = memberships.map((m) => m.conversation_id);
+    // Community chats live in the Communities tab, not in Chats
+    const { data: communityConvs } = await (supabase.from("communities") as any).select("conversation_id");
+    const communitySet = new Set((communityConvs || []).map((c: any) => c.conversation_id));
+    const relevant = memberships.filter((m) => !communitySet.has(m.conversation_id));
+
+    if (relevant.length === 0) {
+      setConversations([]);
+      setLoading(false);
+      return [];
+    }
+
+    const convIds = relevant.map((m) => m.conversation_id);
 
     // Fetch conversations
     const { data: convs } = await supabase
