@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Stethoscope, CheckCircle2, XCircle, Loader2 } from "lucide-react";
-import { ICE_SERVERS } from "@/hooks/useWebRTC";
+import { fetchIceServers } from "@/hooks/useWebRTC";
 
 interface TestResult {
   direct: boolean;
@@ -11,7 +11,8 @@ interface TestResult {
 // Probe the same ICE servers calls use and report which kinds of network
 // paths this device can obtain. "relay" is the one that matters for calls
 // between different networks — if it's missing, those calls cannot work.
-function probeNetwork(timeoutMs = 9000): Promise<TestResult> {
+async function probeNetwork(timeoutMs = 9000): Promise<TestResult> {
+  const iceServers = await fetchIceServers();
   return new Promise((resolve) => {
     const found: TestResult = { direct: false, internet: false, relay: false };
     let pc: RTCPeerConnection | null = null;
@@ -29,7 +30,7 @@ function probeNetwork(timeoutMs = 9000): Promise<TestResult> {
     };
     const timer = setTimeout(finish, timeoutMs);
     try {
-      pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+      pc = new RTCPeerConnection({ iceServers });
       pc.createDataChannel("probe");
       pc.onicecandidate = (e) => {
         if (!e.candidate) {
