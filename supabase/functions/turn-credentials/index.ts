@@ -31,6 +31,23 @@ serve(async (req) => {
       });
     }
 
+    // Option A: static TURN credentials from any provider (e.g. ExpressTURN).
+    // TURN_URLS is comma-separated, e.g. "turn:relay1.expressturn.com:3480"
+    const turnUrls = Deno.env.get("TURN_URLS");
+    const turnUsername = Deno.env.get("TURN_USERNAME");
+    const turnCredential = Deno.env.get("TURN_CREDENTIAL");
+    if (turnUrls && turnUsername && turnCredential) {
+      const iceServers = turnUrls.split(",").map((u) => ({
+        urls: u.trim(),
+        username: turnUsername,
+        credential: turnCredential,
+      }));
+      return new Response(JSON.stringify({ iceServers }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Option B: metered.ca API (fresh short-lived credentials)
     const apiKey = Deno.env.get("METERED_API_KEY");
     const domain = Deno.env.get("METERED_DOMAIN"); // e.g. umsmessages.metered.live
     if (!apiKey || !domain) {
