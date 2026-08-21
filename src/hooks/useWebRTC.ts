@@ -28,33 +28,8 @@ export const ICE_SERVERS: RTCIceServer[] = [
     username: "e8dd65b92c8bfc78d8de7f18",
     credential: "30YDVssHi/YUpxlY",
   },
-  // Open Relay public TURN — fallback in case the credentials above stop working
-  {
-    urls: "turn:openrelay.metered.ca:80",
-    username: "openrelayproject",
-    credential: "openrelayproject",
-  },
-  {
-    urls: "turn:openrelay.metered.ca:443",
-    username: "openrelayproject",
-    credential: "openrelayproject",
-  },
-  {
-    urls: "turn:openrelay.metered.ca:443?transport=tcp",
-    username: "openrelayproject",
-    credential: "openrelayproject",
-  },
-  // Alternative Open Relay host — sometimes up when the main one is down
-  {
-    urls: "turn:staticauth.openrelay.metered.ca:80",
-    username: "openrelayproject",
-    credential: "openrelayproject",
-  },
-  {
-    urls: "turn:staticauth.openrelay.metered.ca:443?transport=tcp",
-    username: "openrelayproject",
-    credential: "openrelayproject",
-  },
+  // NOTE: the Open Relay project (openrelay.metered.ca) shut down — its DNS
+  // no longer resolves, so its entries were removed (they only added delay).
   // freestun.net — public free relay with published credentials (no account)
   { urls: "stun:freestun.net:3478" },
   {
@@ -66,6 +41,27 @@ export const ICE_SERVERS: RTCIceServer[] = [
     urls: "turns:freestun.net:5350",
     username: "free",
     credential: "free",
+  },
+  // Last remaining historical public relays — long shots, but free
+  {
+    urls: "turn:relay.backups.cz",
+    username: "webrtc",
+    credential: "webrtc",
+  },
+  {
+    urls: "turn:relay.backups.cz?transport=tcp",
+    username: "webrtc",
+    credential: "webrtc",
+  },
+  {
+    urls: "turn:turn.anyfirewall.com:443?transport=tcp",
+    username: "webrtc",
+    credential: "webrtc",
+  },
+  {
+    urls: "turn:turn.bistri.com:80",
+    username: "homeo",
+    credential: "homeo",
   },
 ];
 
