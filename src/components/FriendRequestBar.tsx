@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, UserPlus, Check, X, Clock, Bell, Edit } from "lucide-react";
 import { useFriendRequests, type SearchedUser } from "@/hooks/useFriendRequests";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 export function FriendRequestBar() {
   const {
@@ -95,7 +96,7 @@ export function FriendRequestBar() {
                             {(user.display_name || "?").slice(0, 2).toUpperCase()}
                           </div>
                           <span className="text-[15px] font-medium text-foreground">
-                            {user.display_name || "Unknown"}
+                            <span className="inline-flex items-center gap-1">{user.display_name || "Unknown"}<VerifiedBadge verified={user.is_verified} /></span>
                           </span>
                         </div>
                         {sentIds.has(user.user_id) ? (
@@ -158,7 +159,7 @@ export function FriendRequestBar() {
                           {(req.sender_name || "?").slice(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <span className="text-[15px] font-medium text-foreground block">{req.sender_name}</span>
+                          <span className="text-[15px] font-medium text-foreground flex items-center gap-1">{req.sender_name}<VerifiedBadge verified={req.sender_verified} /></span>
                           <span className="text-[11px] text-muted-foreground">Wants to connect</span>
                         </div>
                       </div>

@@ -33,15 +33,17 @@ export function useStoryEngagement(storyId: string | null) {
 
     const userIds = [...new Set((rawComments || []).map((c) => c.user_id))];
     let nameMap = new Map<string, string>();
+    let verifiedMap = new Map<string, boolean>();
     if (userIds.length > 0) {
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id, display_name")
+        .select("user_id, display_name, is_verified")
         .in("user_id", userIds);
       nameMap = new Map(profiles?.map((p) => [p.user_id, p.display_name || "Unknown"]) || []);
+      verifiedMap = new Map(profiles?.map((p) => [p.user_id, (p as any).is_verified || false]) || []);
     }
     setComments(
-      (rawComments || []).map((c) => ({ ...c, user_name: nameMap.get(c.user_id) || "Unknown" }))
+      (rawComments || []).map((c) => ({ ...c, user_name: nameMap.get(c.user_id) || "Unknown", user_verified: verifiedMap.get(c.user_id) || false }))
     );
   }, [storyId, user]);
 

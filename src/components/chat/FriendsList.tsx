@@ -31,7 +31,7 @@ export function FriendsList({ onSelect }: FriendsListProps) {
               )}
             </div>
             <span className="text-[11px] text-muted-foreground truncate max-w-[56px]">
-              {friend.display_name?.split(" ")[0]}
+              {friend.display_name?.split(" ")[0]}{friend.verified ? " ✔" : ""}
             </span>
           </button>
         ))}

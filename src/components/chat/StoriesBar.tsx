@@ -3,6 +3,7 @@ import { Plus, Play } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStories, type StoryGroup } from "@/hooks/useStories";
 import { useAuth } from "@/contexts/AuthContext";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 export function StoriesBar() {
   const { user } = useAuth();
@@ -148,7 +149,7 @@ export function StoriesBar() {
               <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-[10px] font-semibold text-foreground">
                 {viewingGroup.user_avatar}
               </div>
-              <span className="text-white text-sm font-medium">{viewingGroup.user_name}</span>
+              <span className="text-white text-sm font-medium flex items-center gap-1">{viewingGroup.user_name}<VerifiedBadge verified={(viewingGroup as any).user_verified} className="w-3.5 h-3.5 text-white" /></span>
             </div>
 
             {/* Story content */}
