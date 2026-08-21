@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCall } from "@/contexts/CallContext";
 import { CallNetworkTest } from "@/components/call/CallNetworkTest";
 import { formatDistanceToNow } from "date-fns";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 interface CallRecord {
   id: string;
@@ -45,10 +46,11 @@ export default function CallsPage() {
       const userIds = [...new Set(data.flatMap((c: any) => [c.caller_id, c.receiver_id]))];
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id, display_name")
+        .select("user_id, display_name, is_verified")
         .in("user_id", userIds as string[]);
 
       const profileMap = new Map(profiles?.map((p) => [p.user_id, p.display_name]) || []);
+      const verifiedMap = new Map(profiles?.map((p) => [p.user_id, (p as any).is_verified || false]) || []);
 
       setCallHistory(
         data.map((call: any) => {
@@ -57,6 +59,7 @@ export default function CallsPage() {
           return {
             ...call,
             remote_name: remoteName,
+            remote_verified: verifiedMap.get(remoteId) || false,
             remote_avatar: (remoteName || "?").slice(0, 2).toUpperCase(),
           };
         })
@@ -123,7 +126,7 @@ export default function CallsPage() {
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-[15px]">{call.remote_name}</p>
+                  <p className="font-medium text-[15px] flex items-center gap-1">{call.remote_name}<VerifiedBadge verified={(call as any).remote_verified} /></p>
                   <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
                     {call.type === "video" && <Video className="w-3 h-3" />}
                     <span>{formatDistanceToNow(new Date(call.created_at), { addSuffix: true })}</span>

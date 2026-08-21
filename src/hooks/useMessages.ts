@@ -19,6 +19,7 @@ export interface Message {
   created_at: string;
   sender_name?: string;
   sender_avatar?: string;
+  sender_verified?: boolean;
   reactions: MessageReaction[];
   reply_to?: Message | null;
   is_encrypted?: boolean;
@@ -60,7 +61,7 @@ export function useMessages(conversationId: string | null) {
     const senderIds = [...new Set(msgs.map((m) => m.sender_id))];
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("user_id, display_name, avatar_url")
+      .select("user_id, display_name, avatar_url, is_verified")
       .in("user_id", senderIds);
 
     const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
@@ -122,6 +123,7 @@ export function useMessages(conversationId: string | null) {
           content: decryptedContent,
           sender_name: profile?.display_name || "Unknown",
           sender_avatar: (profile?.display_name || "?").slice(0, 2).toUpperCase(),
+          sender_verified: (profile as any)?.is_verified || false,
           reactions: reactionsByMsg.get(msg.id) || [],
           reply_to: replyTo,
           is_encrypted: isEncrypted(msg.content),
@@ -152,7 +154,7 @@ export function useMessages(conversationId: string | null) {
   const enrichMessage = useCallback(async (msg: any): Promise<Message> => {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("user_id, display_name, avatar_url")
+      .select("user_id, display_name, avatar_url, is_verified")
       .eq("user_id", msg.sender_id)
       .single();
 
@@ -166,7 +168,7 @@ export function useMessages(conversationId: string | null) {
       if (replyMsg) {
         const { data: replyProfile } = await supabase
           .from("profiles")
-          .select("user_id, display_name, avatar_url")
+          .select("user_id, display_name, avatar_url, is_verified")
           .eq("user_id", replyMsg.sender_id)
           .single();
 
@@ -197,6 +199,7 @@ export function useMessages(conversationId: string | null) {
       content: decryptedContent,
       sender_name: profile?.display_name || "Unknown",
       sender_avatar: (profile?.display_name || "?").slice(0, 2).toUpperCase(),
+      sender_verified: (profile as any)?.is_verified || false,
       reactions: [],
       reply_to: replyTo,
       is_encrypted: isEncrypted(msg.content),

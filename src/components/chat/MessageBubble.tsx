@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Globe, Reply, Smile, Pencil, Trash2, Lock, Forward, Star, Share2 } from "lucide-react";
 import { type Message } from "@/hooks/useMessages";
 import { VoicePlayer } from "./VoicePlayer";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 
@@ -96,7 +97,7 @@ export function MessageBubble({ message, onReact, onReply, onEdit, onDelete, onF
       <div className="max-w-[65%] relative">
         {/* Sender name for groups */}
         {!isMe && showAvatar && isGroup && (
-          <span className="text-[11px] text-muted-foreground ml-3 mb-0.5 block">{message.sender_name}</span>
+          <span className="text-[11px] text-muted-foreground ml-3 mb-0.5 flex items-center gap-1">{message.sender_name}<VerifiedBadge verified={message.sender_verified} className="w-3 h-3 text-primary" /></span>
         )}
 
         {/* Reply preview */}

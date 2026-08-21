@@ -8,6 +8,7 @@ export interface Friend {
   avatar_url: string | null;
   is_online: boolean;
   last_seen: string | null;
+  verified?: boolean;
 }
 
 export function useFriends() {
@@ -36,7 +37,7 @@ export function useFriends() {
 
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("user_id, display_name, avatar_url")
+      .select("user_id, display_name, avatar_url, is_verified")
       .in("user_id", friendIds);
 
     const { data: statuses } = await supabase
@@ -55,6 +56,7 @@ export function useFriends() {
           avatar_url: p.avatar_url,
           is_online: status?.is_online || false,
           last_seen: status?.last_seen || null,
+          verified: (p as any).is_verified || false,
         };
       })
     );

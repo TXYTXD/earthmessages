@@ -49,7 +49,7 @@ export function useStories() {
     const userIds = [...new Set(stories.map((s) => s.user_id))];
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("user_id, display_name, avatar_url")
+      .select("user_id, display_name, avatar_url, is_verified")
       .in("user_id", userIds);
 
     const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
@@ -78,6 +78,7 @@ export function useStories() {
         visibility: (s.visibility === "public" ? "public" : "private") as "private" | "public",
         media_url: signedUrls.get(s.id) || s.media_url,
         user_name: profile?.display_name || "Unknown",
+        user_verified: (profile as any)?.is_verified || false,
         user_avatar: (profile?.display_name || "?").slice(0, 2).toUpperCase(),
         viewed: viewedIds.has(s.id),
       };

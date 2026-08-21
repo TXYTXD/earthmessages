@@ -11,6 +11,7 @@ export interface FriendRequest {
   created_at: string;
   sender_name?: string;
   receiver_name?: string;
+  sender_verified?: boolean;
 }
 
 export interface SearchedUser {
@@ -18,6 +19,7 @@ export interface SearchedUser {
   user_id: string;
   display_name: string | null;
   avatar_url: string | null;
+  is_verified?: boolean;
 }
 
 export function useFriendRequests() {
@@ -49,12 +51,16 @@ export function useFriendRequests() {
       const senderIds = incoming.data.map((r) => r.sender_id);
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id, display_name")
+        .select("user_id, display_name, is_verified")
         .in("user_id", senderIds);
 
-      const nameMap = new Map(profiles?.map((p) => [p.user_id, p.display_name]) || []);
+      const profMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
       setIncomingRequests(
-        incoming.data.map((r) => ({ ...r, sender_name: nameMap.get(r.sender_id) || "Unknown" }))
+        incoming.data.map((r) => ({
+          ...r,
+          sender_name: profMap.get(r.sender_id)?.display_name || "Unknown",
+          sender_verified: (profMap.get(r.sender_id) as any)?.is_verified || false,
+        }))
       );
     }
 
@@ -102,7 +108,7 @@ export function useFriendRequests() {
     if (!user || query.trim().length < 2) return [];
     const { data } = await supabase
       .from("profiles")
-      .select("id, user_id, display_name, avatar_url")
+      .select("id, user_id, display_name, avatar_url, is_verified")
       .neq("user_id", user.id)
       .ilike("display_name", `%${query}%`)
       .limit(10);

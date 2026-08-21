@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 export default function StoriesPage() {
   const { user } = useAuth();
@@ -198,7 +199,7 @@ export default function StoriesPage() {
                     </div>
                   </div>
                   <div className="text-left">
-                    <p className="font-medium text-[15px]">{group.user_name}</p>
+                    <p className="font-medium text-[15px] flex items-center gap-1">{group.user_name}<VerifiedBadge verified={(group as any).user_verified} /></p>
                     <p className="text-[13px] text-muted-foreground">
                       {group.stories.length} {group.stories.length === 1 ? "story" : "stories"}
                       {group.all_viewed ? "" : " · New"}
@@ -315,7 +316,7 @@ export default function StoriesPage() {
               <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center text-[10px] font-semibold text-foreground flex-shrink-0">
                 {viewingGroup.user_avatar}
               </div>
-              <span className="text-white text-sm font-medium truncate">{viewingGroup.user_name}</span>
+              <span className="text-white text-sm font-medium truncate flex items-center gap-1">{viewingGroup.user_name}<VerifiedBadge verified={(viewingGroup as any).user_verified} className="w-3.5 h-3.5 text-white" /></span>
               {followStatus === "none" && (
                 <button
                   onClick={follow}
@@ -417,7 +418,7 @@ export default function StoriesPage() {
                             {c.user_name.slice(0, 2).toUpperCase()}
                           </div>
                           <div className="min-w-0">
-                            <p className="text-xs font-semibold">{c.user_name}</p>
+                            <p className="text-xs font-semibold flex items-center gap-1">{c.user_name}<VerifiedBadge verified={(c as any).user_verified} className="w-3 h-3 text-primary" /></p>
                             <p className="text-sm text-foreground break-words">{c.content}</p>
                           </div>
                         </div>

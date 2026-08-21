@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { useFriends } from "@/hooks/useFriends";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 interface NewChatDialogProps {
   open: boolean;
@@ -55,7 +56,7 @@ export function NewChatDialog({ open, onClose, onSelect }: NewChatDialogProps) {
                       )}
                     </div>
                     <div className="text-left">
-                      <span className="text-[15px] font-medium block">{friend.display_name}</span>
+                      <span className="text-[15px] font-medium flex items-center gap-1">{friend.display_name}<VerifiedBadge verified={friend.verified} /></span>
                       <span className="text-[11px] text-muted-foreground">
                         {friend.is_online ? "Active now" : "Offline"}
                       </span>

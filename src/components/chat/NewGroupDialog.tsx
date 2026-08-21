@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, Check, X } from "lucide-react";
 import { useFriends } from "@/hooks/useFriends";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 interface NewGroupDialogProps {
   open: boolean;
@@ -76,7 +77,7 @@ export function NewGroupDialog({ open, onClose, onCreate }: NewGroupDialogProps)
                     <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-xs font-semibold">
                       {(friend.display_name || "?").slice(0, 2).toUpperCase()}
                     </div>
-                    <span className="flex-1 text-left text-[15px]">{friend.display_name}</span>
+                    <span className="flex-1 text-left text-[15px] flex items-center gap-1">{friend.display_name}<VerifiedBadge verified={friend.verified} /></span>
                     {selectedIds.has(friend.user_id) && (
                       <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
                         <Check className="w-3 h-3 text-primary-foreground" />
