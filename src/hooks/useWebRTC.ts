@@ -55,6 +55,18 @@ export const ICE_SERVERS: RTCIceServer[] = [
     username: "openrelayproject",
     credential: "openrelayproject",
   },
+  // freestun.net — public free relay with published credentials (no account)
+  { urls: "stun:freestun.net:3478" },
+  {
+    urls: "turn:freestun.net:3478",
+    username: "free",
+    credential: "free",
+  },
+  {
+    urls: "turns:freestun.net:5350",
+    username: "free",
+    credential: "free",
+  },
 ];
 
 // Fetch fresh TURN relay credentials from the turn-credentials edge
