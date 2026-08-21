@@ -57,6 +57,31 @@ export const ICE_SERVERS: RTCIceServer[] = [
   },
 ];
 
+// Fetch fresh TURN relay credentials from the turn-credentials edge
+// function (metered.ca). Falls back to the static list above when not
+// configured or unreachable. STUN entries are kept either way.
+export async function fetchIceServers(): Promise<RTCIceServer[]> {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return ICE_SERVERS;
+    const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/turn-credentials`, {
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      },
+    });
+    if (!resp.ok) return ICE_SERVERS;
+    const data = await resp.json();
+    if (Array.isArray(data?.iceServers) && data.iceServers.length > 0) {
+      const stun = ICE_SERVERS.filter((s) => String(s.urls).startsWith("stun:"));
+      return [...stun, ...data.iceServers];
+    }
+    return ICE_SERVERS;
+  } catch {
+    return ICE_SERVERS;
+  }
+}
+
 export interface CallState {
   callId: string | null;
   status: "idle" | "calling" | "connecting" | "ringing" | "connected" | "ended";
@@ -220,8 +245,8 @@ export function useWebRTC() {
   );
 
   const setupPeerConnection = useCallback(
-    (callId: string, isCaller: boolean) => {
-      const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS, iceCandidatePoolSize: 4 });
+    (callId: string, isCaller: boolean, iceServers: RTCIceServer[]) => {
+      const pc = new RTCPeerConnection({ iceServers, iceCandidatePoolSize: 4 });
       peerConnection.current = pc;
       remoteDescSet.current = false;
       pendingCandidates.current = [];
@@ -587,7 +612,8 @@ export function useWebRTC() {
         duration: 0,
       });
 
-      const pc = setupPeerConnection(call.id, true);
+      const iceServers = await fetchIceServers();
+      const pc = setupPeerConnection(call.id, true, iceServers);
 
       // Subscribe to signaling and WAIT until the channel is ready before sending offer
       await subscribeToSignaling(call.id);
@@ -649,7 +675,8 @@ export function useWebRTC() {
         return;
       }
 
-      const pc = setupPeerConnection(callId, false);
+      const iceServers = await fetchIceServers();
+      const pc = setupPeerConnection(callId, false, iceServers);
 
       // Subscribe and wait until the realtime channel is actually ready
       await subscribeToSignaling(callId);
