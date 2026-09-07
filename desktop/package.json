@@ -1,14 +1,15 @@
 {
   "name": "ums-messages-desktop",
   "productName": "UMS Messages",
-  "version": "1.1.4",
-  "description": "UMS Messages \u2014 private, secure messaging for Windows",
+  "version": "1.2.0",
+  "description": "UMS Messages — private, secure messaging for Windows and Linux",
   "main": "main.js",
   "author": "TXYTXD",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --win"
+    "dist": "electron-builder --win",
+    "dist:linux": "electron-builder --linux"
   },
   "devDependencies": {
     "electron": "^31.3.0",
@@ -38,6 +39,50 @@
     },
     "portable": {
       "artifactName": "UMS-Messages-Portable.exe"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb",
+        "rpm"
+      ],
+      "category": "Network",
+      "icon": "icon.png",
+      "artifactName": "UMS-Messages.${ext}",
+      "maintainer": "TXYTXD <noreply@umsmessages.net>",
+      "synopsis": "Private, secure messaging",
+      "description": "UMS Messages — chats, stories, communities, voice messages and video calls.",
+      "desktop": {
+        "Name": "UMS Messages",
+        "Comment": "Private, secure messaging",
+        "Categories": "Network;InstantMessaging;",
+        "StartupWMClass": "UMS Messages"
+      }
+    },
+    "deb": {
+      "depends": [
+        "libgtk-3-0",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0",
+        "libuuid1",
+        "libsecret-1-0"
+      ]
+    },
+    "rpm": {
+      "depends": [
+        "gtk3",
+        "libnotify",
+        "nss",
+        "libXScrnSaver",
+        "libXtst",
+        "xdg-utils",
+        "at-spi2-core",
+        "libsecret"
+      ]
     }
   }
 }

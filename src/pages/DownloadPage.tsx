@@ -1,9 +1,12 @@
-import { Download, Monitor, Smartphone, ArrowLeft, MessageCircle, ShieldCheck } from "lucide-react";
+import { Download, Monitor, Smartphone, ArrowLeft, MessageCircle, ShieldCheck, Terminal } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 const SETUP_URL = "/downloads/UMS-Messages-Setup.exe";
+const LINUX_APPIMAGE_URL = "https://github.com/TXYTXD/earthmessages/releases/download/desktop-latest/UMS-Messages.AppImage";
+const LINUX_DEB_URL = "/downloads/UMS-Messages.deb";
+const LINUX_RPM_URL = "/downloads/UMS-Messages.rpm";
 const PORTABLE_URL = "/downloads/UMS-Messages-Portable.exe";
 
 export default function DownloadPage() {
@@ -65,6 +68,50 @@ export default function DownloadPage() {
                   <ShieldCheck className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
                   If Windows shows a SmartScreen warning, click "More info" then "Run anyway".
                 </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Linux */}
+          <div className="rounded-2xl border border-border p-6 mb-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Terminal className="w-6 h-6 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-semibold">Linux</h2>
+                <p className="text-sm text-muted-foreground mt-1 mb-4">
+                  The same desktop app for every distro. Pick the package that matches
+                  yours — AppImage works everywhere without installing.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <Button asChild className="rounded-full gap-2">
+                    <a href={LINUX_APPIMAGE_URL}>
+                      <Download className="w-4 h-4" /> AppImage (any distro)
+                    </a>
+                  </Button>
+                  <Button asChild variant="outline" className="rounded-full gap-2">
+                    <a href={LINUX_DEB_URL}>
+                      <Download className="w-4 h-4" /> .deb — Ubuntu / Debian / Mint
+                    </a>
+                  </Button>
+                  <Button asChild variant="outline" className="rounded-full gap-2">
+                    <a href={LINUX_RPM_URL}>
+                      <Download className="w-4 h-4" /> .rpm — Fedora / openSUSE
+                    </a>
+                  </Button>
+                </div>
+                <div className="text-[12px] text-muted-foreground mt-3 space-y-1">
+                  <p className="flex items-start gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                    AppImage: right-click → Properties → allow executing, then double-click.
+                    Or in a terminal: <code className="px-1 rounded bg-muted">chmod +x UMS-Messages.AppImage && ./UMS-Messages.AppImage</code>
+                  </p>
+                  <p className="pl-5">
+                    .deb: <code className="px-1 rounded bg-muted">sudo apt install ./UMS-Messages.deb</code> ·
+                    .rpm: <code className="px-1 rounded bg-muted">sudo dnf install ./UMS-Messages.rpm</code>
+                  </p>
+                </div>
               </div>
             </div>
           </div>

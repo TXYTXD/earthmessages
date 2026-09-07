@@ -1,0 +1,106 @@
+name: Build desktop apps
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "desktop/**"
+      - ".github/workflows/build-desktop.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-desktop
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        working-directory: desktop
+        run: npm install
+      - name: Build Windows installers
+        working-directory: desktop
+        run: npx electron-builder --win --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: desktop/dist/*.exe
+          if-no-files-found: error
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install packaging tools
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq rpm
+      - name: Install dependencies
+        working-directory: desktop
+        run: npm install
+      - name: Build Linux packages (AppImage, deb, rpm)
+        working-directory: desktop
+        run: npx electron-builder --linux --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: |
+            desktop/dist/*.AppImage
+            desktop/dist/*.deb
+            desktop/dist/*.rpm
+          if-no-files-found: error
+
+  publish:
+    needs: [windows, linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+      - name: Show build outputs
+        run: ls -la out/windows out/linux
+
+      - name: Publish GitHub release (all platforms)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./desktop/package.json').version")
+          gh release delete desktop-latest -y --cleanup-tag || true
+          gh release create desktop-latest out/windows/*.exe out/linux/*.AppImage out/linux/*.deb out/linux/*.rpm \
+            -t "UMS Messages desktop v$VERSION" \
+            -n "UMS Messages for Windows (Setup / Portable) and Linux (AppImage for any distro, .deb for Ubuntu/Debian, .rpm for Fedora/openSUSE)."
+
+      - name: Publish downloads to the website
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          mkdir -p public/downloads
+          cp out/windows/UMS-Messages-Setup.exe out/windows/UMS-Messages-Portable.exe public/downloads/
+          # GitHub refuses files over 100 MB in git; anything bigger stays on
+          # the GitHub release only (the download page links there for those).
+          for f in out/linux/UMS-Messages.deb out/linux/UMS-Messages.rpm out/linux/UMS-Messages.AppImage; do
+            size=$(stat -c%s "$f")
+            if [ "$size" -lt 99000000 ]; then cp "$f" public/downloads/; else echo "skip $(basename "$f") ($size bytes) — release only"; fi
+          done
+          # Bump the update manifest to the version that was actually built,
+          # so the mandatory-update gate only fires once the files are live.
+          VERSION=$(node -p "require('./desktop/package.json').version")
+          node -e "
+            const fs=require('fs');const p='public/desktop-version.json';
+            const j=JSON.parse(fs.readFileSync(p,'utf8'));j.version='$VERSION';
+            fs.writeFileSync(p,JSON.stringify(j,null,2)+'\n');"
+          ls -la public/downloads
+          git add public/downloads public/desktop-version.json
+          git commit -m "Publish desktop build v$VERSION to website downloads" || exit 0
+          git pull --rebase origin main
+          git push origin HEAD:main
