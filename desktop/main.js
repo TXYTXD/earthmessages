@@ -107,8 +107,22 @@ function looksLikeExe(file) {
   }
 }
 
+// Linux AppImage/ELF check (first bytes 0x7f 'E' 'L' 'F')
+function looksLikeElf(file) {
+  try {
+    const fd = fs.openSync(file, "r");
+    const buf = Buffer.alloc(4);
+    fs.readSync(fd, buf, 0, 4, 0);
+    fs.closeSync(fd);
+    return buf[0] === 0x7f && buf.toString("ascii", 1, 4) === "ELF";
+  } catch {
+    return false;
+  }
+}
+
 async function runRequiredUpdate(info) {
   const isPortable = !!process.env.PORTABLE_EXECUTABLE_FILE || !!process.env.PORTABLE_EXECUTABLE_DIR;
+  const isLinux = process.platform === "linux";
 
   const choice = dialog.showMessageBoxSync({
     type: "info",
@@ -127,7 +141,43 @@ async function runRequiredUpdate(info) {
 
   const dlWin = showDownloadingWindow();
   try {
-    if (isPortable && process.env.PORTABLE_EXECUTABLE_FILE) {
+    if (isLinux && process.env.APPIMAGE && info.appImageUrl) {
+      // AppImage self-update: download the new AppImage, then a tiny shell
+      // script swaps it into place once this process exits and relaunches.
+      const selfPath = process.env.APPIMAGE;
+      const newFile = path.join(app.getPath("temp"), "UMS-Messages-new.AppImage");
+      await downloadWithProgress(info.appImageUrl, newFile, dlWin);
+      if (!looksLikeElf(newFile)) throw new Error("Downloaded file is not a valid AppImage");
+      fs.chmodSync(newFile, 0o755);
+      const sh = path.join(app.getPath("temp"), "ums-appimage-update.sh");
+      fs.writeFileSync(
+        sh,
+        [
+          "#!/bin/sh",
+          "sleep 1",
+          `while ! mv -f "${newFile}" "${selfPath}" 2>/dev/null; do sleep 1; done`,
+          `chmod +x "${selfPath}"`,
+          `"${selfPath}" >/dev/null 2>&1 &`,
+          'rm -f "$0"',
+          "",
+        ].join("\n")
+      );
+      fs.chmodSync(sh, 0o755);
+      spawn("/bin/sh", [sh], { detached: true, stdio: "ignore" }).unref();
+      await new Promise((r) => setTimeout(r, 500));
+    } else if (isLinux) {
+      // .deb / .rpm installs update through the package: open the downloads
+      // page so the user grabs the new package for their distro.
+      if (!dlWin.isDestroyed()) dlWin.destroy();
+      dialog.showMessageBoxSync({
+        type: "info",
+        title: "Update required",
+        message: "Download the new package for your Linux distro.",
+        detail: "Your browser will open the downloads page. Install the new .deb or .rpm, then start UMS Messages again.",
+        buttons: ["Open downloads"],
+      });
+      shell.openExternal(info.linuxPage || info.page || info.url);
+    } else if (isPortable && process.env.PORTABLE_EXECUTABLE_FILE) {
       // Portable self-update: download the new portable exe, then hand off to
       // a small script that waits for this app to exit, swaps the file in
       // place, and relaunches it.
