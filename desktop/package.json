@@ -3,6 +3,7 @@
   "productName": "UMS Messages",
   "version": "1.2.0",
   "description": "UMS Messages — private, secure messaging for Windows and Linux",
+  "homepage": "https://umsmessages.net",
   "main": "main.js",
   "author": "TXYTXD",
   "license": "MIT",
