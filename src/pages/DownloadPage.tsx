@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 const SETUP_URL = "/downloads/UMS-Messages-Setup.exe";
-const LINUX_APPIMAGE_URL = "https://github.com/TXYTXD/earthmessages/releases/download/desktop-latest/UMS-Messages.AppImage";
+const LINUX_APPIMAGE_URL = "/downloads/UMS-Messages.AppImage";
 const LINUX_DEB_URL = "/downloads/UMS-Messages.deb";
 const LINUX_RPM_URL = "/downloads/UMS-Messages.rpm";
 const PORTABLE_URL = "/downloads/UMS-Messages-Portable.exe";

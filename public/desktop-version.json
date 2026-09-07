@@ -3,7 +3,7 @@
   "url": "https://umsmessages.net/downloads/UMS-Messages-Setup.exe",
   "page": "https://umsmessages.net/download",
   "portableUrl": "https://umsmessages.net/downloads/UMS-Messages-Portable.exe",
-  "appImageUrl": "https://github.com/TXYTXD/earthmessages/releases/download/desktop-latest/UMS-Messages.AppImage",
+  "appImageUrl": "https://umsmessages.net/downloads/UMS-Messages.AppImage",
   "debUrl": "https://umsmessages.net/downloads/UMS-Messages.deb",
   "rpmUrl": "https://umsmessages.net/downloads/UMS-Messages.rpm",
   "linuxPage": "https://umsmessages.net/download"
