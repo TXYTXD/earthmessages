@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Stethoscope, CheckCircle2, XCircle, Loader2 } from "lucide-react";
-import { fetchIceServers } from "@/hooks/useWebRTC";
+import { fetchIceServers, iceDiagnostics } from "@/hooks/useWebRTC";
 
 interface TestResult {
   direct: boolean;
@@ -127,6 +127,12 @@ export function CallNetworkTest() {
               both people are on the same WiFi. Show this result to support.
             </p>
           )}
+          <div className="text-[11px] text-muted-foreground rounded-lg bg-muted/60 px-3 py-2 space-y-0.5 break-words">
+            <p>Relay source: {iceDiagnostics.source}</p>
+            {iceDiagnostics.notes.map((n, i) => (
+              <p key={i}>{n}</p>
+            ))}
+          </div>
           {result.relay && (
             <p className="text-[12px] text-success bg-success/10 rounded-lg px-3 py-2">
               All paths available — calls should work from this device. Ask the other person

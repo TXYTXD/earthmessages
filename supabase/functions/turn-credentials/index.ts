@@ -10,8 +10,17 @@ const corsHeaders = {
 // metered.ca — whichever secrets are set) so calls can connect between
 // different networks. The API key stays server-side —
 // the client only ever sees short-lived credentials.
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  // Human-readable notes about what went wrong (never includes secrets) —
+  // shown on the Calls → Test card so problems can be diagnosed.
+  const notes: string[] = [];
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -43,9 +52,7 @@ serve(async (req) => {
         username: turnUsername,
         credential: turnCredential,
       }));
-      return new Response(JSON.stringify({ iceServers }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json({ iceServers, source: "static" });
     }
 
     // Option B: Twilio Network Traversal Service (short-lived credentials).
@@ -70,11 +77,13 @@ serve(async (req) => {
           urls: s.urls ?? s.url,
           ...(s.username ? { username: s.username, credential: s.credential } : {}),
         }));
-        return new Response(JSON.stringify({ iceServers }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return json({ iceServers, source: "twilio" });
       }
-      console.error("twilio error:", resp.status, await resp.text());
+      const text = await resp.text();
+      console.error("twilio error:", resp.status, text);
+      notes.push(`Twilio rejected the request (HTTP ${resp.status}): ${text.slice(0, 200)}`);
+    } else if (twilioSid || twilioToken) {
+      notes.push("Twilio: only one of TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN is set");
     }
 
     // Option C: Cloudflare Realtime TURN (short-lived credentials).
@@ -92,11 +101,11 @@ serve(async (req) => {
       if (resp.ok) {
         const data = await resp.json();
         const list = Array.isArray(data.iceServers) ? data.iceServers : [data.iceServers];
-        return new Response(JSON.stringify({ iceServers: list }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return json({ iceServers: list, source: "cloudflare" });
       }
-      console.error("cloudflare turn error:", resp.status, await resp.text());
+      const text = await resp.text();
+      console.error("cloudflare turn error:", resp.status, text);
+      notes.push(`Cloudflare rejected the request (HTTP ${resp.status}): ${text.slice(0, 200)}`);
     }
 
     // Option D: metered.ca API (fresh short-lived credentials)
@@ -104,29 +113,24 @@ serve(async (req) => {
     const domain = Deno.env.get("METERED_DOMAIN"); // e.g. umsmessages.metered.live
     if (!apiKey || !domain) {
       // Not configured yet — the app falls back to its built-in server list
-      return new Response(JSON.stringify({ iceServers: null }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      if (notes.length === 0) notes.push("No relay provider secrets are set in Supabase");
+      return json({ iceServers: null, source: "none", notes });
     }
 
     const resp = await fetch(
       `https://${domain}/api/v1/turn/credentials?apiKey=${encodeURIComponent(apiKey)}`
     );
     if (!resp.ok) {
-      console.error("metered.ca error:", resp.status, await resp.text());
-      return new Response(JSON.stringify({ iceServers: null }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      const text = await resp.text();
+      console.error("metered.ca error:", resp.status, text);
+      notes.push(`metered.ca rejected the request (HTTP ${resp.status}): ${text.slice(0, 200)}`);
+      return json({ iceServers: null, source: "none", notes });
     }
     const iceServers = await resp.json();
-
-    return new Response(JSON.stringify({ iceServers }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json({ iceServers, source: "metered" });
   } catch (e) {
     console.error("turn-credentials error:", e);
-    return new Response(JSON.stringify({ iceServers: null }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    notes.push(`Function error: ${String(e).slice(0, 200)}`);
+    return json({ iceServers: null, source: "none", notes });
   }
 });
