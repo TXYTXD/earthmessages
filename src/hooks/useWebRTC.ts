@@ -109,6 +109,55 @@ export async function fetchIceServers(): Promise<RTCIceServer[]> {
   }
 }
 
+// ---- Camera framing -------------------------------------------------------
+// Front cameras on iPads (and some phones) are ultra-wide, so a raw WebRTC
+// feed looks "zoomed out" compared to FaceTime, which crops in. We ask for
+// a proper HD frame and apply a hardware/digital zoom where the browser
+// supports the `zoom` constraint. The chosen level is remembered.
+const ZOOM_KEY = "ums-camera-zoom";
+export const ZOOM_STEPS = [1, 1.5, 2, 2.5];
+
+function isIPadLike(): boolean {
+  const ua = navigator.userAgent;
+  return /iPad/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+function defaultZoom(): number {
+  try {
+    const v = parseFloat(localStorage.getItem(ZOOM_KEY) || "");
+    if (v >= 1) return v;
+  } catch {
+    /* ignore */
+  }
+  return isIPadLike() ? 2 : 1;
+}
+
+function videoConstraints(facing: "user" | "environment", exact = false): MediaTrackConstraints {
+  return {
+    facingMode: exact ? { exact: facing } : facing,
+    width: { ideal: 1280 },
+    height: { ideal: 720 },
+  };
+}
+
+// Returns true when the track supports zoom (and the level was applied).
+async function applyTrackZoom(track: MediaStreamTrack, factor: number): Promise<boolean> {
+  const caps = (track.getCapabilities?.() ?? {}) as MediaTrackCapabilities & {
+    zoom?: { min?: number; max?: number };
+  };
+  if (!caps.zoom) return false;
+  const min = caps.zoom.min ?? 1;
+  const max = caps.zoom.max ?? min;
+  const value = Math.min(max, Math.max(min, min * factor));
+  try {
+    await track.applyConstraints({ advanced: [{ zoom: value } as MediaTrackConstraintSet] });
+    return true;
+  } catch (e) {
+    console.warn("[Call] zoom not applied:", e);
+    return false;
+  }
+}
+
 export interface CallState {
   callId: string | null;
   status: "idle" | "calling" | "connecting" | "ringing" | "connected" | "ended";
@@ -156,6 +205,38 @@ export function useWebRTC() {
 
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
+  const [cameraZoom, setCameraZoomState] = useState<number>(defaultZoom);
+  const [zoomSupported, setZoomSupported] = useState(false);
+  const cameraZoomRef = useRef<number>(cameraZoom);
+
+  // Apply the remembered zoom to a freshly obtained camera track
+  const prepareVideoTrack = useCallback(async (stream: MediaStream | null) => {
+    const track = stream?.getVideoTracks()[0];
+    if (!track) {
+      setZoomSupported(false);
+      return;
+    }
+    const ok = await applyTrackZoom(track, cameraZoomRef.current);
+    setZoomSupported(ok);
+  }, []);
+
+  const setCameraZoom = useCallback(async (factor: number) => {
+    cameraZoomRef.current = factor;
+    setCameraZoomState(factor);
+    try {
+      localStorage.setItem(ZOOM_KEY, String(factor));
+    } catch {
+      /* ignore */
+    }
+    const track = localStream.current?.getVideoTracks()[0];
+    if (track) setZoomSupported(await applyTrackZoom(track, factor));
+  }, []);
+
+  const cycleZoom = useCallback(() => {
+    const i = ZOOM_STEPS.indexOf(cameraZoomRef.current);
+    const next = ZOOM_STEPS[(i + 1) % ZOOM_STEPS.length];
+    void setCameraZoom(next);
+  }, [setCameraZoom]);
 
   // Keep ref in sync so callbacks always have latest state
   useEffect(() => {
@@ -193,6 +274,7 @@ export function useWebRTC() {
     }
     startingCall.current = false;
     facingModeRef.current = "user";
+    setZoomSupported(false);
     setCallState({
       callId: null,
       status: "idle",
@@ -591,11 +673,12 @@ export function useWebRTC() {
       try {
         localStream.current = await navigator.mediaDevices.getUserMedia({
           audio: true,
-          video: type === "video",
+          video: type === "video" ? videoConstraints("user") : false,
         });
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = localStream.current;
         }
+        void prepareVideoTrack(localStream.current);
       } catch (err) {
         console.error("[Call] Failed to get media devices:", err);
         toast({ title: "Media access denied", description: "Please allow microphone/camera access to make calls", variant: "destructive" });
@@ -667,11 +750,12 @@ export function useWebRTC() {
       try {
         localStream.current = await navigator.mediaDevices.getUserMedia({
           audio: true,
-          video: type === "video",
+          video: type === "video" ? videoConstraints("user") : false,
         });
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = localStream.current;
         }
+        void prepareVideoTrack(localStream.current);
       } catch (err) {
         console.error("[Call] Failed to get media devices while answering:", err);
         toast({ title: "Media access denied", description: "Please allow microphone/camera access to answer calls", variant: "destructive" });
@@ -783,9 +867,9 @@ export function useWebRTC() {
     let newStream: MediaStream;
     try {
       try {
-        newStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: next } } });
+        newStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints(next, true) });
       } catch {
-        newStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: next } });
+        newStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints(next) });
       }
     } catch (e) {
       console.warn("[Call] Could not switch camera:", e);
@@ -796,6 +880,7 @@ export function useWebRTC() {
     const newTrack = newStream.getVideoTracks()[0];
     if (!newTrack) return;
     newTrack.enabled = !isVideoOff;
+    setZoomSupported(await applyTrackZoom(newTrack, cameraZoomRef.current));
 
     const sender = pc?.getSenders().find((s) => s.track?.kind === "video");
     if (sender) {
@@ -1027,5 +1112,8 @@ export function useWebRTC() {
     toggleMute,
     toggleVideo,
     switchCamera,
+    cameraZoom,
+    zoomSupported,
+    cycleZoom,
   };
 }
