@@ -21,6 +21,7 @@ interface CallContextType {
   cameraZoom: number;
   zoomSupported: boolean;
   cycleZoom: () => void;
+  isFrontCamera: boolean;
 }
 
 const CallContext = createContext<CallContextType | null>(null);

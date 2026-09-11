@@ -101,7 +101,7 @@ export function ActiveCallOverlay() {
   const {
     callState, hangUp, toggleMute, toggleVideo, switchCamera, isMuted, isVideoOff,
     localVideoRef, remoteVideoRef, remoteAudioRef, localStream, remoteStream,
-    cameraZoom, zoomSupported, cycleZoom,
+    cameraZoom, zoomSupported, cycleZoom, isFrontCamera,
   } = useCall();
   const [speakerOff, setSpeakerOff] = useState(false);
 
@@ -204,6 +204,9 @@ export function ActiveCallOverlay() {
               playsInline
               muted
               className={`w-full h-full object-cover ${isVideoOff ? "opacity-0" : ""}`}
+              // Mirror the self-view for the front camera so it behaves like a
+              // mirror (the other person still sees you un-mirrored).
+              style={isFrontCamera ? { transform: "scaleX(-1)" } : undefined}
             />
             {isVideoOff && (
               <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/30 to-secondary">
