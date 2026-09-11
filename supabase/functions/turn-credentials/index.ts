@@ -6,8 +6,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Returns fresh TURN relay credentials from metered.ca so calls can
-// connect between different networks. The API key stays server-side —
+// Returns fresh TURN relay credentials (static, Twilio, Cloudflare or
+// metered.ca — whichever secrets are set) so calls can connect between
+// different networks. The API key stays server-side —
 // the client only ever sees short-lived credentials.
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -47,7 +48,58 @@ serve(async (req) => {
       });
     }
 
-    // Option B: metered.ca API (fresh short-lived credentials)
+    // Option B: Twilio Network Traversal Service (short-lived credentials).
+    // Both values are shown on the Twilio Console home page.
+    const twilioSid = Deno.env.get("TWILIO_ACCOUNT_SID");
+    const twilioToken = Deno.env.get("TWILIO_AUTH_TOKEN");
+    if (twilioSid && twilioToken) {
+      const resp = await fetch(
+        `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(twilioSid)}/Tokens.json`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: "Basic " + btoa(`${twilioSid}:${twilioToken}`),
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: "Ttl=3600",
+        }
+      );
+      if (resp.ok) {
+        const data = await resp.json();
+        const iceServers = (data.ice_servers ?? []).map((s: any) => ({
+          urls: s.urls ?? s.url,
+          ...(s.username ? { username: s.username, credential: s.credential } : {}),
+        }));
+        return new Response(JSON.stringify({ iceServers }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      console.error("twilio error:", resp.status, await resp.text());
+    }
+
+    // Option C: Cloudflare Realtime TURN (short-lived credentials).
+    const cfKeyId = Deno.env.get("CLOUDFLARE_TURN_KEY_ID");
+    const cfApiToken = Deno.env.get("CLOUDFLARE_TURN_API_TOKEN");
+    if (cfKeyId && cfApiToken) {
+      const resp = await fetch(
+        `https://rtc.live.cloudflare.com/v1/turn/keys/${encodeURIComponent(cfKeyId)}/credentials/generate-ice-servers`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${cfApiToken}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ ttl: 3600 }),
+        }
+      );
+      if (resp.ok) {
+        const data = await resp.json();
+        const list = Array.isArray(data.iceServers) ? data.iceServers : [data.iceServers];
+        return new Response(JSON.stringify({ iceServers: list }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      console.error("cloudflare turn error:", resp.status, await resp.text());
+    }
+
+    // Option D: metered.ca API (fresh short-lived credentials)
     const apiKey = Deno.env.get("METERED_API_KEY");
     const domain = Deno.env.get("METERED_DOMAIN"); // e.g. umsmessages.metered.live
     if (!apiKey || !domain) {
