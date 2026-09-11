@@ -10,7 +10,7 @@ import {
   Pencil,
   X,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { AITypingEffect, AIThinkingIndicator } from "@/components/chat/AITypingEffect";
@@ -19,7 +19,7 @@ import { useAIChats, type AIMsg, type AIChat } from "@/hooks/useAIChats";
 
 type Msg = AIMsg;
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
+const CHAT_URL = `${SUPABASE_URL}/functions/v1/ai-chat`;
 
 async function streamChat({
   messages,
@@ -39,7 +39,7 @@ async function streamChat({
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${session.access_token}`,
-      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      apikey: SUPABASE_PUBLISHABLE_KEY,
     },
     body: JSON.stringify({ messages }),
   });

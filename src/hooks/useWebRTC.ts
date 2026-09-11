@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 
@@ -82,10 +82,10 @@ export async function fetchIceServers(): Promise<RTCIceServer[]> {
       iceDiagnostics.source = "built-in list (not signed in)";
       return ICE_SERVERS;
     }
-    const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/turn-credentials`, {
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/turn-credentials`, {
       headers: {
         Authorization: `Bearer ${session.access_token}`,
-        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        apikey: SUPABASE_PUBLISHABLE_KEY,
       },
     });
     if (!resp.ok) {

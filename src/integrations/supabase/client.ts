@@ -5,8 +5,8 @@ import type { Database } from './types';
 // Hardcoded to the "earth" project (wamprxszh) so the deployed app always
 // connects to this Supabase project, regardless of any host environment
 // variables that might otherwise override it. These are public keys.
-const SUPABASE_URL = "https://wamprxswumzvianzbhxh.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_pak3BE32-molooT_8ABuUQ_MqSxwpUi";
+export const SUPABASE_URL = "https://wamprxswumzvianzbhxh.supabase.co";
+export const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_pak3BE32-molooT_8ABuUQ_MqSxwpUi";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
