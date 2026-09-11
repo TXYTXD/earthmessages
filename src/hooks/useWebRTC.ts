@@ -68,24 +68,43 @@ export const ICE_SERVERS: RTCIceServer[] = [
 // Fetch fresh TURN relay credentials from the turn-credentials edge
 // function (metered.ca). Falls back to the static list above when not
 // configured or unreachable. STUN entries are kept either way.
+// Diagnostics from the last fetchIceServers() call, shown on Calls → Test.
+export const iceDiagnostics: { source: string; notes: string[] } = {
+  source: "not checked",
+  notes: [],
+};
+
 export async function fetchIceServers(): Promise<RTCIceServer[]> {
+  iceDiagnostics.notes = [];
   try {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) return ICE_SERVERS;
+    if (!session?.access_token) {
+      iceDiagnostics.source = "built-in list (not signed in)";
+      return ICE_SERVERS;
+    }
     const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/turn-credentials`, {
       headers: {
         Authorization: `Bearer ${session.access_token}`,
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
       },
     });
-    if (!resp.ok) return ICE_SERVERS;
+    if (!resp.ok) {
+      iceDiagnostics.source = "built-in list";
+      iceDiagnostics.notes = [`turn-credentials function returned HTTP ${resp.status}`];
+      return ICE_SERVERS;
+    }
     const data = await resp.json();
+    iceDiagnostics.notes = Array.isArray(data?.notes) ? data.notes : [];
     if (Array.isArray(data?.iceServers) && data.iceServers.length > 0) {
+      iceDiagnostics.source = String(data.source ?? "server");
       const stun = ICE_SERVERS.filter((s) => String(s.urls).startsWith("stun:"));
       return [...stun, ...data.iceServers];
     }
+    iceDiagnostics.source = "built-in list";
     return ICE_SERVERS;
-  } catch {
+  } catch (e) {
+    iceDiagnostics.source = "built-in list";
+    iceDiagnostics.notes = [`Could not reach turn-credentials: ${String(e)}`];
     return ICE_SERVERS;
   }
 }
