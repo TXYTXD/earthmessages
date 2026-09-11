@@ -18,6 +18,9 @@ interface CallContextType {
   toggleMute: () => void;
   toggleVideo: () => void;
   switchCamera: () => Promise<void>;
+  cameraZoom: number;
+  zoomSupported: boolean;
+  cycleZoom: () => void;
 }
 
 const CallContext = createContext<CallContextType | null>(null);

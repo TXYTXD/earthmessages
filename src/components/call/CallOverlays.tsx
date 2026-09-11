@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, Volume2, VolumeX, User, SwitchCamera } from "lucide-react";
+import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, Volume2, VolumeX, User, SwitchCamera, ZoomIn } from "lucide-react";
 import { useCall } from "@/contexts/CallContext";
 
 export function IncomingCallOverlay() {
@@ -101,6 +101,7 @@ export function ActiveCallOverlay() {
   const {
     callState, hangUp, toggleMute, toggleVideo, switchCamera, isMuted, isVideoOff,
     localVideoRef, remoteVideoRef, remoteAudioRef, localStream, remoteStream,
+    cameraZoom, zoomSupported, cycleZoom,
   } = useCall();
   const [speakerOff, setSpeakerOff] = useState(false);
 
@@ -237,7 +238,7 @@ export function ActiveCallOverlay() {
       </div>
 
       {/* Controls */}
-      <div className="p-6 flex items-center justify-center gap-3 sm:gap-4 border-t border-border glass-nav">
+      <div className="p-6 flex flex-wrap items-center justify-center gap-3 sm:gap-4 border-t border-border glass-nav">
         <ControlButton
           active={isMuted}
           onClick={toggleMute}
@@ -270,6 +271,15 @@ export function ActiveCallOverlay() {
               icon={<SwitchCamera className="w-6 h-6" />}
               label="Flip"
             />
+            {zoomSupported && (
+              <ControlButton
+                active={false}
+                onClick={cycleZoom}
+                activeIcon={<ZoomIn className="w-6 h-6" />}
+                icon={<ZoomIn className="w-6 h-6" />}
+                label={`Zoom ${cameraZoom}x`}
+              />
+            )}
           </>
         )}
 
