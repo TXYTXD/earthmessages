@@ -9,6 +9,7 @@ import { PinVerifyDialog } from "@/components/PinVerifyDialog";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { usePushToggle } from "@/hooks/usePushNotifications";
 
 const themes: { id: ThemeName; name: string; colors: string[] }[] = [
   { id: "default", name: "Default", colors: ["hsl(270 70% 55%)", "hsl(214 100% 55%)", "hsl(190 100% 50%)"] },
@@ -52,7 +53,12 @@ export default function SettingsPage() {
   const [staySignedIn, setStaySignedIn] = useState(() => {
     return localStorage.getItem("stay_signed_in") !== "false";
   });
-  const [notifications, setNotifications] = useState(true);
+  const push = usePushToggle();
+  const handlePushToggle = async (v: boolean) => {
+    const problem = await push.toggle(v);
+    if (problem) toast({ title: "Notifications", description: problem, variant: "destructive" });
+    else if (v) toast({ title: "Notifications on", description: "Messages and calls will reach this device even when UMS is closed." });
+  };
   const [showPinChange, setShowPinChange] = useState(false);
   const [pinVerifyOpen, setPinVerifyOpen] = useState(false);
   const [changePinStep, setChangePinStep] = useState<"new" | "confirm">("new");
@@ -131,10 +137,16 @@ export default function SettingsPage() {
           <div className="border-t border-border" />
           <ToggleRow
             icon={<Bell className="w-5 h-5 text-warning" />}
-            title="Call notifications"
-            desc="Get notified for incoming calls"
-            value={notifications}
-            onChange={setNotifications}
+            title="Notifications"
+            desc={
+              push.needsHomeScreen
+                ? "On iPhone/iPad: add UMS to your Home Screen first (Share → Add to Home Screen), then turn this on"
+                : push.supported
+                  ? "Messages and calls reach this device even when UMS is closed"
+                  : "Not supported in this browser"
+            }
+            value={push.enabled}
+            onChange={handlePushToggle}
           />
         </div>
 

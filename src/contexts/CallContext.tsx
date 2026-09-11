@@ -1,6 +1,7 @@
 import { createContext, useContext, ReactNode, useEffect, useRef, MutableRefObject } from "react";
 import { useWebRTC, type CallState } from "@/hooks/useWebRTC";
 import { useCallSounds } from "@/hooks/useCallSounds";
+import { useAutoPushSubscribe } from "@/hooks/usePushNotifications";
 
 interface CallContextType {
   callState: CallState;
@@ -34,6 +35,7 @@ export const useCall = () => {
 
 export function CallProvider({ children }: { children: ReactNode }) {
   const webrtc = useWebRTC();
+  useAutoPushSubscribe();
   const { playIncomingRing, playDialingTone, stopSound } = useCallSounds();
   const prevStatus = useRef(webrtc.callState.status);
 

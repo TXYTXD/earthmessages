@@ -17,3 +17,5 @@ verify_jwt = false
 
 [functions.turn-credentials]
 verify_jwt = false
+[functions.send-push]
+verify_jwt = false
