@@ -205,6 +205,7 @@ export function useWebRTC() {
 
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
+  const [isFrontCamera, setIsFrontCamera] = useState(true);
   const [cameraZoom, setCameraZoomState] = useState<number>(defaultZoom);
   const [zoomSupported, setZoomSupported] = useState(false);
   const cameraZoomRef = useRef<number>(cameraZoom);
@@ -274,6 +275,7 @@ export function useWebRTC() {
     }
     startingCall.current = false;
     facingModeRef.current = "user";
+    setIsFrontCamera(true);
     setZoomSupported(false);
     setCallState({
       callId: null,
@@ -900,6 +902,7 @@ export function useWebRTC() {
     }
     stream.addTrack(newTrack);
     facingModeRef.current = next;
+    setIsFrontCamera(next === "user");
 
     // Re-attach the preview so every browser picks up the new track
     if (localVideoRef.current) {
@@ -1115,5 +1118,6 @@ export function useWebRTC() {
     cameraZoom,
     zoomSupported,
     cycleZoom,
+    isFrontCamera,
   };
 }
