@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { MessageCircle, Edit, Users } from "lucide-react";
 import { FriendRequestBar } from "@/components/FriendRequestBar";
 import { ContactList } from "@/components/chat/ContactList";
@@ -19,6 +20,41 @@ export default function ChatsPage() {
   const [showNewChat, setShowNewChat] = useState(false);
   const [showNewGroup, setShowNewGroup] = useState(false);
   const isMobile = useIsMobile();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Deep link from a notification: /?chat=<conversationId>
+  const chatParam = searchParams.get("chat");
+  useEffect(() => {
+    if (!chatParam || loading) return;
+    const conv = conversations.find((c) => c.id === chatParam);
+    if (conv) {
+      setShowAI(false);
+      setSelectedConversation(conv);
+    }
+    // Clear the param so back/refresh behave normally
+    const next = new URLSearchParams(searchParams);
+    next.delete("chat");
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatParam, loading, conversations]);
+
+  // A notification tapped while the app is already open
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const onMessage = (event: MessageEvent) => {
+      const d = event.data;
+      if (!d || d.type !== "open-url" || typeof d.url !== "string") return;
+      const id = new URL(d.url, window.location.origin).searchParams.get("chat");
+      if (!id) return;
+      const conv = conversations.find((c) => c.id === id);
+      if (conv) {
+        setShowAI(false);
+        setSelectedConversation(conv);
+      }
+    };
+    navigator.serviceWorker.addEventListener("message", onMessage);
+    return () => navigator.serviceWorker.removeEventListener("message", onMessage);
+  }, [conversations]);
 
   const handleSelectFriend = async (friend: Friend) => {
     setShowAI(false);

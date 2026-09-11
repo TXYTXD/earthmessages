@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { subscribeToPush } from "@/hooks/usePushNotifications";
 
 export const ICE_SERVERS: RTCIceServer[] = [
   { urls: "stun:stun.l.google.com:19302" },
@@ -205,6 +206,28 @@ export function useWebRTC() {
 
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
+
+  // Opened from a call notification while the app was closed:
+  // /?call=<id>&action=accept|decline — act as soon as that call shows up.
+  const pendingCallActionRef = useRef<{ callId: string; action: string } | null>(
+    (() => {
+      try {
+        const p = new URLSearchParams(window.location.search);
+        const callId = p.get("call");
+        const action = p.get("action");
+        if (callId && (action === "accept" || action === "decline")) {
+          p.delete("call");
+          p.delete("action");
+          const qs = p.toString();
+          window.history.replaceState(null, "", window.location.pathname + (qs ? `?${qs}` : ""));
+          return { callId, action };
+        }
+      } catch {
+        /* ignore */
+      }
+      return null;
+    })()
+  );
   const [isFrontCamera, setIsFrontCamera] = useState(true);
   const [cameraZoom, setCameraZoomState] = useState<number>(defaultZoom);
   const [zoomSupported, setZoomSupported] = useState(false);
@@ -997,6 +1020,16 @@ export function useWebRTC() {
     [user]
   );
 
+  // Carry out a pending notification action once the matching call is ringing
+  useEffect(() => {
+    const pending = pendingCallActionRef.current;
+    if (!pending) return;
+    if (callState.status !== "ringing" || !callState.isIncoming || callState.callId !== pending.callId) return;
+    pendingCallActionRef.current = null;
+    if (pending.action === "accept") answerCall(pending.callId, callState.type);
+    else declineCall(pending.callId);
+  }, [callState.status, callState.isIncoming, callState.callId, callState.type, answerCall, declineCall]);
+
   // React to Accept/Decline pressed on a call notification (relayed by
   // the service worker as a message).
   useEffect(() => {
@@ -1022,9 +1055,12 @@ export function useWebRTC() {
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission().then((perm) => {
         console.log("[Call] Notification permission:", perm);
+        if (perm === "granted" && user?.id) {
+          subscribeToPush(user.id).catch((e) => console.warn("[Push] subscribe failed:", e));
+        }
       });
     }
-  }, []);
+  }, [user?.id]);
 
   // Listen for incoming calls via Realtime + Polling fallback
   useEffect(() => {
