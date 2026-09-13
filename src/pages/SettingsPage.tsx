@@ -18,6 +18,16 @@ const themes: { id: ThemeName; name: string; colors: string[] }[] = [
   { id: "forest", name: "Forest", colors: ["hsl(130 50% 35%)", "hsl(150 60% 40%)", "hsl(170 70% 45%)"] },
   { id: "midnight", name: "Midnight", colors: ["hsl(280 80% 55%)", "hsl(265 85% 60%)", "hsl(240 80% 65%)"] },
   { id: "rose", name: "Rose", colors: ["hsl(340 82% 55%)", "hsl(320 75% 50%)", "hsl(290 70% 55%)"] },
+  { id: "lavender", name: "Lavender", colors: ["hsl(290 70% 60%)", "hsl(265 75% 62%)", "hsl(240 80% 68%)"] },
+  { id: "mint", name: "Mint", colors: ["hsl(160 70% 45%)", "hsl(175 70% 45%)", "hsl(190 80% 50%)"] },
+  { id: "gold", name: "Gold", colors: ["hsl(25 95% 55%)", "hsl(42 95% 55%)", "hsl(55 95% 55%)"] },
+  { id: "cherry", name: "Cherry", colors: ["hsl(350 85% 55%)", "hsl(0 80% 55%)", "hsl(15 90% 58%)"] },
+  { id: "sky", name: "Sky", colors: ["hsl(200 100% 60%)", "hsl(215 100% 65%)", "hsl(230 100% 70%)"] },
+  { id: "coral", name: "Coral", colors: ["hsl(350 85% 65%)", "hsl(12 90% 60%)", "hsl(30 95% 60%)"] },
+  { id: "mono", name: "Mono", colors: ["hsl(220 10% 35%)", "hsl(220 8% 50%)", "hsl(220 6% 65%)"] },
+  { id: "neon", name: "Neon", colors: ["hsl(150 100% 50%)", "hsl(180 100% 50%)", "hsl(300 100% 60%)"] },
+  { id: "mocha", name: "Mocha", colors: ["hsl(20 50% 35%)", "hsl(30 55% 45%)", "hsl(40 60% 55%)"] },
+  { id: "arctic", name: "Arctic", colors: ["hsl(190 70% 70%)", "hsl(205 80% 68%)", "hsl(220 90% 75%)"] },
 ];
 
 const languages = [
