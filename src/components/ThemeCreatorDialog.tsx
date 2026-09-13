@@ -1,5 +1,10 @@
 import { useMemo, useState } from "react";
-import { Sparkles, Upload, Lock, Loader2, Wand2, RefreshCw, ChevronDown, MessageCircle } from "lucide-react";
+import { Sparkles, Upload, Lock, Loader2, Wand2, RefreshCw, ChevronDown, Palette, Play, Volume2 } from "lucide-react";
+import {
+  BACKGROUNDS, DEFAULT_EFFECTS, MOTION_STYLES, SOUNDS, type ThemeEffects,
+} from "@/lib/themeEffects";
+import { ThemeBackground } from "@/components/ThemeBackground";
+import { useAmbientSound } from "@/hooks/useAmbientSound";
 import { designThemes, THEME_AI_EXAMPLES, type ThemeSuggestion } from "@/lib/themeAI";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -101,7 +106,10 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
   const [name, setName] = useState("");
   const [def, setDef] = useState<ThemeDefinition>(DEFAULT_DEFINITION);
   const [saving, setSaving] = useState(false);
+  const [tab, setTab] = useState<"colours" | "effects">("colours");
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [effects, setEffects] = useState<ThemeEffects>(DEFAULT_EFFECTS);
+  const [previewSound, setPreviewSound] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [variant, setVariant] = useState(0);
   const [suggestions, setSuggestions] = useState<ThemeSuggestion[]>([]);
@@ -119,6 +127,7 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
       setThinking(false);
       if (ideas[0]) {
         setDef(ideas[0].definition);
+        if (ideas[0].effects) setEffects(ideas[0].effects);
         if (!name.trim()) setName(ideas[0].name);
       }
     }, 350);
@@ -133,6 +142,12 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
   // Every role resolved, so the editor can show a colour for roles the
   // theme hasn't set explicitly yet.
   const full = useMemo(() => completeDefinition(def), [def]);
+  const effectColors = useMemo(
+    () => [...def.gradient, full.bubble[0], full.bubble[1]],
+    [def.gradient, full.bubble]
+  );
+  // Hear the ambience while choosing it, only while this dialog is open
+  useAmbientSound(effects.sound, effects.soundVolume, open && previewSound);
 
   const randomize = () => {
     const h = Math.floor(Math.random() * 360);
@@ -166,9 +181,9 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
     }
     setSaving(true);
     try {
-      const created = await publish(name, def, isPublic);
+      const created = await publish(name, def, isPublic, effects);
       if (created) {
-        setCustomTheme(created.id, created.definition);
+        setCustomTheme(created.id, created.definition, created.effects ?? effects);
         toast({
           title: isPublic ? "Published to the Theme Market" : "Theme saved",
           description: isPublic ? `"${created.name}" is now live for everyone.` : `"${created.name}" is in your themes.`,
@@ -233,7 +248,7 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
                     <button
                       key={i}
                       type="button"
-                      onClick={() => { setDef(sg.definition); setName(sg.name); }}
+                      onClick={() => { setDef(sg.definition); setName(sg.name); if (sg.effects) setEffects(sg.effects); }}
                       title={sg.reason}
                       className={`rounded-lg p-1.5 text-left transition-all ${def === sg.definition ? "ring-2 ring-primary bg-primary/10" : "bg-accent/60 hover:bg-accent"}`}
                     >
@@ -250,8 +265,141 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
           </div>
 
           <Input value={name} onChange={(e) => setName(e.target.value.slice(0, 40))} placeholder="Theme name" className="rounded-lg" />
-          <ThemePreview definition={def} mode={previewMode} name={name} />
 
+          <div className="relative rounded-xl overflow-hidden">
+            {effects.background !== "none" && (
+              <div className="absolute inset-0 rounded-xl overflow-hidden">
+                <ThemeBackground kind={effects.background} intensity={effects.backgroundIntensity} colors={effectColors} />
+              </div>
+            )}
+            <div className="relative">
+              <ThemePreview definition={def} mode={previewMode} name={name} />
+            </div>
+          </div>
+
+          {/* Colours / Effects */}
+          <div className="flex rounded-full bg-accent/60 p-1">
+            {([
+              { id: "colours", label: "Colours", icon: <Palette className="w-3.5 h-3.5" /> },
+              { id: "effects", label: "Animation & sound", icon: <Play className="w-3.5 h-3.5" /> },
+            ] as const).map((x) => (
+              <button
+                key={x.id}
+                type="button"
+                onClick={() => setTab(x.id)}
+                className={`flex-1 px-3 py-1.5 rounded-full text-[12px] font-medium flex items-center justify-center gap-1.5 transition-colors ${
+                  tab === x.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {x.icon} {x.label}
+              </button>
+            ))}
+          </div>
+
+          {tab === "effects" ? (
+            <div className="space-y-3">
+              <div>
+                <p className="text-[13px] font-medium mb-1.5">How the app moves</p>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {MOTION_STYLES.map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      title={m.hint}
+                      onClick={() => setEffects({ ...effects, motion: m.id })}
+                      className={`px-1 py-2 rounded-lg text-[11px] font-medium transition-all ${
+                        effects.motion === m.id ? "ring-2 ring-primary bg-primary/10" : "bg-accent/60 hover:bg-accent"
+                      }`}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  {MOTION_STYLES.find((m) => m.id === effects.motion)?.hint}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-[13px] font-medium mb-1.5">Background animation</p>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {BACKGROUNDS.map((b) => (
+                    <button
+                      key={b.id}
+                      type="button"
+                      onClick={() => setEffects({ ...effects, background: b.id })}
+                      className={`px-1 py-2 rounded-lg text-[11px] font-medium transition-all ${
+                        effects.background === b.id ? "ring-2 ring-primary bg-primary/10" : "bg-accent/60 hover:bg-accent"
+                      }`}
+                    >
+                      <span className="block text-base leading-tight">{b.emoji}</span>
+                      <span className="block truncate">{b.label}</span>
+                    </button>
+                  ))}
+                </div>
+                {effects.background !== "none" && (
+                  <label className="block mt-2">
+                    <span className="text-[11px] text-muted-foreground">Strength — {effects.backgroundIntensity}%</span>
+                    <input
+                      type="range"
+                      min={10}
+                      max={100}
+                      value={effects.backgroundIntensity}
+                      onChange={(e) => setEffects({ ...effects, backgroundIntensity: Number(e.target.value) })}
+                      className="w-full accent-primary"
+                    />
+                  </label>
+                )}
+              </div>
+
+              <div>
+                <p className="text-[13px] font-medium mb-1.5">Background sound</p>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {SOUNDS.map((sd) => (
+                    <button
+                      key={sd.id}
+                      type="button"
+                      onClick={() => setEffects({ ...effects, sound: sd.id })}
+                      className={`px-1 py-2 rounded-lg text-[11px] font-medium transition-all ${
+                        effects.sound === sd.id ? "ring-2 ring-primary bg-primary/10" : "bg-accent/60 hover:bg-accent"
+                      }`}
+                    >
+                      <span className="block text-base leading-tight">{sd.emoji}</span>
+                      <span className="block truncate">{sd.label}</span>
+                    </button>
+                  ))}
+                </div>
+                {effects.sound !== "none" && (
+                  <>
+                    <label className="block mt-2">
+                      <span className="text-[11px] text-muted-foreground">Volume — {effects.soundVolume}%</span>
+                      <input
+                        type="range"
+                        min={5}
+                        max={100}
+                        value={effects.soundVolume}
+                        onChange={(e) => setEffects({ ...effects, soundVolume: Number(e.target.value) })}
+                        className="w-full accent-primary"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewSound((v) => !v)}
+                      className="text-[12px] text-primary hover:underline flex items-center gap-1 mt-1"
+                    >
+                      <Volume2 className="w-3.5 h-3.5" /> {previewSound ? "Stop listening" : "Listen"}
+                    </button>
+                  </>
+                )}
+              </div>
+
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                These travel with your theme. Anyone who uses it gets the same motion and background — sound only
+                starts if they turn it on in their own settings.
+              </p>
+            </div>
+          ) : (
+          <div className="space-y-3">
           {/* The colours most people care about */}
           <ColorField label="Accent" hint="Buttons, links, highlights" value={def.primary} onChange={(v) => setDef({ ...def, primary: v })} />
           <ColorField label="Your bubbles (start)" hint="Messages you send" value={full.bubble[0]} onChange={(v) => setDef({ ...def, bubble: [v, full.bubble[1]] })} />
@@ -279,6 +427,8 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
           )}
 
           <button type="button" onClick={randomize} className="text-[12px] text-primary hover:underline">🎲 Surprise me</button>
+          </div>
+          )}
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2 pt-2">

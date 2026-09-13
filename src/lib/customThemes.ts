@@ -19,6 +19,8 @@ export interface CustomTheme {
   author_id: string;
   author_name: string;
   definition: ThemeDefinition;
+  /** Motion, background animation and ambient sound bundled with the theme */
+  effects?: import("@/lib/themeEffects").ThemeEffects;
   is_public: boolean;
   installs: number;
   created_at: string;

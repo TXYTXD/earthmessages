@@ -5,6 +5,9 @@
 // No network, no external model.
 
 import { hexFromHsl, type ThemeDefinition } from "@/lib/customThemes";
+import {
+  DEFAULT_EFFECTS, type AmbientSound, type BackgroundKind, type MotionStyle, type ThemeEffects,
+} from "@/lib/themeEffects";
 
 interface HueSpec { h: number; s?: number; l?: number }
 interface StyleSpec {
@@ -14,6 +17,9 @@ interface StyleSpec {
   harmony?: Harmony;      // preferred gradient harmony
   tintSat?: number;       // dark background tint strength
   names?: string[];       // name fragments
+  bg?: BackgroundKind;    // background animation that suits it
+  sound?: AmbientSound;   // ambience that suits it
+  motion?: MotionStyle;   // how the UI should move
 }
 type Harmony = "analogous" | "complementary" | "triadic" | "mono" | "split";
 
@@ -52,82 +58,82 @@ const COLORS: Record<string, HueSpec> = {
 };
 
 const STYLES: Record<string, StyleSpec> = {
-  ocean: { hues: [200, 190, 215], sat: 85, harmony: "analogous", names: ["Ocean", "Tide", "Deep Blue"] },
-  sea: { hues: [195, 185], sat: 80, harmony: "analogous", names: ["Sea", "Lagoon"] },
-  beach: { hues: [195, 40], sat: 75, light: 58, harmony: "complementary", names: ["Beach", "Shoreline"] },
-  sunset: { hues: [20, 340, 45], sat: 90, harmony: "analogous", names: ["Sunset", "Golden Hour", "Dusk"] },
-  sunrise: { hues: [35, 15, 55], sat: 90, light: 58, harmony: "analogous", names: ["Sunrise", "Dawn"] },
-  forest: { hues: [140, 120, 160], sat: 55, light: 40, harmony: "analogous", tintSat: 20, names: ["Forest", "Woods", "Pine"] },
-  jungle: { hues: [130, 90], sat: 70, harmony: "analogous", names: ["Jungle"] },
-  night: { hues: [240, 260], sat: 60, light: 55, harmony: "analogous", tintSat: 28, names: ["Night", "Midnight"] },
-  midnight: { hues: [250, 230], sat: 70, harmony: "analogous", tintSat: 30, names: ["Midnight"] },
-  galaxy: { hues: [265, 300, 220], sat: 85, harmony: "triadic", tintSat: 30, names: ["Galaxy", "Nebula", "Cosmos"] },
-  space: { hues: [255, 200], sat: 75, harmony: "split", tintSat: 30, names: ["Space", "Orbit"] },
-  cyber: { hues: [300, 180], sat: 100, light: 55, harmony: "complementary", tintSat: 30, names: ["Cyber", "Neon City"] },
-  cyberpunk: { hues: [310, 185, 55], sat: 100, light: 55, harmony: "triadic", tintSat: 30, names: ["Cyberpunk", "Night City"] },
-  neon: { hues: [150, 180, 300], sat: 100, light: 52, harmony: "triadic", tintSat: 25, names: ["Neon", "Glow"] },
-  retro: { hues: [15, 45, 190], sat: 70, light: 55, harmony: "triadic", tintSat: 15, names: ["Retro", "Vintage"] },
+  ocean: { hues: [200, 190, 215], sat: 85, harmony: "analogous", names: ["Ocean", "Tide", "Deep Blue"], bg: "waves", sound: "waves", motion: "calm" },
+  sea: { hues: [195, 185], sat: 80, harmony: "analogous", names: ["Sea", "Lagoon"], bg: "waves", sound: "waves", motion: "calm" },
+  beach: { hues: [195, 40], sat: 75, light: 58, harmony: "complementary", names: ["Beach", "Shoreline"], bg: "waves", sound: "waves", motion: "calm" },
+  sunset: { hues: [20, 340, 45], sat: 90, harmony: "analogous", names: ["Sunset", "Golden Hour", "Dusk"], bg: "aurora", sound: "waves", motion: "calm" },
+  sunrise: { hues: [35, 15, 55], sat: 90, light: 58, harmony: "analogous", names: ["Sunrise", "Dawn"], bg: "aurora", motion: "calm" },
+  forest: { hues: [140, 120, 160], sat: 55, light: 40, harmony: "analogous", tintSat: 20, names: ["Forest", "Woods", "Pine"], bg: "snow", sound: "forest", motion: "calm" },
+  jungle: { hues: [130, 90], sat: 70, harmony: "analogous", names: ["Jungle"], sound: "forest" },
+  night: { hues: [240, 260], sat: 60, light: 55, harmony: "analogous", tintSat: 28, names: ["Night", "Midnight"], bg: "stars", motion: "calm" },
+  midnight: { hues: [250, 230], sat: 70, harmony: "analogous", tintSat: 30, names: ["Midnight"], bg: "stars", sound: "space", motion: "calm" },
+  galaxy: { hues: [265, 300, 220], sat: 85, harmony: "triadic", tintSat: 30, names: ["Galaxy", "Nebula", "Cosmos"], bg: "stars", sound: "space", motion: "calm" },
+  space: { hues: [255, 200], sat: 75, harmony: "split", tintSat: 30, names: ["Space", "Orbit"], bg: "stars", sound: "space", motion: "calm" },
+  cyber: { hues: [300, 180], sat: 100, light: 55, harmony: "complementary", tintSat: 30, names: ["Cyber", "Neon City"], bg: "grid", motion: "snappy" },
+  cyberpunk: { hues: [310, 185, 55], sat: 100, light: 55, harmony: "triadic", tintSat: 30, names: ["Cyberpunk", "Night City"], bg: "grid", sound: "space", motion: "snappy" },
+  neon: { hues: [150, 180, 300], sat: 100, light: 52, harmony: "triadic", tintSat: 25, names: ["Neon", "Glow"], bg: "grid", motion: "snappy" },
+  retro: { hues: [15, 45, 190], sat: 70, light: 55, harmony: "triadic", tintSat: 15, names: ["Retro", "Vintage"], bg: "grid", motion: "playful" },
   vintage: { hues: [30, 15], sat: 45, light: 50, harmony: "analogous", tintSat: 12, names: ["Vintage", "Old Film"] },
-  pastel: { sat: 55, light: 70, harmony: "analogous", tintSat: 12, names: ["Pastel", "Soft"] },
-  candy: { hues: [330, 200, 50], sat: 90, light: 62, harmony: "triadic", names: ["Candy", "Sweet"] },
-  fire: { hues: [10, 30, 50], sat: 95, harmony: "analogous", names: ["Fire", "Blaze", "Ember"] },
-  lava: { hues: [5, 25], sat: 95, harmony: "analogous", tintSat: 25, names: ["Lava", "Magma"] },
-  ice: { hues: [195, 210], sat: 60, light: 65, harmony: "analogous", tintSat: 15, names: ["Ice", "Frost", "Arctic"] },
-  snow: { hues: [205, 220], sat: 40, light: 68, harmony: "mono", tintSat: 10, names: ["Snow", "Winter"] },
-  winter: { hues: [210, 195], sat: 55, light: 60, harmony: "analogous", tintSat: 15, names: ["Winter"] },
-  spring: { hues: [120, 330, 55], sat: 70, light: 58, harmony: "triadic", names: ["Spring", "Bloom"] },
-  summer: { hues: [45, 195, 15], sat: 90, light: 55, harmony: "triadic", names: ["Summer", "Heatwave"] },
-  autumn: { hues: [25, 40, 10], sat: 80, light: 48, harmony: "analogous", tintSat: 18, names: ["Autumn", "Fall", "Harvest"] },
+  pastel: { sat: 55, light: 70, harmony: "analogous", tintSat: 12, names: ["Pastel", "Soft"], bg: "bubbles", motion: "calm" },
+  candy: { hues: [330, 200, 50], sat: 90, light: 62, harmony: "triadic", names: ["Candy", "Sweet"], bg: "bubbles", motion: "playful" },
+  fire: { hues: [10, 30, 50], sat: 95, harmony: "analogous", names: ["Fire", "Blaze", "Ember"], bg: "embers", sound: "fire", motion: "playful" },
+  lava: { hues: [5, 25], sat: 95, harmony: "analogous", tintSat: 25, names: ["Lava", "Magma"], bg: "embers", sound: "fire" },
+  ice: { hues: [195, 210], sat: 60, light: 65, harmony: "analogous", tintSat: 15, names: ["Ice", "Frost", "Arctic"], bg: "snow", sound: "wind", motion: "calm" },
+  snow: { hues: [205, 220], sat: 40, light: 68, harmony: "mono", tintSat: 10, names: ["Snow", "Winter"], bg: "snow", sound: "wind", motion: "calm" },
+  winter: { hues: [210, 195], sat: 55, light: 60, harmony: "analogous", tintSat: 15, names: ["Winter"], bg: "snow", sound: "wind", motion: "calm" },
+  spring: { hues: [120, 330, 55], sat: 70, light: 58, harmony: "triadic", names: ["Spring", "Bloom"], bg: "bubbles", sound: "forest", motion: "playful" },
+  summer: { hues: [45, 195, 15], sat: 90, light: 55, harmony: "triadic", names: ["Summer", "Heatwave"], bg: "waves", sound: "waves", motion: "playful" },
+  autumn: { hues: [25, 40, 10], sat: 80, light: 48, harmony: "analogous", tintSat: 18, names: ["Autumn", "Fall", "Harvest"], sound: "wind", motion: "calm" },
   fall: { hues: [25, 40, 10], sat: 80, light: 48, harmony: "analogous", tintSat: 18, names: ["Autumn"] },
-  christmas: { hues: [0, 140], sat: 80, harmony: "complementary", names: ["Christmas", "Holiday"] },
-  halloween: { hues: [25, 275], sat: 95, harmony: "complementary", tintSat: 25, names: ["Halloween", "Spooky"] },
+  christmas: { hues: [0, 140], sat: 80, harmony: "complementary", names: ["Christmas", "Holiday"], bg: "snow", motion: "playful" },
+  halloween: { hues: [25, 275], sat: 95, harmony: "complementary", tintSat: 25, names: ["Halloween", "Spooky"], bg: "embers", sound: "wind" },
   valentine: { hues: [345, 330, 0], sat: 85, harmony: "analogous", names: ["Valentine", "Love"] },
   love: { hues: [345, 320], sat: 85, harmony: "analogous", names: ["Love", "Heart"] },
-  rainbow: { hues: [0, 120, 240], sat: 95, harmony: "triadic", names: ["Rainbow", "Spectrum"] },
-  coffee: { hues: [25, 35], sat: 45, light: 42, harmony: "analogous", tintSat: 18, names: ["Coffee", "Latte", "Espresso"] },
+  rainbow: { hues: [0, 120, 240], sat: 95, harmony: "triadic", names: ["Rainbow", "Spectrum"], bg: "orbs", motion: "playful" },
+  coffee: { hues: [25, 35], sat: 45, light: 42, harmony: "analogous", tintSat: 18, names: ["Coffee", "Latte", "Espresso"], sound: "cafe", motion: "calm" },
   chocolate: { hues: [22, 30], sat: 50, light: 35, harmony: "mono", tintSat: 18, names: ["Chocolate", "Cocoa"] },
   desert: { hues: [35, 20], sat: 65, light: 55, harmony: "analogous", tintSat: 15, names: ["Desert", "Dune"] },
-  sakura: { hues: [335, 350], sat: 65, light: 68, harmony: "analogous", names: ["Sakura", "Blossom"] },
+  sakura: { hues: [335, 350], sat: 65, light: 68, harmony: "analogous", names: ["Sakura", "Blossom"], bg: "bubbles", motion: "calm" },
   cherryblossom: { hues: [335, 350], sat: 65, light: 68, harmony: "analogous", names: ["Cherry Blossom"] },
-  matrix: { hues: [120, 135], sat: 100, light: 45, harmony: "mono", tintSat: 20, names: ["Matrix", "Code"] },
-  hacker: { hues: [120, 150], sat: 100, light: 45, harmony: "mono", tintSat: 20, names: ["Hacker", "Terminal"] },
+  matrix: { hues: [120, 135], sat: 100, light: 45, harmony: "mono", tintSat: 20, names: ["Matrix", "Code"], bg: "grid", motion: "snappy" },
+  hacker: { hues: [120, 150], sat: 100, light: 45, harmony: "mono", tintSat: 20, names: ["Hacker", "Terminal"], bg: "grid", motion: "snappy" },
   royal: { hues: [265, 45], sat: 85, harmony: "complementary", names: ["Royal", "Majesty"] },
   luxury: { hues: [42, 265], sat: 85, light: 50, harmony: "complementary", tintSat: 20, names: ["Luxury", "Gold Card"] },
-  gaming: { hues: [270, 190, 330], sat: 100, light: 55, harmony: "triadic", tintSat: 28, names: ["Gaming", "Player One"] },
-  minimal: { sat: 15, light: 55, harmony: "mono", tintSat: 6, names: ["Minimal", "Clean"] },
-  mono: { sat: 8, light: 55, harmony: "mono", tintSat: 5, names: ["Mono", "Grayscale"] },
+  gaming: { hues: [270, 190, 330], sat: 100, light: 55, harmony: "triadic", tintSat: 28, names: ["Gaming", "Player One"], bg: "grid", motion: "snappy" },
+  minimal: { sat: 15, light: 55, harmony: "mono", tintSat: 6, names: ["Minimal", "Clean"], bg: "none", motion: "snappy" },
+  mono: { sat: 8, light: 55, harmony: "mono", tintSat: 5, names: ["Mono", "Grayscale"], bg: "none", motion: "snappy" },
   nature: { hues: [130, 90, 170], sat: 60, harmony: "analogous", names: ["Nature", "Meadow"] },
   tropical: { hues: [165, 45, 330], sat: 95, light: 55, harmony: "triadic", names: ["Tropical", "Paradise"] },
   lemon: { hues: [55, 80], sat: 95, light: 55, harmony: "analogous", names: ["Lemon", "Zest"] },
   berry: { hues: [330, 290, 350], sat: 85, harmony: "analogous", names: ["Berry", "Mixed Berries"] },
   grape: { hues: [280, 300], sat: 80, harmony: "analogous", names: ["Grape"] },
-  storm: { hues: [220, 200], sat: 35, light: 50, harmony: "analogous", tintSat: 12, names: ["Storm", "Thunder"] },
-  rain: { hues: [210, 200], sat: 45, light: 55, harmony: "mono", tintSat: 14, names: ["Rain", "Drizzle"] },
+  storm: { hues: [220, 200], sat: 35, light: 50, harmony: "analogous", tintSat: 12, names: ["Storm", "Thunder"], bg: "rain", sound: "rain", motion: "calm" },
+  rain: { hues: [210, 200], sat: 45, light: 55, harmony: "mono", tintSat: 14, names: ["Rain", "Drizzle"], bg: "rain", sound: "rain", motion: "calm" },
   sun: { hues: [45, 30], sat: 100, light: 55, harmony: "analogous", names: ["Sun", "Solar"] },
   moon: { hues: [230, 45], sat: 40, light: 65, harmony: "complementary", tintSat: 15, names: ["Moon", "Lunar"] },
   // things and places
-  lake: { hues: [200, 180], sat: 60, light: 50, harmony: "analogous", names: ["Lake", "Still Water"] },
-  river: { hues: [195, 170], sat: 55, harmony: "analogous", names: ["River", "Stream"] },
-  mountain: { hues: [215, 150], sat: 35, light: 48, harmony: "split", tintSat: 12, names: ["Mountain", "Summit"] },
-  volcano: { hues: [10, 30], sat: 95, light: 50, harmony: "analogous", tintSat: 25, names: ["Volcano", "Eruption"] },
-  cloud: { hues: [210, 220], sat: 25, light: 68, harmony: "mono", tintSat: 8, names: ["Cloud", "Overcast"] },
-  aurora: { hues: [150, 280, 190], sat: 85, light: 55, harmony: "triadic", tintSat: 25, names: ["Aurora", "Northern Lights"] },
+  lake: { hues: [200, 180], sat: 60, light: 50, harmony: "analogous", names: ["Lake", "Still Water"], bg: "waves", sound: "waves", motion: "calm" },
+  river: { hues: [195, 170], sat: 55, harmony: "analogous", names: ["River", "Stream"], bg: "waves", sound: "waves", motion: "calm" },
+  mountain: { hues: [215, 150], sat: 35, light: 48, harmony: "split", tintSat: 12, names: ["Mountain", "Summit"], sound: "wind", motion: "calm" },
+  volcano: { hues: [10, 30], sat: 95, light: 50, harmony: "analogous", tintSat: 25, names: ["Volcano", "Eruption"], bg: "embers", sound: "fire" },
+  cloud: { hues: [210, 220], sat: 25, light: 68, harmony: "mono", tintSat: 8, names: ["Cloud", "Overcast"], bg: "orbs", motion: "calm" },
+  aurora: { hues: [150, 280, 190], sat: 85, light: 55, harmony: "triadic", tintSat: 25, names: ["Aurora", "Northern Lights"], bg: "aurora", sound: "wind", motion: "calm" },
   sunflower: { hues: [48, 90], sat: 95, harmony: "analogous", names: ["Sunflower"] },
   dragon: { hues: [0, 45], sat: 90, light: 48, harmony: "complementary", tintSat: 25, names: ["Dragon", "Wyrm"] },
   ninja: { hues: [240, 0], sat: 40, light: 40, harmony: "complementary", tintSat: 12, names: ["Ninja", "Shadow"] },
-  vampire: { hues: [350, 270], sat: 85, light: 42, harmony: "split", tintSat: 30, names: ["Vampire", "Nocturne"] },
+  vampire: { hues: [350, 270], sat: 85, light: 42, harmony: "split", tintSat: 30, names: ["Vampire", "Nocturne"], bg: "embers", motion: "calm" },
   pirate: { hues: [25, 210], sat: 55, light: 45, harmony: "complementary", tintSat: 15, names: ["Pirate", "High Seas"] },
   zombie: { hues: [95, 130], sat: 45, light: 40, harmony: "analogous", tintSat: 15, names: ["Zombie", "Undead"] },
-  wedding: { hues: [340, 40], sat: 40, light: 70, harmony: "analogous", tintSat: 8, names: ["Wedding", "Vows"] },
-  birthday: { hues: [330, 200, 50], sat: 95, light: 60, harmony: "triadic", names: ["Birthday", "Party"] },
-  party: { hues: [300, 190, 50], sat: 100, light: 55, harmony: "triadic", tintSat: 22, names: ["Party", "Disco"] },
-  disco: { hues: [300, 190, 50], sat: 100, light: 55, harmony: "triadic", tintSat: 22, names: ["Disco", "Mirrorball"] },
-  music: { hues: [280, 330], sat: 80, harmony: "analogous", tintSat: 20, names: ["Music", "Beat"] },
+  wedding: { hues: [340, 40], sat: 40, light: 70, harmony: "analogous", tintSat: 8, names: ["Wedding", "Vows"], bg: "bubbles", motion: "calm" },
+  birthday: { hues: [330, 200, 50], sat: 95, light: 60, harmony: "triadic", names: ["Birthday", "Party"], bg: "orbs", motion: "playful" },
+  party: { hues: [300, 190, 50], sat: 100, light: 55, harmony: "triadic", tintSat: 22, names: ["Party", "Disco"], bg: "orbs", motion: "playful" },
+  disco: { hues: [300, 190, 50], sat: 100, light: 55, harmony: "triadic", tintSat: 22, names: ["Disco", "Mirrorball"], bg: "orbs", motion: "playful" },
+  music: { hues: [280, 330], sat: 80, harmony: "analogous", tintSat: 20, names: ["Music", "Beat"], bg: "orbs", motion: "playful" },
   football: { hues: [130, 45], sat: 80, harmony: "complementary", names: ["Football", "Matchday"] },
   basketball: { hues: [25, 240], sat: 85, harmony: "complementary", names: ["Basketball", "Courtside"] },
   school: { hues: [220, 45], sat: 70, harmony: "complementary", names: ["School", "Notebook"] },
-  study: { hues: [200, 40], sat: 45, light: 52, harmony: "complementary", tintSat: 10, names: ["Study", "Focus"] },
-  work: { hues: [215, 200], sat: 45, light: 48, harmony: "mono", tintSat: 8, names: ["Work", "Office"] },
+  study: { hues: [200, 40], sat: 45, light: 52, harmony: "complementary", tintSat: 10, names: ["Study", "Focus"], sound: "rain", motion: "calm" },
+  work: { hues: [215, 200], sat: 45, light: 48, harmony: "mono", tintSat: 8, names: ["Work", "Office"], bg: "none", motion: "snappy" },
   // familiar app looks (described, not copied)
   discord: { hues: [235, 225], sat: 80, light: 62, harmony: "analogous", tintSat: 18, names: ["Blurple", "Chat Lounge"] },
   spotify: { hues: [141, 150], sat: 75, light: 45, harmony: "mono", tintSat: 8, names: ["Playlist", "Green Room"] },
@@ -229,15 +235,49 @@ export interface ThemeSuggestion {
   name: string;
   definition: ThemeDefinition;
   reason: string;
+  effects: ThemeEffects;
 }
 
+// Words that name an effect directly, so "stars" or "with rain sounds"
+// does exactly what it says.
+const EFFECT_WORDS: Record<string, Partial<ThemeEffects>> = {
+  star: { background: "stars" }, stars: { background: "stars" }, starry: { background: "stars" },
+  wave: { background: "waves" }, waves: { background: "waves" },
+  bubble: { background: "bubbles" }, bubbles: { background: "bubbles" },
+  orb: { background: "orbs" }, orbs: { background: "orbs" },
+  grid: { background: "grid" }, ember: { background: "embers" }, embers: { background: "embers" },
+  aurora: { background: "aurora" }, snowfall: { background: "snow" },
+  silent: { sound: "none" }, quiet: { sound: "none" },
+  fireplace: { background: "embers", sound: "fire" },
+  thunder: { background: "rain", sound: "rain" },
+  "αστέρια": { background: "stars" }, "αστερια": { background: "stars" },
+  "κύματα": { background: "waves" }, "κυματα": { background: "waves" },
+  "βροχή": { background: "rain", sound: "rain" }, "βροχη": { background: "rain", sound: "rain" },
+  "χιόνι": { background: "snow" }, "χιονι": { background: "snow" },
+};
+
+const KNOWN = (w: string) => !!COLORS[w] || !!STYLES[w] || !!MODIFIERS[w] || !!EFFECT_WORDS[w];
+
 function tokenize(prompt: string): string[] {
-  return prompt
+  const raw = prompt
     .toLowerCase()
     .replace(/[^\p{L}\p{N}\s]/gu, " ")
     .split(/\s+/)
-    .filter(Boolean)
-    .map((w) => w.replace(/s$/, "")); // crude plural strip: "berries" stays, "colors" -> "color"
+    .filter(Boolean);
+
+  const out: string[] = [];
+  for (const w of raw) {
+    out.push(w);
+    // Try a singular form too, but only when the word itself means nothing
+    // to us — otherwise "christmas" would become "christma" and "waves"
+    // would stop matching.
+    if (!KNOWN(w)) {
+      if (w.endsWith("ies") && w.length > 4) out.push(`${w.slice(0, -3)}y`);
+      else if (w.endsWith("s") && !w.endsWith("ss") && w.length > 3) out.push(w.slice(0, -1));
+      if (w.endsWith("y") && w.length > 3) out.push(w.slice(0, -1)); // rainy -> rain
+    }
+  }
+  return out;
 }
 
 function titleCase(s: string) {
@@ -249,6 +289,7 @@ export function designThemes(prompt: string, variant = 0, count = 3): ThemeSugge
   const colors: HueSpec[] = [];
   const styles: StyleSpec[] = [];
   const styleWords: string[] = [];
+  const asked: Partial<ThemeEffects> = {}; // effects the person named outright
   let sat = 85;
   let light = 55;
   let tintSat = 22;
@@ -266,6 +307,7 @@ export function designThemes(prompt: string, variant = 0, count = 3): ThemeSugge
     }
     if (WARM.has(w)) warm += 1;
     if (COOL.has(w)) warm -= 1;
+    if (EFFECT_WORDS[w]) Object.assign(asked, EFFECT_WORDS[w]);
   }
   // "cherry blossom" as two words
   if (words.includes("cherry") && words.includes("blossom")) { styles.push(STYLES.sakura); styleWords.push("sakura"); }
@@ -381,7 +423,21 @@ export function designThemes(prompt: string, variant = 0, count = 3): ThemeSugge
       harmony === "split" ? "One main color with two accents" :
       harmony === "mono" ? "One color, many shades" : "Neighbouring colors that flow together";
 
-    out.push({ name: name.trim().slice(0, 40), definition, reason });
+    // Motion, background and sound the described scene suggests
+    const styleEffects = styles.find((st) => st.bg || st.sound || st.motion);
+    const quiet = words.some((w) => ["minimal", "clean", "simple", "work", "focus"].includes(w));
+    const lively = words.some((w) => ["party", "fun", "playful", "gaming", "neon"].includes(w));
+    const effects: ThemeEffects = {
+      motion: asked.motion ?? styleEffects?.motion ?? (quiet ? "snappy" : lively ? "playful" : DEFAULT_EFFECTS.motion),
+      background:
+        asked.background ??
+        (quiet ? "none" : styleEffects?.bg ?? (i === 0 ? "none" : i === 1 ? "orbs" : "stars")),
+      backgroundIntensity: lively ? 65 : 40,
+      sound: asked.sound ?? styleEffects?.sound ?? "none",
+      soundVolume: 22,
+    };
+
+    out.push({ name: name.trim().slice(0, 40), definition, reason, effects });
   }
   return out;
 }

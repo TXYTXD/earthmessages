@@ -2,11 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { isValidDefinition, type CustomTheme, type ThemeDefinition } from "@/lib/customThemes";
+import { normalizeEffects, type ThemeEffects } from "@/lib/themeEffects";
 
 const table = () => supabase.from("custom_themes") as any;
 
 function normalize(rows: any[]): CustomTheme[] {
-  return (rows || []).filter((r) => isValidDefinition(r.definition)) as CustomTheme[];
+  return (rows || [])
+    .filter((r) => isValidDefinition(r.definition))
+    .map((r) => ({ ...r, effects: normalizeEffects(r.effects) })) as CustomTheme[];
 }
 
 // Themes this user made or added from the market
@@ -64,7 +67,7 @@ export function useThemeMarket() {
   }, [refetch]);
 
   const publish = useCallback(
-    async (name: string, definition: ThemeDefinition, isPublic: boolean): Promise<CustomTheme | null> => {
+    async (name: string, definition: ThemeDefinition, isPublic: boolean, effects?: ThemeEffects): Promise<CustomTheme | null> => {
       if (!user) return null;
       const { data: profile } = await supabase
         .from("profiles").select("display_name").eq("user_id", user.id).maybeSingle();
@@ -74,12 +77,13 @@ export function useThemeMarket() {
           author_name: profile?.display_name || "Someone",
           name: name.trim(),
           definition,
+          effects: normalizeEffects(effects),
           is_public: isPublic,
         })
         .select("*")
         .single();
       if (error) throw error;
-      return data as CustomTheme;
+      return { ...(data as CustomTheme), effects: normalizeEffects((data as any).effects) };
     },
     [user]
   );

@@ -20,6 +20,7 @@ import VideoCallPage from "@/pages/VideoCallPage";
 import CallsPage from "@/pages/CallsPage";
 import SettingsPage from "@/pages/SettingsPage";
 import ThemeMarketPage from "@/pages/ThemeMarketPage";
+import { ThemeAmbience } from "@/components/ThemeAmbience";
 import StoriesPage from "@/pages/StoriesPage";
 import AccountPage from "@/pages/AccountPage";
 import AuthPage from "@/pages/AuthPage";
@@ -59,7 +60,8 @@ function ProtectedLayout() {
 
   return (
     <CallProvider>
-      <div className="flex h-screen overflow-hidden">
+      <ThemeAmbience />
+      <div className="flex h-screen overflow-hidden app-shell">
         <AppSidebar />
         <main className="flex-1 overflow-hidden flex pb-14 md:pb-0">
           <Routes>
