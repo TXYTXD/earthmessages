@@ -19,6 +19,7 @@ import ChatsPage from "@/pages/ChatsPage";
 import VideoCallPage from "@/pages/VideoCallPage";
 import CallsPage from "@/pages/CallsPage";
 import SettingsPage from "@/pages/SettingsPage";
+import ThemeMarketPage from "@/pages/ThemeMarketPage";
 import StoriesPage from "@/pages/StoriesPage";
 import AccountPage from "@/pages/AccountPage";
 import AuthPage from "@/pages/AuthPage";
@@ -70,6 +71,7 @@ function ProtectedLayout() {
             <Route path="/communities" element={<CommunitiesPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/themes" element={<ThemeMarketPage />} />
             <Route path="/account" element={<AccountPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

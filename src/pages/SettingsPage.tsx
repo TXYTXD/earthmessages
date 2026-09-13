@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Globe, Volume2, Languages, Zap, Check, Shield, Bell, Palette, Sun, Moon, Lock, Sparkles } from "lucide-react";
+import { Globe, Volume2, Languages, Zap, Check, Shield, Bell, Palette, Sun, Moon, Lock, Sparkles, Store, Paintbrush } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useMyThemes } from "@/hooks/useThemeMarket";
+import { ThemeCreatorDialog } from "@/components/ThemeCreatorDialog";
+import { gradientCss } from "@/lib/customThemes";
 import { Input } from "@/components/ui/input";
 import { useThemeContext, ThemeName } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
@@ -47,7 +51,10 @@ const languages = [
 ];
 
 export default function SettingsPage() {
-  const { theme, setTheme, colorMode, toggleColorMode } = useThemeContext();
+  const { theme, setTheme, setCustomTheme, colorMode, toggleColorMode } = useThemeContext();
+  const navigate = useNavigate();
+  const myThemes = useMyThemes();
+  const [creatingTheme, setCreatingTheme] = useState(false);
   const {
     primaryLang,
     setPrimaryLang,
@@ -234,6 +241,7 @@ export default function SettingsPage() {
           verifyPin={verifyPin}
           title="Verify current PIN"
         />
+      <ThemeCreatorDialog open={creatingTheme} onClose={() => setCreatingTheme(false)} onCreated={myThemes.refetch} />
 
 
         <div className="bg-card rounded-xl border border-border p-5">
@@ -315,11 +323,40 @@ export default function SettingsPage() {
             <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center">
               <Palette className="w-5 h-5 text-primary" />
             </div>
-            <div>
+            <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-[15px]">App Theme</h3>
               <p className="text-[13px] text-muted-foreground">Choose a color theme for the entire app</p>
             </div>
           </div>
+          <div className="flex flex-wrap gap-2 mb-4">
+            <Button onClick={() => setCreatingTheme(true)} className="rounded-full gap-2" size="sm">
+              <Paintbrush className="w-4 h-4" /> Create your own
+            </Button>
+            <Button onClick={() => navigate("/themes")} variant="outline" className="rounded-full gap-2" size="sm">
+              <Store className="w-4 h-4" /> Theme Market
+            </Button>
+          </div>
+          {myThemes.themes.length > 0 && (
+            <>
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-2">Your themes</p>
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                {myThemes.themes.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setCustomTheme(t.id, t.definition)}
+                    className={`p-3 rounded-lg text-sm flex flex-col items-center gap-2 transition-all ${
+                      theme === `custom:${t.id}` ? "ring-2 ring-primary bg-primary/10" : "bg-accent hover:bg-accent/80"
+                    }`}
+                  >
+                    <div className="w-full h-6 rounded-md" style={{ background: gradientCss(t.definition) }} />
+                    <span className="text-xs font-medium truncate max-w-full">{t.name}</span>
+                    {theme === `custom:${t.id}` && <Check className="w-3.5 h-3.5 text-primary" />}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-2">Built-in</p>
+            </>
+          )}
           <div className="grid grid-cols-3 gap-2">
             {themes.map((t) => (
               <button
