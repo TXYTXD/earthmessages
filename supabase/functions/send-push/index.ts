@@ -95,7 +95,13 @@ function messagePreview(m: { type: string; content: string | null }): string {
     case "voice": return "🎤 Voice message";
     case "file": return "📎 File";
     case "sticker": return "Sticker";
-    default: return (m.content || "New message").slice(0, 140);
+    default: {
+      const c = m.content || "";
+      // Encrypted text stays encrypted: the device decrypts it (see sw.js)
+      if (c.startsWith("🔒:")) return "New message";
+      const clean = c.replace(/\s+/g, " ").trim();
+      return clean ? clean.slice(0, 140) : "New message";
+    }
   }
 }
 
@@ -132,11 +138,14 @@ async function handleMessage(id: string) {
 
   const sender = await displayName(m.sender_id);
   const isGroup = conv?.type === "group";
+  // Web Push payloads are limited (~4 KB); very long messages just say "New message"
+  const encrypted =
+    m.type === "text" && m.content?.startsWith("🔒:") && m.content.length <= 3000 ? m.content : undefined;
   return sendToUsers(recipients, {
     title: isGroup && conv?.name ? `${sender} · ${conv.name}` : sender,
     body: messagePreview(m),
     tag: `chat-${m.conversation_id}`,
-    data: { url: `/?chat=${m.conversation_id}`, conversationId: m.conversation_id },
+    data: { url: `/?chat=${m.conversation_id}`, conversationId: m.conversation_id, ...(encrypted ? { encrypted } : {}) },
   });
 }
 

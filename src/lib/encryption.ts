@@ -83,6 +83,27 @@ export function isEncrypted(content: string | null): boolean {
 // In-memory key cache to avoid repeated DB lookups
 const keyCache = new Map<string, string>();
 
+// Also keep keys in IndexedDB on this device so the service worker can
+// decrypt message previews in push notifications locally — the text is
+// never decrypted anywhere except on the user's own devices.
+function rememberKeyForNotifications(conversationId: string, key: string) {
+  try {
+    const req = indexedDB.open("ums-push", 1);
+    req.onupgradeneeded = () => req.result.createObjectStore("keys");
+    req.onsuccess = () => {
+      try {
+        const tx = req.result.transaction("keys", "readwrite");
+        tx.objectStore("keys").put(key, conversationId);
+        tx.oncomplete = () => req.result.close();
+      } catch {
+        /* ignore */
+      }
+    };
+  } catch {
+    /* ignore */
+  }
+}
+
 // Get or create the encryption key for a conversation
 export async function getConversationKey(
   conversationId: string
@@ -99,6 +120,7 @@ export async function getConversationKey(
 
   if (data?.encryption_key) {
     keyCache.set(conversationId, data.encryption_key);
+    rememberKeyForNotifications(conversationId, data.encryption_key);
     return data.encryption_key;
   }
 
@@ -110,5 +132,6 @@ export async function getConversationKey(
   });
 
   keyCache.set(conversationId, newKey);
+  rememberKeyForNotifications(conversationId, newKey);
   return newKey;
 }
