@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, Volume2, VolumeX, User, SwitchCamera, ZoomIn } from "lucide-react";
+import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, Volume2, VolumeX, User, SwitchCamera, ZoomIn, MonitorUp, MonitorX } from "lucide-react";
 import { useCall } from "@/contexts/CallContext";
 
 export function IncomingCallOverlay() {
@@ -102,7 +102,10 @@ export function ActiveCallOverlay() {
     callState, hangUp, toggleMute, toggleVideo, switchCamera, isMuted, isVideoOff,
     localVideoRef, remoteVideoRef, remoteAudioRef, localStream, remoteStream,
     cameraZoom, zoomSupported, cycleZoom, isFrontCamera,
+    isSharingScreen, remoteScreenSharing, screenShareSupported, toggleScreenShare,
   } = useCall();
+  // Voice calls switch to the video layout while a screen is being shared
+  const showVideo = callState.type === "video" || isSharingScreen || remoteScreenSharing;
   const [speakerOff, setSpeakerOff] = useState(false);
 
   // Attach streams and keep retrying play() while paused — a play() blocked
@@ -162,16 +165,21 @@ export function ActiveCallOverlay() {
           style={{ background: "radial-gradient(circle at 30% 20%, hsl(var(--primary) / 0.25), transparent 60%)" }}
         />
 
-        {callState.type === "video" ? (
+        {showVideo ? (
           <>
             <video
               ref={remoteVideoRef}
               autoPlay
               playsInline
-              className="w-full h-full object-cover"
+              className={`w-full h-full ${remoteScreenSharing ? "object-contain bg-black" : "object-cover"}`}
             />
+            {remoteScreenSharing && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 glass rounded-full px-4 py-1.5 text-sm font-medium flex items-center gap-2">
+                <MonitorUp className="w-4 h-4 text-primary" /> {callState.remoteName} is sharing their screen
+              </div>
+            )}
             {/* Profile fallback when remote video unavailable (rough heuristic: no track yet) */}
-            {!remoteStream.current?.getVideoTracks().some((t) => t.enabled) && (
+            {!remoteScreenSharing && !remoteStream.current?.getVideoTracks().some((t) => t.enabled) && (
               <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary">
                 <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-4xl font-bold text-primary-foreground shadow-premium">
                   {callState.remoteAvatar}
@@ -196,7 +204,7 @@ export function ActiveCallOverlay() {
         )}
 
         {/* Local video PiP with profile fallback when camera off */}
-        {callState.type === "video" && (
+        {showVideo && (
           <div className="absolute top-4 right-4 w-32 h-44 rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl bg-secondary">
             <video
               ref={localVideoRef}
@@ -206,9 +214,14 @@ export function ActiveCallOverlay() {
               className={`w-full h-full object-cover ${isVideoOff ? "opacity-0" : ""}`}
               // Mirror the self-view for the front camera so it behaves like a
               // mirror (the other person still sees you un-mirrored).
-              style={isFrontCamera ? { transform: "scaleX(-1)" } : undefined}
+              style={isFrontCamera && !isSharingScreen ? { transform: "scaleX(-1)" } : undefined}
             />
-            {isVideoOff && (
+            {isSharingScreen && (
+              <div className="absolute top-1.5 left-1.5 right-1.5 text-center text-[10px] font-medium text-white bg-black/50 rounded-full px-2 py-0.5">
+                Sharing screen
+              </div>
+            )}
+            {isVideoOff && !isSharingScreen && (
               <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/30 to-secondary">
                 <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-lg font-bold text-primary-foreground">
                   <User className="w-7 h-7" />
@@ -284,6 +297,16 @@ export function ActiveCallOverlay() {
               />
             )}
           </>
+        )}
+
+        {screenShareSupported && callState.status === "connected" && (
+          <ControlButton
+            active={isSharingScreen}
+            onClick={toggleScreenShare}
+            activeIcon={<MonitorX className="w-6 h-6" />}
+            icon={<MonitorUp className="w-6 h-6" />}
+            label={isSharingScreen ? "Stop share" : "Share"}
+          />
         )}
 
         <motion.button

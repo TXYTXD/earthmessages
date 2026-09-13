@@ -23,6 +23,10 @@ interface CallContextType {
   zoomSupported: boolean;
   cycleZoom: () => void;
   isFrontCamera: boolean;
+  isSharingScreen: boolean;
+  remoteScreenSharing: boolean;
+  screenShareSupported: boolean;
+  toggleScreenShare: () => void;
 }
 
 const CallContext = createContext<CallContextType | null>(null);
