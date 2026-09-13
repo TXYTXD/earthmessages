@@ -4,7 +4,7 @@
 // and styles, then applies color-harmony rules to produce balanced themes.
 // No network, no external model.
 
-import type { ThemeDefinition } from "@/lib/customThemes";
+import { hexFromHsl, type ThemeDefinition } from "@/lib/customThemes";
 
 interface HueSpec { h: number; s?: number; l?: number }
 interface StyleSpec {
@@ -334,10 +334,35 @@ export function designThemes(prompt: string, variant = 0, count = 3): ThemeSugge
       accentSpec?.s !== undefined ? Math.max(accentSpec.s, 20) : sat,
       accentSpec?.l !== undefined ? clamp(accentSpec.l, 32, 68) : accentL
     );
+
+    // Give each part of the app its own colour rather than tinting
+    // everything with the accent. The nav sits coolest and darkest, cards
+    // one step lighter, the other person's bubble lighter still, and your
+    // own bubbles carry the theme's brightest pair.
+    // Your own bubbles start in the accent's family and travel to the
+    // theme's second colour, so they feel related but not identical.
+    const partner = stops ? hues[2] : hues[(hues.indexOf(accentHue) + 2) % 3];
+    const bubbleA = norm(accentHue + (harmony === "mono" ? -6 : -12));
+    const bubbleB = norm(partner + (harmony === "mono" ? 10 : 0));
+    // Surfaces stay in the theme's own family — they shift around the accent
+    // by a little, so the nav, cards and bubbles read as different colours
+    // without any of them looking like a mistake.
+    const surfaceHue = norm(accentHue + 8);
+    const sidebarHue = norm(accentHue - 14);
+    const receivedHue = norm(accentHue + 18);
+    const bodySat = clamp(tintSat + 6, 6, 40);
+
     const definition: ThemeDefinition = {
       primary,
       gradient: [stopHex(0, -5, 4), stops ? stopHex(1, 0, 0) : primary, stopHex(2, 5, 2)],
       tint: hslToHex(accentHue, clamp(tintSat + 25, 10, 70), 28),
+      bubble: [
+        hslToHex(bubbleA, clamp(sat + 4, 20, 100), clamp(light + 3, 38, 66)),
+        hslToHex(bubbleB, clamp(sat - 2, 18, 100), clamp(light - 4, 32, 62)),
+      ],
+      received: hexFromHsl(receivedHue, clamp(bodySat + 2, 6, 32), 17),
+      sidebar: hexFromHsl(sidebarHue, clamp(bodySat + 6, 6, 36), 8),
+      surface: hexFromHsl(surfaceHue, clamp(bodySat, 6, 30), 12),
     };
 
     // A name: style fragments + color words, or the person's own words

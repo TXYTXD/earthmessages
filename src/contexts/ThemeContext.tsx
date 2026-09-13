@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { applyThemeVariables, isValidDefinition, type ThemeDefinition } from "@/lib/customThemes";
 
 export type ThemeName =
@@ -71,10 +71,25 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setColorMode(colorMode === "dark" ? "light" : "dark");
   };
 
+  // Ease every colour to its new value when the theme changes, but not on
+  // the very first paint (which would fade the app in from the wrong colours).
+  const firstPaint = useRef(true);
+  const transitionTimer = useRef<ReturnType<typeof setTimeout>>();
+
   useEffect(() => {
+    const body = document.body;
+    if (!firstPaint.current) {
+      body.classList.add("theme-transition");
+      clearTimeout(transitionTimer.current);
+      transitionTimer.current = setTimeout(() => body.classList.remove("theme-transition"), 500);
+    }
+    firstPaint.current = false;
+
     const isCustom = theme.startsWith("custom:");
-    document.body.setAttribute("data-theme", isCustom ? "default" : theme);
-    applyThemeVariables(document.body, isCustom && customDefinition ? customDefinition : null, colorMode);
+    body.setAttribute("data-theme", isCustom ? "default" : theme);
+    applyThemeVariables(body, isCustom && customDefinition ? customDefinition : null, colorMode);
+
+    return () => clearTimeout(transitionTimer.current);
   }, [theme, customDefinition, colorMode]);
 
   useEffect(() => {

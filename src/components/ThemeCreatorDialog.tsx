@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Sparkles, Upload, Lock, Loader2, Wand2, RefreshCw } from "lucide-react";
+import { Sparkles, Upload, Lock, Loader2, Wand2, RefreshCw, ChevronDown, MessageCircle } from "lucide-react";
 import { designThemes, THEME_AI_EXAMPLES, type ThemeSuggestion } from "@/lib/themeAI";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useThemeContext } from "@/contexts/ThemeContext";
 import { useThemeMarket } from "@/hooks/useThemeMarket";
-import { DEFAULT_DEFINITION, gradientCss, themeVariables, type ThemeDefinition } from "@/lib/customThemes";
+import { DEFAULT_DEFINITION, completeDefinition, gradientCss, bubbleGradientCss, themeVariables, type ThemeDefinition } from "@/lib/customThemes";
 
 interface Props {
   open: boolean;
@@ -15,11 +15,14 @@ interface Props {
   onCreated?: () => void;
 }
 
-function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function ColorField({ label, hint, value, onChange }: { label: string; hint?: string; value: string; onChange: (v: string) => void }) {
   return (
     <label className="flex items-center justify-between gap-3 rounded-lg bg-accent/60 px-3 py-2">
-      <span className="text-[13px] font-medium">{label}</span>
-      <span className="flex items-center gap-2">
+      <span className="min-w-0">
+        <span className="text-[13px] font-medium block truncate">{label}</span>
+        {hint && <span className="text-[11px] text-muted-foreground block truncate">{hint}</span>}
+      </span>
+      <span className="flex items-center gap-2 flex-shrink-0">
         <span className="text-[11px] text-muted-foreground font-mono uppercase">{value}</span>
         <input
           type="color"
@@ -32,34 +35,58 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
   );
 }
 
-// Live preview of a definition: a tiny mock of the app in the current mode
+// Live preview of a definition: a tiny mock of the app in the current mode,
+// showing each area in the colour the theme gives it.
 export function ThemePreview({ definition, mode, name }: { definition: ThemeDefinition; mode: "light" | "dark"; name?: string }) {
   const vars = themeVariables(definition, mode);
   const style = { ...(vars as Record<string, string>) } as React.CSSProperties;
-  const bg = mode === "dark" ? `hsl(${vars["--background"]})` : "hsl(0 0% 100%)";
-  const fg = mode === "dark" ? `hsl(${vars["--foreground"]})` : "hsl(224 20% 10%)";
-  const card = mode === "dark" ? `hsl(${vars["--card"]})` : "hsl(220 14% 96%)";
+  const v = (k: string, fallback: string) => (vars[k] ? `hsl(${vars[k]})` : fallback);
+  const bg = mode === "dark" ? v("--background", "hsl(224 20% 4%)") : "hsl(0 0% 100%)";
+  const fg = mode === "dark" ? v("--foreground", "hsl(0 0% 96%)") : "hsl(224 20% 10%)";
+  const card = v("--card", mode === "dark" ? "hsl(224 20% 8%)" : "hsl(220 14% 96%)");
+  const nav = v("--sidebar-background", card);
+  const received = v("--secondary", card);
+  const receivedFg = v("--secondary-foreground", fg);
+
   return (
-    <div className="rounded-xl overflow-hidden border border-border" style={{ ...style, background: bg, color: fg }}>
-      <div className="flex items-center gap-2 px-3 py-2" style={{ background: card }}>
-        <div className="w-6 h-6 rounded-full" style={{ background: gradientCss(definition) }} />
-        <div className="text-[12px] font-semibold truncate">{name || "My theme"}</div>
-        <div className="ml-auto w-2 h-2 rounded-full" style={{ background: `hsl(${vars["--primary"]})` }} />
+    <div className="rounded-xl overflow-hidden border border-border flex" style={{ ...style, background: bg, color: fg }}>
+      {/* navigation rail — its own colour */}
+      <div className="w-8 flex flex-col items-center gap-2 py-2.5" style={{ background: nav }}>
+        <div className="w-5 h-5 rounded-lg" style={{ background: gradientCss(definition) }} />
+        <div className="w-4 h-4 rounded-md" style={{ background: `hsl(${vars["--primary"]})`, opacity: 0.9 }} />
+        <div className="w-4 h-4 rounded-md" style={{ background: fg, opacity: 0.15 }} />
+        <div className="w-4 h-4 rounded-md" style={{ background: fg, opacity: 0.15 }} />
       </div>
-      <div className="p-3 space-y-2">
-        <div className="max-w-[70%] rounded-2xl rounded-bl-md px-3 py-1.5 text-[11px]" style={{ background: card }}>
-          Hey! How does this look?
+
+      <div className="flex-1 min-w-0">
+        {/* header — card colour */}
+        <div className="flex items-center gap-2 px-3 py-2" style={{ background: card }}>
+          <div className="w-6 h-6 rounded-full" style={{ background: gradientCss(definition) }} />
+          <div className="text-[12px] font-semibold truncate">{name || "My theme"}</div>
+          <div className="ml-auto w-2 h-2 rounded-full" style={{ background: `hsl(${vars["--primary"]})` }} />
         </div>
-        <div
-          className="ml-auto max-w-[70%] rounded-2xl rounded-br-md px-3 py-1.5 text-[11px] font-medium"
-          style={{ background: `hsl(${vars["--primary"]})`, color: `hsl(${vars["--primary-foreground"]})` }}
-        >
-          Looks amazing ✨
-        </div>
-        <div className="flex gap-2 pt-1">
-          <div className="h-6 flex-1 rounded-full" style={{ background: gradientCss(definition) }} />
-          <div className="h-6 px-3 rounded-full text-[10px] flex items-center font-semibold" style={{ background: `hsl(${vars["--primary"]})`, color: `hsl(${vars["--primary-foreground"]})` }}>
-            Send
+
+        <div className="p-3 space-y-2">
+          <div
+            className="max-w-[75%] rounded-2xl rounded-bl-md px-3 py-1.5 text-[11px]"
+            style={{ background: received, color: receivedFg }}
+          >
+            Hey! How does this look?
+          </div>
+          <div
+            className="ml-auto max-w-[75%] rounded-2xl rounded-br-md px-3 py-1.5 text-[11px] font-medium text-white"
+            style={{ background: bubbleGradientCss(definition) }}
+          >
+            Looks amazing ✨
+          </div>
+          <div className="flex gap-2 pt-1">
+            <div className="h-6 flex-1 rounded-full" style={{ background: received }} />
+            <div
+              className="h-6 px-3 rounded-full text-[10px] flex items-center font-semibold"
+              style={{ background: `hsl(${vars["--primary"]})`, color: `hsl(${vars["--primary-foreground"]})` }}
+            >
+              Send
+            </div>
           </div>
         </div>
       </div>
@@ -74,6 +101,7 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
   const [name, setName] = useState("");
   const [def, setDef] = useState<ThemeDefinition>(DEFAULT_DEFINITION);
   const [saving, setSaving] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [variant, setVariant] = useState(0);
   const [suggestions, setSuggestions] = useState<ThemeSuggestion[]>([]);
@@ -102,6 +130,9 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
   };
 
   const previewMode = useMemo(() => colorMode, [colorMode]);
+  // Every role resolved, so the editor can show a colour for roles the
+  // theme hasn't set explicitly yet.
+  const full = useMemo(() => completeDefinition(def), [def]);
 
   const randomize = () => {
     const h = Math.floor(Math.random() * 360);
@@ -116,10 +147,15 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
       };
       return `#${f(0)}${f(8)}${f(4)}`;
     };
+    const n = (x: number) => ((x % 360) + 360) % 360;
     setDef({
       primary: hex(h, 85, 55),
-      gradient: [hex((h + 320) % 360, 75, 58), hex(h, 90, 55), hex((h + 40) % 360, 90, 55)],
+      gradient: [hex(n(h + 320), 75, 58), hex(h, 90, 55), hex(n(h + 40), 90, 55)],
       tint: hex(h, 60, 30),
+      bubble: [hex(n(h - 12), 88, 56), hex(n(h + 34), 84, 50)],
+      received: hex(n(h + 18), 22, 17),
+      sidebar: hex(n(h - 14), 28, 8),
+      surface: hex(n(h + 8), 22, 12),
     });
   };
 
@@ -215,12 +251,34 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
 
           <Input value={name} onChange={(e) => setName(e.target.value.slice(0, 40))} placeholder="Theme name" className="rounded-lg" />
           <ThemePreview definition={def} mode={previewMode} name={name} />
-          <ColorField label="Accent color" value={def.primary} onChange={(v) => setDef({ ...def, primary: v })} />
-          <ColorField label="Gradient start" value={def.gradient[0]} onChange={(v) => setDef({ ...def, gradient: [v, def.gradient[1], def.gradient[2]] })} />
-          <ColorField label="Gradient middle" value={def.gradient[1]} onChange={(v) => setDef({ ...def, gradient: [def.gradient[0], v, def.gradient[2]] })} />
-          <ColorField label="Gradient end" value={def.gradient[2]} onChange={(v) => setDef({ ...def, gradient: [def.gradient[0], def.gradient[1], v] })} />
-          <ColorField label="Dark background tint" value={def.tint} onChange={(v) => setDef({ ...def, tint: v })} />
-          <button onClick={randomize} className="text-[12px] text-primary hover:underline">🎲 Surprise me</button>
+
+          {/* The colours most people care about */}
+          <ColorField label="Accent" hint="Buttons, links, highlights" value={def.primary} onChange={(v) => setDef({ ...def, primary: v })} />
+          <ColorField label="Your bubbles (start)" hint="Messages you send" value={full.bubble[0]} onChange={(v) => setDef({ ...def, bubble: [v, full.bubble[1]] })} />
+          <ColorField label="Your bubbles (end)" hint="The other end of the fade" value={full.bubble[1]} onChange={(v) => setDef({ ...def, bubble: [full.bubble[0], v] })} />
+          <ColorField label="Their bubbles" hint="Messages you receive" value={full.received} onChange={(v) => setDef({ ...def, received: v })} />
+
+          <button
+            type="button"
+            onClick={() => setShowAdvanced((a) => !a)}
+            className="w-full flex items-center justify-between text-[13px] font-medium px-1 py-1.5 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <span>More colours — navigation, cards, logo</span>
+            <ChevronDown className={`w-4 h-4 transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
+          </button>
+
+          {showAdvanced && (
+            <div className="space-y-2">
+              <ColorField label="Navigation bar" hint="The side and bottom bar" value={full.sidebar} onChange={(v) => setDef({ ...def, sidebar: v })} />
+              <ColorField label="Cards & panels" hint="Chat list, settings cards" value={full.surface} onChange={(v) => setDef({ ...def, surface: v })} />
+              <ColorField label="Logo gradient start" hint="Avatars and the logo" value={def.gradient[0]} onChange={(v) => setDef({ ...def, gradient: [v, def.gradient[1], def.gradient[2]] })} />
+              <ColorField label="Logo gradient middle" hint="Avatars and the logo" value={def.gradient[1]} onChange={(v) => setDef({ ...def, gradient: [def.gradient[0], v, def.gradient[2]] })} />
+              <ColorField label="Logo gradient end" hint="Avatars and the logo" value={def.gradient[2]} onChange={(v) => setDef({ ...def, gradient: [def.gradient[0], def.gradient[1], v] })} />
+              <ColorField label="Background tint" hint="The dark background colour" value={def.tint} onChange={(v) => setDef({ ...def, tint: v })} />
+            </div>
+          )}
+
+          <button type="button" onClick={randomize} className="text-[12px] text-primary hover:underline">🎲 Surprise me</button>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2 pt-2">
