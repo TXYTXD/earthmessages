@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Globe, Volume2, Languages, Zap, Check, Shield, Bell, Palette, Sun, Moon, Lock, Sparkles, Store, Paintbrush } from "lucide-react";
+import { Globe, Volume2, Languages, Zap, Check, Shield, Bell, Palette, Sun, Moon, Lock, Sparkles, Store, Paintbrush, Wand2, Volume2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useMyThemes } from "@/hooks/useThemeMarket";
 import { ThemeCreatorDialog } from "@/components/ThemeCreatorDialog";
 import { gradientCss } from "@/lib/customThemes";
+import { BACKGROUNDS, SOUNDS, describeEffects } from "@/lib/themeEffects";
 import { Input } from "@/components/ui/input";
 import { useThemeContext, ThemeName } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
@@ -51,7 +52,10 @@ const languages = [
 ];
 
 export default function SettingsPage() {
-  const { theme, setTheme, setCustomTheme, colorMode, toggleColorMode } = useThemeContext();
+  const {
+    theme, setTheme, setCustomTheme, colorMode, toggleColorMode,
+    effects, effectsEnabled, setEffectsEnabled, soundEnabled, setSoundEnabled,
+  } = useThemeContext();
   const navigate = useNavigate();
   const myThemes = useMyThemes();
   const [creatingTheme, setCreatingTheme] = useState(false);
@@ -343,7 +347,7 @@ export default function SettingsPage() {
                 {myThemes.themes.map((t) => (
                   <button
                     key={t.id}
-                    onClick={() => setCustomTheme(t.id, t.definition)}
+                    onClick={() => setCustomTheme(t.id, t.definition, t.effects)}
                     className={`p-3 rounded-lg text-sm flex flex-col items-center gap-2 transition-all ${
                       theme === `custom:${t.id}` ? "ring-2 ring-primary bg-primary/10" : "bg-accent hover:bg-accent/80"
                     }`}
@@ -377,6 +381,48 @@ export default function SettingsPage() {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Theme effects */}
+        <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center">
+              <Wand2 className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-[15px]">Animation &amp; sound</h3>
+              <p className="text-[13px] text-muted-foreground">
+                {describeEffects(effects).length
+                  ? `This theme brings: ${describeEffects(effects).join(", ")}`
+                  : "This theme has no background animation or sound"}
+              </p>
+            </div>
+          </div>
+          <ToggleRow
+            icon={<Sparkles className="w-5 h-5 text-primary" />}
+            title="Theme animations"
+            desc="Background animation and the theme's motion style"
+            value={effectsEnabled}
+            onChange={setEffectsEnabled}
+          />
+          <div className="border-t border-border" />
+          <ToggleRow
+            icon={<Volume2 className="w-5 h-5 text-primary" />}
+            title="Background sound"
+            desc={
+              effects.sound === "none"
+                ? "This theme has no sound"
+                : `Play the ${SOUNDS.find((x) => x.id === effects.sound)?.label.toLowerCase()} ambience`
+            }
+            value={soundEnabled}
+            onChange={setSoundEnabled}
+          />
+          {effects.background !== "none" && (
+            <p className="text-[11px] text-muted-foreground">
+              Background: {BACKGROUNDS.find((b) => b.id === effects.background)?.label}. Turn animations off above if
+              you would rather have a still background.
+            </p>
+          )}
         </div>
 
         {/* Primary Language */}

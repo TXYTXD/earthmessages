@@ -836,17 +836,33 @@
 }
 
 @layer base {
+  :root {
+    /* How fast the UI moves. A theme can slow this down, speed it up,
+       or switch it off entirely. */
+    --motion-scale: 1;
+    --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* "Off" motion: stop every animation and transition in the app */
+  .motion-off *,
+  .motion-off *::before,
+  .motion-off *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
   /* Buttery theme switching: every surface eases to its new colour
      instead of snapping. Suppressed for people who prefer less motion,
      and never applied while a page is still loading. */
   .theme-transition,
   .theme-transition *:not(svg):not(path) {
     transition:
-      background-color 420ms cubic-bezier(0.22, 1, 0.36, 1),
-      border-color 420ms cubic-bezier(0.22, 1, 0.36, 1),
-      color 320ms cubic-bezier(0.22, 1, 0.36, 1),
-      fill 320ms cubic-bezier(0.22, 1, 0.36, 1),
-      box-shadow 420ms cubic-bezier(0.22, 1, 0.36, 1);
+      background-color calc(420ms * var(--motion-scale, 1)) var(--motion-ease),
+      border-color calc(420ms * var(--motion-scale, 1)) var(--motion-ease),
+      color calc(320ms * var(--motion-scale, 1)) var(--motion-ease),
+      fill calc(320ms * var(--motion-scale, 1)) var(--motion-ease),
+      box-shadow calc(420ms * var(--motion-scale, 1)) var(--motion-ease);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -917,8 +933,15 @@
   }
 
   .premium-hover {
-    transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
-      background-color 220ms ease, box-shadow 220ms ease;
+    transition: transform calc(220ms * var(--motion-scale, 1)) var(--motion-ease),
+      background-color calc(220ms * var(--motion-scale, 1)) ease,
+      box-shadow calc(220ms * var(--motion-scale, 1)) ease;
+  }
+
+  /* The app sits above any animated background the theme draws */
+  .app-shell {
+    position: relative;
+    z-index: 1;
   }
   .premium-hover:hover {
     background-color: hsl(var(--accent) / 0.7);

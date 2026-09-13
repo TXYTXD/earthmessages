@@ -8,6 +8,7 @@ import { useThemeContext } from "@/contexts/ThemeContext";
 import { useThemeMarket, useMyThemes } from "@/hooks/useThemeMarket";
 import { ThemeCreatorDialog, ThemePreview } from "@/components/ThemeCreatorDialog";
 import { gradientCss, type CustomTheme } from "@/lib/customThemes";
+import { describeEffects, normalizeEffects } from "@/lib/themeEffects";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function ThemeMarketPage() {
@@ -47,7 +48,7 @@ export default function ThemeMarketPage() {
   };
 
   const use = async (t: CustomTheme) => {
-    setCustomTheme(t.id, t.definition);
+    setCustomTheme(t.id, t.definition, t.effects);
     if (!isAdded(t)) {
       try {
         await market.install(t.id);
@@ -133,6 +134,11 @@ export default function ThemeMarketPage() {
                       <p className="text-[11px] text-muted-foreground truncate">
                         by {t.author_name || "Someone"} · <Download className="w-3 h-3 inline -mt-0.5" /> {t.installs}
                       </p>
+                      {describeEffects(normalizeEffects(t.effects)).length > 0 && (
+                        <p className="text-[10px] text-primary/90 truncate">
+                          ✨ {describeEffects(normalizeEffects(t.effects)).join(" · ")}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex gap-2">
