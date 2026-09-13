@@ -229,6 +229,15 @@ export function useWebRTC() {
     })()
   );
   const [isFrontCamera, setIsFrontCamera] = useState(true);
+  const [isSharingScreen, setIsSharingScreen] = useState(false);
+  const [remoteScreenSharing, setRemoteScreenSharing] = useState(false);
+  const screenTrackRef = useRef<MediaStreamTrack | null>(null);
+  const cameraTrackRef = useRef<MediaStreamTrack | null>(null);
+  const dataChannelRef = useRef<RTCDataChannel | null>(null);
+  const screenShareSupported =
+    typeof navigator !== "undefined" &&
+    typeof navigator.mediaDevices?.getDisplayMedia === "function" &&
+    !/iPhone|iPad|iPod|Android/.test(navigator.userAgent);
   const [cameraZoom, setCameraZoomState] = useState<number>(defaultZoom);
   const [zoomSupported, setZoomSupported] = useState(false);
   const cameraZoomRef = useRef<number>(cameraZoom);
@@ -299,6 +308,13 @@ export function useWebRTC() {
     startingCall.current = false;
     facingModeRef.current = "user";
     setIsFrontCamera(true);
+    screenTrackRef.current?.stop();
+    screenTrackRef.current = null;
+    cameraTrackRef.current?.stop();
+    cameraTrackRef.current = null;
+    dataChannelRef.current = null;
+    setIsSharingScreen(false);
+    setRemoteScreenSharing(false);
     setZoomSupported(false);
     setCallState({
       callId: null,
@@ -456,7 +472,17 @@ export function useWebRTC() {
 
       pc.ontrack = (event) => {
         console.log("[Call] ontrack received, streams:", event.streams.length);
-        const stream = event.streams[0];
+        // Merge everything into one remote stream. The reserved video slot
+        // (voice calls / screen share) arrives without a stream, so it must
+        // never replace the stream that carries the audio.
+        const incoming = event.streams[0];
+        const stream = remoteStream.current ?? incoming ?? new MediaStream();
+        if (incoming && incoming !== stream) {
+          incoming.getTracks().forEach((t) => {
+            if (!stream.getTracks().includes(t)) stream.addTrack(t);
+          });
+        }
+        if (!stream.getTracks().includes(event.track)) stream.addTrack(event.track);
         remoteStream.current = stream;
         if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = stream;
@@ -499,10 +525,35 @@ export function useWebRTC() {
         }
       };
 
+      // Small side channel for call metadata (screen-share on/off). Created
+      // by the caller before the first offer so it needs no renegotiation.
+      const wireDataChannel = (dc: RTCDataChannel) => {
+        dataChannelRef.current = dc;
+        dc.onmessage = (ev) => {
+          try {
+            const msg = JSON.parse(ev.data);
+            if (msg?.type === "screen") setRemoteScreenSharing(!!msg.on);
+          } catch {
+            /* ignore */
+          }
+        };
+      };
+      if (isCaller) wireDataChannel(pc.createDataChannel("ums-meta"));
+      else pc.ondatachannel = (ev) => wireDataChannel(ev.channel);
+
       // Add local tracks
       localStream.current?.getTracks().forEach((track) => {
         pc.addTrack(track, localStream.current!);
       });
+      // Voice calls still reserve a video slot so either side can share
+      // their screen later without renegotiating.
+      if (isCaller && !localStream.current?.getVideoTracks().length) {
+        try {
+          pc.addTransceiver("video", { direction: "sendrecv" });
+        } catch (e) {
+          console.warn("[Call] addTransceiver failed:", e);
+        }
+      }
 
       // Allow up to 45s for the callee to answer; once the answer arrives
       // the timeout is re-armed with a fresh 30s connection window.
@@ -545,6 +596,16 @@ export function useWebRTC() {
           if (remoteDescSet.current && pc.signalingState !== "stable") return;
           await pc.setRemoteDescription(new RTCSessionDescription((signal.payload as any).sdp));
           remoteDescSet.current = true;
+          // Let the answerer send video into the reserved slot (screen share)
+          pc.getTransceivers().forEach((t) => {
+            if (t.receiver.track?.kind === "video" && t.direction === "recvonly") {
+              try {
+                t.direction = "sendrecv";
+              } catch {
+                /* ignore */
+              }
+            }
+          });
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
           await (supabase.from("call_signaling") as any).insert({
@@ -934,6 +995,114 @@ export function useWebRTC() {
     }
   }, [isVideoOff]);
 
+  // ---- Screen sharing ------------------------------------------------------
+  const sendMeta = (msg: unknown) => {
+    const dc = dataChannelRef.current;
+    if (dc && dc.readyState === "open") {
+      try {
+        dc.send(JSON.stringify(msg));
+      } catch {
+        /* ignore */
+      }
+    }
+  };
+
+  const videoSender = () => {
+    const pc = peerConnection.current;
+    if (!pc) return null;
+    return (
+      pc.getSenders().find((s) => s.track?.kind === "video") ||
+      pc.getTransceivers().find((t) => t.receiver.track?.kind === "video")?.sender ||
+      null
+    );
+  };
+
+  const stopScreenShare = useCallback(async () => {
+    const screen = screenTrackRef.current;
+    if (!screen) return;
+    screenTrackRef.current = null;
+    screen.onended = null;
+    screen.stop();
+
+    const camera = cameraTrackRef.current;
+    cameraTrackRef.current = null;
+    const sender = videoSender();
+    if (sender) {
+      try {
+        await sender.replaceTrack(camera ?? null);
+      } catch (e) {
+        console.warn("[Call] replaceTrack (stop share) failed:", e);
+      }
+    }
+    const stream = localStream.current;
+    if (stream) {
+      stream.getVideoTracks().forEach((t) => stream.removeTrack(t));
+      if (camera) stream.addTrack(camera);
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+        localVideoRef.current.play().catch(() => {});
+      }
+    }
+    sendMeta({ type: "screen", on: false });
+    setIsSharingScreen(false);
+  }, []);
+
+  const startScreenShare = useCallback(async () => {
+    if (screenTrackRef.current) return;
+    if (!screenShareSupported) {
+      toast({ title: "Not available here", description: "Screen sharing works from a computer (Windows, Mac, Linux)." });
+      return;
+    }
+    let display: MediaStream;
+    try {
+      display = await navigator.mediaDevices.getDisplayMedia({
+        video: { frameRate: { ideal: 15, max: 30 } },
+        audio: false,
+      });
+    } catch {
+      return; // user cancelled the picker
+    }
+    const screen = display.getVideoTracks()[0];
+    if (!screen) return;
+
+    const sender = videoSender();
+    if (sender) {
+      try {
+        await sender.replaceTrack(screen);
+      } catch (e) {
+        console.warn("[Call] replaceTrack (share) failed:", e);
+        screen.stop();
+        toast({ title: "Couldn't share screen", variant: "destructive" });
+        return;
+      }
+    }
+    screenTrackRef.current = screen;
+
+    // Keep the camera track aside so we can switch back afterwards
+    const stream = localStream.current;
+    if (stream) {
+      const cam = stream.getVideoTracks()[0] ?? null;
+      cameraTrackRef.current = cam;
+      if (cam) stream.removeTrack(cam);
+      stream.addTrack(screen);
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+        localVideoRef.current.play().catch(() => {});
+      }
+    }
+    // The browser's own "Stop sharing" button ends the track
+    screen.onended = () => {
+      void stopScreenShare();
+    };
+    sendMeta({ type: "screen", on: true });
+    setIsSharingScreen(true);
+  }, [screenShareSupported, stopScreenShare]);
+
+  const toggleScreenShare = useCallback(() => {
+    if (screenTrackRef.current) void stopScreenShare();
+    else void startScreenShare();
+  }, [startScreenShare, stopScreenShare]);
+
   // Handle an incoming call (shared between realtime and polling)
   const handleIncomingCall = useCallback(
     async (call: any) => {
@@ -1155,5 +1324,9 @@ export function useWebRTC() {
     zoomSupported,
     cycleZoom,
     isFrontCamera,
+    isSharingScreen,
+    remoteScreenSharing,
+    screenShareSupported,
+    toggleScreenShare,
   };
 }
