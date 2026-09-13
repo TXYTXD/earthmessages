@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { prefetchTrendingGifs } from "@/lib/gifs";
 import { Send, Smile, Image, Paperclip, Mic, ThumbsUp, X, Sticker, Clock, CalendarClock } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { type Message } from "@/hooks/useMessages";
@@ -38,6 +39,10 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply, onSchedule
   const [showEmoji, setShowEmoji] = useState(false);
   const [showStickers, setShowStickers] = useState(false);
   const [showGifs, setShowGifs] = useState(false);
+  // Warm the GIF list so the picker opens with content already there
+  useEffect(() => {
+    prefetchTrendingGifs();
+  }, []);
   const [showSchedule, setShowSchedule] = useState(false);
   const [scheduleDate, setScheduleDate] = useState<Date | undefined>(undefined);
   const [scheduleTime, setScheduleTime] = useState("12:00");

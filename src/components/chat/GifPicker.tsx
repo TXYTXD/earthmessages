@@ -1,16 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Search, X, Loader2, TrendingUp } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-
-interface GifResult {
-  id: string;
-  title: string;
-  preview: string;
-  url: string;
-  width: number;
-  height: number;
-}
+import { searchGifs, cachedGifs, type GifResult } from "@/lib/gifs";
 
 interface GifPickerProps {
   onSelect: (gifUrl: string) => void;
@@ -26,39 +17,36 @@ export function GifPicker({ onSelect, onClose }: GifPickerProps) {
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   const fetchGifs = useCallback(async (searchQuery: string) => {
-    setLoading(true);
-    setError(null);
+    // Show cached results immediately, then refresh in the background
+    const cached = cachedGifs(searchQuery);
+    if (cached) {
+      setGifs(cached);
+      setError(null);
+    }
+    setLoading(!cached);
     try {
-      const { data, error: fnError } = await supabase.functions.invoke("gif-search", {
-        body: { query: searchQuery, limit: 20 },
-      });
-      if (fnError) {
-        throw new Error(fnError.message);
-      }
-      if (data?.gifs) {
-        setGifs(data.gifs);
-      } else {
-        setGifs([]);
-      }
+      const results = await searchGifs(searchQuery);
+      setGifs(results);
+      setError(null);
     } catch (e: any) {
       console.error("GIF search error:", e);
-      setError("Failed to load GIFs");
-      setGifs([]);
+      if (!cached) {
+        setError(String(e?.message || "").includes("TENOR_API_KEY") ? "GIFs aren't set up yet" : "Failed to load GIFs");
+        setGifs([]);
+      }
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchGifs("");
     inputRef.current?.focus();
-  }, [fetchGifs]);
+  }, []);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      fetchGifs(query);
-    }, 200);
+    // Trending shows instantly; typed searches wait a moment for more keys
+    debounceRef.current = setTimeout(() => fetchGifs(query), query ? 150 : 0);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
