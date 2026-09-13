@@ -5,6 +5,45 @@
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
 
+// Message text is end-to-end encrypted; the server only forwards the
+// ciphertext. If this device has the conversation key (saved by the app
+// when the chat was opened), decrypt the preview here. Otherwise the
+// notification just says "New message".
+function loadConversationKey(conversationId) {
+  return new Promise((resolve) => {
+    try {
+      const req = indexedDB.open("ums-push", 1);
+      req.onupgradeneeded = () => req.result.createObjectStore("keys");
+      req.onerror = () => resolve(null);
+      req.onsuccess = () => {
+        try {
+          const tx = req.result.transaction("keys", "readonly");
+          const get = tx.objectStore("keys").get(conversationId);
+          get.onsuccess = () => { resolve(get.result || null); req.result.close(); };
+          get.onerror = () => resolve(null);
+        } catch { resolve(null); }
+      };
+    } catch { resolve(null); }
+  });
+}
+
+async function decryptPreview(encrypted, conversationId) {
+  const PREFIX = "🔒:";
+  if (!encrypted || !encrypted.startsWith(PREFIX)) return encrypted || null;
+  try {
+    const b64Key = await loadConversationKey(conversationId);
+    if (!b64Key) return null;
+    const raw = Uint8Array.from(atob(b64Key), (c) => c.charCodeAt(0));
+    const key = await crypto.subtle.importKey("raw", raw, { name: "AES-GCM" }, false, ["decrypt"]);
+    const combined = Uint8Array.from(atob(encrypted.slice(PREFIX.length)), (c) => c.charCodeAt(0));
+    const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: combined.slice(0, 12) }, key, combined.slice(12));
+    const text = new TextDecoder().decode(plain).replace(/\s+/g, " ").trim();
+    return text ? text.slice(0, 140) : null;
+  } catch {
+    return null;
+  }
+}
+
 // Web Push from the send-push edge function: new messages and incoming
 // calls arrive here even when the app is closed.
 self.addEventListener("push", (event) => {
@@ -24,6 +63,10 @@ self.addEventListener("push", (event) => {
   };
   event.waitUntil(
     (async () => {
+      if (payload.data && payload.data.encrypted) {
+        const text = await decryptPreview(payload.data.encrypted, payload.data.conversationId);
+        if (text) options.body = text;
+      }
       // Don't pile up a call notification if the app is open and already ringing
       if (payload.data && payload.data.callId) {
         const wins = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
