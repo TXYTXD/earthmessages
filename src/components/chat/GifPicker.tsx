@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Search, X, Loader2, TrendingUp } from "lucide-react";
-import { searchGifs, cachedGifs, type GifResult } from "@/lib/gifs";
+import { searchGifs, cachedGifs, gifProviderName, type GifResult } from "@/lib/gifs";
 
 interface GifPickerProps {
   onSelect: (gifUrl: string) => void;
@@ -31,7 +31,7 @@ export function GifPicker({ onSelect, onClose }: GifPickerProps) {
     } catch (e: any) {
       console.error("GIF search error:", e);
       if (!cached) {
-        setError(String(e?.message || "").includes("TENOR_API_KEY") ? "GIFs aren't set up yet" : "Failed to load GIFs");
+        setError("Failed to load GIFs");
         setGifs([]);
       }
     } finally {
@@ -142,7 +142,7 @@ export function GifPicker({ onSelect, onClose }: GifPickerProps) {
 
       {/* Attribution */}
       <div className="px-3 py-1.5 border-t border-border bg-muted/20 flex items-center">
-        <span className="text-[10px] text-muted-foreground/70">Powered by Tenor</span>
+        <span className="text-[10px] text-muted-foreground/70">Powered by {gifProviderName()}</span>
       </div>
     </motion.div>
   );
