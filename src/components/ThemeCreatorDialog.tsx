@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { Sparkles, Upload, Lock, Loader2 } from "lucide-react";
+import { Sparkles, Upload, Lock, Loader2, Wand2, RefreshCw } from "lucide-react";
+import { designThemes, THEME_AI_EXAMPLES, type ThemeSuggestion } from "@/lib/themeAI";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -73,6 +74,32 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
   const [name, setName] = useState("");
   const [def, setDef] = useState<ThemeDefinition>(DEFAULT_DEFINITION);
   const [saving, setSaving] = useState(false);
+  const [prompt, setPrompt] = useState("");
+  const [variant, setVariant] = useState(0);
+  const [suggestions, setSuggestions] = useState<ThemeSuggestion[]>([]);
+  const [thinking, setThinking] = useState(false);
+
+  // UMS Theme AI: runs entirely on the device
+  const generate = (text: string, nextVariant = variant) => {
+    const q = text.trim();
+    if (!q) return;
+    setThinking(true);
+    // A short pause so the result feels considered and the UI can animate
+    setTimeout(() => {
+      const ideas = designThemes(q, nextVariant);
+      setSuggestions(ideas);
+      setThinking(false);
+      if (ideas[0]) {
+        setDef(ideas[0].definition);
+        if (!name.trim()) setName(ideas[0].name);
+      }
+    }, 350);
+  };
+  const generateAgain = () => {
+    const v = variant + 1;
+    setVariant(v);
+    generate(prompt, v);
+  };
 
   const previewMode = useMemo(() => colorMode, [colorMode]);
 
@@ -133,6 +160,59 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
         </DialogHeader>
 
         <div className="space-y-3">
+          {/* UMS Theme AI */}
+          <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 space-y-2">
+            <div className="flex items-center gap-2 text-[13px] font-semibold">
+              <Wand2 className="w-4 h-4 text-primary" /> UMS Theme AI
+              <span className="text-[10px] font-medium text-muted-foreground ml-auto">runs on your device</span>
+            </div>
+            <div className="flex gap-2">
+              <Input
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); generate(prompt); } }}
+                placeholder="Describe it… e.g. dark purple cyberpunk"
+                className="rounded-lg"
+              />
+              <Button type="button" onClick={() => generate(prompt)} disabled={!prompt.trim() || thinking} className="rounded-lg gap-1.5 flex-shrink-0">
+                {thinking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />} Design
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {THEME_AI_EXAMPLES.slice(0, 6).map((ex) => (
+                <button
+                  key={ex}
+                  type="button"
+                  onClick={() => { setPrompt(ex); generate(ex, 0); setVariant(0); }}
+                  className="text-[11px] px-2 py-1 rounded-full bg-accent hover:bg-accent/70 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {ex}
+                </button>
+              ))}
+            </div>
+            {suggestions.length > 0 && (
+              <div className="space-y-1.5">
+                <div className="grid grid-cols-3 gap-1.5">
+                  {suggestions.map((sg, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => { setDef(sg.definition); setName(sg.name); }}
+                      title={sg.reason}
+                      className={`rounded-lg p-1.5 text-left transition-all ${def === sg.definition ? "ring-2 ring-primary bg-primary/10" : "bg-accent/60 hover:bg-accent"}`}
+                    >
+                      <div className="h-5 rounded-md mb-1" style={{ background: gradientCss(sg.definition) }} />
+                      <div className="text-[11px] font-medium truncate">{sg.name}</div>
+                    </button>
+                  ))}
+                </div>
+                <button type="button" onClick={generateAgain} className="text-[12px] text-primary hover:underline flex items-center gap-1">
+                  <RefreshCw className="w-3 h-3" /> Try different ideas
+                </button>
+              </div>
+            )}
+          </div>
+
           <Input value={name} onChange={(e) => setName(e.target.value.slice(0, 40))} placeholder="Theme name" className="rounded-lg" />
           <ThemePreview definition={def} mode={previewMode} name={name} />
           <ColorField label="Accent color" value={def.primary} onChange={(v) => setDef({ ...def, primary: v })} />
