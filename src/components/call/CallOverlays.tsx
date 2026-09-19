@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, Volume2, VolumeX, User, SwitchCamera, ZoomIn, MonitorUp, MonitorX } from "lucide-react";
 import { useCall } from "@/contexts/CallContext";
+import { useElementStyle } from "@/hooks/useElementStyle";
 
 export function IncomingCallOverlay() {
   const { callState, answerCall, declineCall } = useCall();
