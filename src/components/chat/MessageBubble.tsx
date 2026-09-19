@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from "react";
+import { useElementStyle } from "@/hooks/useElementStyle";
 import { motion, AnimatePresence } from "framer-motion";
 import { Globe, Reply, Smile, Pencil, Trash2, Lock, Forward, Star, Share2 } from "lucide-react";
 import { type Message } from "@/hooks/useMessages";
@@ -26,6 +27,18 @@ export function MessageBubble({ message, onReact, onReply, onEdit, onDelete, onF
   const { user } = useAuth();
   const { autoTranslate, showOriginal, primaryLang, translateText } = useTranslation();
   const isMe = message.sender_id === user?.id;
+  const bubble = useElementStyle(isMe ? "bubble.sent" : "bubble.received");
+
+  // A theme can give messages a sound. Only fires for messages that have
+  // just arrived, never for history scrolling past.
+  const soundPlayed = useRef(false);
+  useEffect(() => {
+    if (soundPlayed.current) return;
+    soundPlayed.current = true;
+    const age = Date.now() - new Date(message.created_at).getTime();
+    if (age < 4000) bubble.play();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const isDeleted = !!message.deleted_at;
   const [showActions, setShowActions] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
@@ -110,7 +123,8 @@ export function MessageBubble({ message, onReact, onReply, onEdit, onDelete, onF
 
         {/* Bubble */}
         <div
-          className={`px-3 py-2 rounded-2xl text-[15px] leading-relaxed relative ${
+          style={bubble.style}
+          className={`px-3 py-2 rounded-2xl text-[15px] leading-relaxed relative ${bubble.className} ${
             isDeleted
               ? "bg-accent/50 text-muted-foreground italic"
               : isMe

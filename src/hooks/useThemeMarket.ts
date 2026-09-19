@@ -3,13 +3,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { isValidDefinition, type CustomTheme, type ThemeDefinition } from "@/lib/customThemes";
 import { normalizeEffects, type ThemeEffects } from "@/lib/themeEffects";
+import { normalizeCustomization, type ThemeCustomization } from "@/lib/themeCustomization";
 
 const table = () => supabase.from("custom_themes") as any;
 
 function normalize(rows: any[]): CustomTheme[] {
   return (rows || [])
     .filter((r) => isValidDefinition(r.definition))
-    .map((r) => ({ ...r, effects: normalizeEffects(r.effects) })) as CustomTheme[];
+    .map((r) => ({
+      ...r,
+      effects: normalizeEffects(r.effects),
+      customization: normalizeCustomization(r.customization),
+    })) as CustomTheme[];
 }
 
 // Themes this user made or added from the market
@@ -67,7 +72,13 @@ export function useThemeMarket() {
   }, [refetch]);
 
   const publish = useCallback(
-    async (name: string, definition: ThemeDefinition, isPublic: boolean, effects?: ThemeEffects): Promise<CustomTheme | null> => {
+    async (
+      name: string,
+      definition: ThemeDefinition,
+      isPublic: boolean,
+      effects?: ThemeEffects,
+      customization?: ThemeCustomization
+    ): Promise<CustomTheme | null> => {
       if (!user) return null;
       const { data: profile } = await supabase
         .from("profiles").select("display_name").eq("user_id", user.id).maybeSingle();
@@ -78,12 +89,17 @@ export function useThemeMarket() {
           name: name.trim(),
           definition,
           effects: normalizeEffects(effects),
+          customization: normalizeCustomization(customization),
           is_public: isPublic,
         })
         .select("*")
         .single();
       if (error) throw error;
-      return { ...(data as CustomTheme), effects: normalizeEffects((data as any).effects) };
+      return {
+        ...(data as CustomTheme),
+        effects: normalizeEffects((data as any).effects),
+        customization: normalizeCustomization((data as any).customization),
+      };
     },
     [user]
   );

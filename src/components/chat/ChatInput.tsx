@@ -7,6 +7,7 @@ import { useMediaUpload } from "@/hooks/useMediaUpload";
 import { useVoiceRecorder } from "@/hooks/useVoiceRecorder";
 import EmojiPicker, { Theme } from "emoji-picker-react";
 import { StickerPicker } from "./StickerPicker";
+import { useElementStyle } from "@/hooks/useElementStyle";
 import { GifPicker } from "./GifPicker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -38,6 +39,13 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply, onSchedule
   const [message, setMessage] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
   const [showStickers, setShowStickers] = useState(false);
+  // What the theme says about each control in this bar
+  const elSend = useElementStyle("button.send");
+  const elEmoji = useElementStyle("button.emoji");
+  const elAttach = useElementStyle("button.attach");
+  const elMic = useElementStyle("button.mic");
+  const elGif = useElementStyle("button.gif");
+  const elInput = useElementStyle("input.box");
   const [showGifs, setShowGifs] = useState(false);
   // Warm the GIF list so the picker opens with content already there
   useEffect(() => {
@@ -278,24 +286,27 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply, onSchedule
         />
 
         <button
-          onClick={() => imageInputRef.current?.click()}
+          onClick={() => { elAttach.play(); imageInputRef.current?.click(); }}
           disabled={uploading}
-          className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary flex-shrink-0"
+          className={cn("w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary flex-shrink-0", elAttach.className)}
+          style={elAttach.style}
         >
           <Image className="w-5 h-5" />
         </button>
         <button
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => { elAttach.play(); fileInputRef.current?.click(); }}
           disabled={uploading}
-          className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary flex-shrink-0"
+          className={cn("w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary flex-shrink-0", elAttach.className)}
+          style={elAttach.style}
         >
-          <Paperclip className="w-5 h-5" />
+          {elAttach.Icon ? <elAttach.Icon className="w-5 h-5" /> : <Paperclip className="w-5 h-5" />}
         </button>
         <button
-          onClick={() => { setShowEmoji(!showEmoji); setShowStickers(false); setShowGifs(false); setShowSchedule(false); }}
-          className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary flex-shrink-0"
+          onClick={() => { elEmoji.play(); setShowEmoji(!showEmoji); setShowStickers(false); setShowGifs(false); setShowSchedule(false); }}
+          className={cn("w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary flex-shrink-0", elEmoji.className)}
+          style={elEmoji.style}
         >
-          <Smile className="w-5 h-5" />
+          {elEmoji.Icon ? <elEmoji.Icon className="w-5 h-5" /> : <Smile className="w-5 h-5" />}
         </button>
         <button
           onClick={() => { setShowStickers(!showStickers); setShowEmoji(false); setShowGifs(false); setShowSchedule(false); }}
@@ -304,10 +315,11 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply, onSchedule
           <Sticker className="w-5 h-5" />
         </button>
         <button
-          onClick={() => { setShowGifs(!showGifs); setShowEmoji(false); setShowStickers(false); setShowSchedule(false); }}
-          className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary flex-shrink-0"
+          onClick={() => { elGif.play(); setShowGifs(!showGifs); setShowEmoji(false); setShowStickers(false); setShowSchedule(false); }}
+          className={cn("w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary flex-shrink-0", elGif.className)}
+          style={elGif.style}
         >
-          <GifIcon className="w-5 h-5" />
+          {elGif.Icon ? <elGif.Icon className="w-5 h-5" /> : <GifIcon className="w-5 h-5" />}
         </button>
         {onSchedule && (
           <button
@@ -332,25 +344,28 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply, onSchedule
             placeholder={uploading ? "Uploading..." : "Aa"}
             disabled={uploading}
             className="w-full px-4 py-2 bg-accent rounded-full text-[15px] text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            style={elInput.style}
           />
         </div>
 
         {message.trim() ? (
           <button
-            onClick={handleSend}
-            className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary flex-shrink-0"
+            onClick={() => { elSend.play(); handleSend(); }}
+            className={cn("w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary flex-shrink-0", elSend.className)}
+            style={elSend.style}
           >
-            <Send className="w-5 h-5" />
+            {elSend.Icon ? <elSend.Icon className="w-5 h-5" /> : <Send className="w-5 h-5" />}
           </button>
         ) : (
           <>
             <button
-              onClick={handleStartRecording}
+              onClick={() => { elMic.play(); handleStartRecording(); }}
               disabled={uploading}
-              className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary flex-shrink-0"
+              className={cn("w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary flex-shrink-0", elMic.className)}
+              style={elMic.style}
               title="Record a voice message"
             >
-              <Mic className="w-5 h-5" />
+              {elMic.Icon ? <elMic.Icon className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
             </button>
             <button
               onClick={handleThumbsUp}

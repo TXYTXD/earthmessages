@@ -21,6 +21,8 @@ export interface CustomTheme {
   definition: ThemeDefinition;
   /** Motion, background animation and ambient sound bundled with the theme */
   effects?: import("@/lib/themeEffects").ThemeEffects;
+  /** Per-element colours, icons, sounds and animations */
+  customization?: import("@/lib/themeCustomization").ThemeCustomization;
   is_public: boolean;
   installs: number;
   created_at: string;
