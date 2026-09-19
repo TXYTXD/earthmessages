@@ -1,13 +1,14 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import Anthropic from "npm:@anthropic-ai/sdk";
 
 // The smart half of UMS Theme AI. It takes an instruction about a theme and
 // returns a patch describing what to change. A real model does the
 // understanding; this function decides what is allowed to be changed.
 //
-// Whichever key the owner has configured is used:
-//   GEMINI_API_KEY     -> Google Gemini
-//   ANTHROPIC_API_KEY  -> Claude (the same key the AI tab uses)
-// With neither, the app falls back to its built-in on-device assistant.
+// Claude is used when ANTHROPIC_API_KEY is set — the same key the AI tab and
+// translation use, so one key covers every AI feature in the app. A
+// GEMINI_API_KEY is honoured instead if that is all the owner has. With
+// neither, the app falls back to its built-in on-device assistant.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -106,9 +107,10 @@ function sanitize(raw: unknown): { patch: Patch; changed: number } {
   let changed = 0;
 
   // Per-element overrides
-  if (p.customization && typeof p.customization === "object") {
+  const elementMap = p.customization ?? elementsToMap((raw as { elements?: unknown })?.elements);
+  if (elementMap && typeof elementMap === "object") {
     const custom: Record<string, Record<string, string>> = {};
-    for (const [id, value] of Object.entries(p.customization)) {
+    for (const [id, value] of Object.entries(elementMap)) {
       const traits = ELEMENTS[id];
       if (!traits || !value || typeof value !== "object") continue;
       const style: Record<string, string> = {};
@@ -172,45 +174,104 @@ function sanitize(raw: unknown): { patch: Patch; changed: number } {
 }
 
 // ---- What the model is told -----------------------------------------------
+// The answer is constrained to this schema, so it always comes back as valid
+// JSON with the right shape instead of prose we have to fish through.
+const RESPONSE_SCHEMA = {
+  type: "object",
+  properties: {
+    reply: { type: "string", description: "One short friendly sentence saying what you changed." },
+    elements: {
+      type: "array",
+      description: "Per-element changes. Include only elements you are changing.",
+      items: {
+        type: "object",
+        properties: {
+          id: { type: "string", enum: Object.keys(ELEMENTS) },
+          color: { type: "string", description: "#rrggbb, the text or icon colour" },
+          background: { type: "string", description: "#rrggbb, the fill" },
+          icon: { type: "string", enum: ICONS },
+          sound: { type: "string", enum: SOUNDS },
+          animation: { type: "string", enum: ANIMATIONS },
+        },
+        required: ["id"],
+        additionalProperties: false,
+      },
+    },
+    palette: {
+      type: "object",
+      description: "The theme's overall colours. Include only what you are changing.",
+      properties: {
+        primary: { type: "string", description: "#rrggbb accent" },
+        gradient: { type: "array", items: { type: "string" }, minItems: 3, maxItems: 3 },
+        bubble: { type: "array", items: { type: "string" }, minItems: 2, maxItems: 2 },
+        received: { type: "string" },
+        sidebar: { type: "string" },
+        surface: { type: "string" },
+        tint: { type: "string" },
+      },
+      additionalProperties: false,
+    },
+    effects: {
+      type: "object",
+      description: "How the app moves and what plays behind it.",
+      properties: {
+        motion: { type: "string", enum: MOTIONS },
+        background: { type: "string", enum: BACKGROUNDS },
+        backgroundIntensity: { type: "integer", minimum: 0, maximum: 100 },
+        sound: { type: "string", enum: AMBIENCE },
+        soundVolume: { type: "integer", minimum: 0, maximum: 100 },
+      },
+      additionalProperties: false,
+    },
+  },
+  required: ["reply"],
+  additionalProperties: false,
+} as const;
+
 function systemPrompt(): string {
   return [
-    "You design themes for UMS Messages, a messaging app. The person tells you what they want changed and you answer with JSON only.",
+    "You design themes for UMS Messages, a messaging app. Someone tells you what they want changed and you return the change.",
     "",
-    "Reply with exactly this shape and nothing else — no prose, no markdown fence:",
-    '{"reply":"one short friendly sentence saying what you did","customization":{"<elementId>":{"color":"#rrggbb","background":"#rrggbb","icon":"<IconName>","sound":"<sound>","animation":"<animation>"}},"palette":{"primary":"#rrggbb","gradient":["#rrggbb","#rrggbb","#rrggbb"],"bubble":["#rrggbb","#rrggbb"],"received":"#rrggbb","sidebar":"#rrggbb","surface":"#rrggbb","tint":"#rrggbb"},"effects":{"motion":"<motion>","background":"<background>","backgroundIntensity":0,"sound":"<ambience>","soundVolume":0}}',
-    "",
-    "Include only the keys you are actually changing. Leave everything else out.",
-    "",
-    "Element ids and what each one accepts:",
+    "What each element accepts — never set a property an element does not list:",
     ...Object.entries(ELEMENTS).map(([id, traits]) => `  ${id}: ${traits.join(", ")}`),
     "",
-    `Icons: ${ICONS.join(", ")}`,
-    `Sounds: ${SOUNDS.join(", ")}`,
-    `Animations: ${ANIMATIONS.join(", ")}`,
-    `Background animations: ${BACKGROUNDS.join(", ")}`,
-    `Ambient sounds: ${AMBIENCE.join(", ")}`,
-    `Motion styles: ${MOTIONS.join(", ")}`,
-    "",
-    "Rules:",
+    "Guidance:",
     "- Colours are always #rrggbb.",
-    "- Never invent an element id, icon, sound or animation that is not listed above.",
-    "- palette.primary is the accent; palette.bubble is the two-colour fade on the messages the person sends.",
-    "- Keep text readable: do not put a dark colour on a dark surface or a light one on a light surface.",
-    "- When they describe a mood rather than a part ('make it feel like the sea'), set the palette and effects.",
+    "- palette.primary is the accent. palette.bubble is the two-colour fade on the messages this person sends.",
+    "- Keep text readable: never put a dark colour on a dark surface or a light one on a light surface.",
+    "- When they describe a mood rather than a part ('make it feel like the sea'), set the palette and the effects.",
     "- When they name a part ('the send button'), change just that part.",
-    "- 'everything' means give most elements a coherent treatment, not one flat colour.",
-    "- The person may write in any language; reply in the language they used.",
+    "- 'everything' means give the whole app a coherent treatment, not one flat colour on every element.",
+    "- Reply in the language they wrote in.",
   ].join("\n");
 }
 
 function userPrompt(instruction: string, state: unknown): string {
   return [
-    "Current theme:",
+    "The theme as it stands:",
     JSON.stringify(state).slice(0, 4000),
     "",
     "What they asked for:",
     instruction.slice(0, 1000),
   ].join("\n");
+}
+
+// The model answers with a list of element changes; the rest of this
+// function works in the same map shape the app stores.
+function elementsToMap(raw: unknown): Record<string, Record<string, string>> {
+  const out: Record<string, Record<string, string>> = {};
+  if (!Array.isArray(raw)) return out;
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object") continue;
+    const { id, ...rest } = entry as Record<string, unknown>;
+    if (typeof id !== "string") continue;
+    const style: Record<string, string> = {};
+    for (const [k, v] of Object.entries(rest)) {
+      if (typeof v === "string" && v) style[k] = v;
+    }
+    if (Object.keys(style).length) out[id] = { ...(out[id] ?? {}), ...style };
+  }
+  return out;
 }
 
 // ---- Providers ------------------------------------------------------------
@@ -223,6 +284,31 @@ function extractJson(text: string): unknown {
   return JSON.parse(body.slice(start, end + 1));
 }
 
+async function askClaude(key: string, instruction: string, state: unknown): Promise<unknown> {
+  const anthropic = new Anthropic({ apiKey: key });
+  const response = await anthropic.messages.create({
+    model: "claude-opus-5",
+    max_tokens: 4096,
+    // Theme edits are quick judgement calls, not deep reasoning; low effort
+    // keeps the editor feeling instant.
+    output_config: {
+      effort: "low",
+      format: { type: "json_schema", schema: RESPONSE_SCHEMA },
+    },
+    system: systemPrompt(),
+    messages: [{ role: "user", content: userPrompt(instruction, state) }],
+  });
+
+  if (response.stop_reason === "refusal") {
+    throw new Error("The assistant declined that request.");
+  }
+  const text = response.content
+    .filter((b): b is Anthropic.TextBlock => b.type === "text")
+    .map((b) => b.text)
+    .join("");
+  return extractJson(text);
+}
+
 async function askGemini(key: string, instruction: string, state: unknown): Promise<unknown> {
   const resp = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`,
@@ -232,34 +318,18 @@ async function askGemini(key: string, instruction: string, state: unknown): Prom
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: systemPrompt() }] },
         contents: [{ role: "user", parts: [{ text: userPrompt(instruction, state) }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 2048, responseMimeType: "application/json" },
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 4096,
+          responseMimeType: "application/json",
+          responseSchema: RESPONSE_SCHEMA,
+        },
       }),
     }
   );
   if (!resp.ok) throw new Error(`Gemini ${resp.status}: ${(await resp.text()).slice(0, 200)}`);
   const data = await resp.json();
   const text = data?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? "").join("") ?? "";
-  return extractJson(text);
-}
-
-async function askClaude(key: string, instruction: string, state: unknown): Promise<unknown> {
-  const resp = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": key,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-5",
-      max_tokens: 2048,
-      system: systemPrompt(),
-      messages: [{ role: "user", content: userPrompt(instruction, state) }],
-    }),
-  });
-  if (!resp.ok) throw new Error(`Claude ${resp.status}: ${(await resp.text()).slice(0, 200)}`);
-  const data = await resp.json();
-  const text = (data?.content ?? []).map((b: { text?: string }) => b.text ?? "").join("");
   return extractJson(text);
 }
 
@@ -282,9 +352,9 @@ Deno.serve(async (req) => {
     if (!instruction) return json({ error: "Nothing to do" }, 400);
     const state = body?.state ?? {};
 
-    const gemini = Deno.env.get("GEMINI_API_KEY");
     const claude = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!gemini && !claude) {
+    const gemini = Deno.env.get("GEMINI_API_KEY");
+    if (!claude && !gemini) {
       // Not configured — the app uses its own on-device assistant instead
       return json({ configured: false });
     }
@@ -292,19 +362,18 @@ Deno.serve(async (req) => {
     let raw: unknown;
     let provider = "claude";
     try {
-      if (gemini) {
-        raw = await askGemini(gemini, instruction, state);
-        provider = "gemini";
+      if (claude) {
+        raw = await askClaude(claude, instruction, state);
       } else {
-        raw = await askClaude(claude!, instruction, state);
-        provider = "claude";
+        raw = await askGemini(gemini!, instruction, state);
+        provider = "gemini";
       }
     } catch (e) {
       // One provider failing should not lose the feature if the other is set
-      if (gemini && claude) {
-        console.error("primary provider failed, trying the other:", e);
-        raw = await askClaude(claude, instruction, state);
-        provider = "claude";
+      if (claude && gemini) {
+        console.error("Claude failed, trying Gemini:", e);
+        raw = await askGemini(gemini, instruction, state);
+        provider = "gemini";
       } else {
         throw e;
       }
