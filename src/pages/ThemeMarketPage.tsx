@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Store, Plus, Check, Search, Flame, Clock, Loader2, Download, Paintbrush } from "lucide-react";
+import { ArrowLeft, Store, Plus, Check, Search, Flame, Clock, Loader2, Download, Paintbrush, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useThemeContext } from "@/contexts/ThemeContext";
@@ -21,6 +21,7 @@ export default function ThemeMarketPage() {
   const mine = useMyThemes();
   const [query, setQuery] = useState("");
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<CustomTheme | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const list = useMemo(() => {
@@ -151,6 +152,11 @@ export default function ThemeMarketPage() {
                     <Button size="sm" onClick={() => use(t)} className="rounded-full flex-1 gap-1" variant={active ? "secondary" : "default"}>
                       {active ? <><Check className="w-3.5 h-3.5" /> In use</> : "Use"}
                     </Button>
+                    {t.author_id === user?.id && (
+                      <Button size="sm" variant="outline" onClick={() => setEditing(t)} className="rounded-full gap-1">
+                        <Pencil className="w-3.5 h-3.5" /> Edit
+                      </Button>
+                    )}
                     {t.author_id !== user?.id && (
                       <Button size="sm" variant="outline" onClick={() => toggleAdd(t)} disabled={busyId === t.id} className="rounded-full gap-1">
                         {busyId === t.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : added ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
@@ -166,6 +172,12 @@ export default function ThemeMarketPage() {
       </div>
 
       <ThemeCreatorDialog open={creating} onClose={() => setCreating(false)} onCreated={() => { market.refetch(); mine.refetch(); }} />
+      <ThemeCreatorDialog
+        open={!!editing}
+        editing={editing}
+        onClose={() => setEditing(null)}
+        onCreated={() => { market.refetch(); mine.refetch(); }}
+      />
     </div>
   );
 }

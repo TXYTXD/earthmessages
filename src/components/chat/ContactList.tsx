@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useElementStyle } from "@/hooks/useElementStyle";
 import { Search, MessageCircle, Users, Bot, BadgeCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import { type Conversation } from "@/hooks/useConversations";
@@ -14,6 +15,10 @@ interface ContactListProps {
 }
 
 export function ContactList({ conversations, selectedId, onSelect, onSelectAI, isAISelected, loading }: ContactListProps) {
+  const elRow = useElementStyle("list.row");
+  const elUnread = useElementStyle("list.unread");
+  const elOnline = useElementStyle("list.online");
+  const elAvatar = useElementStyle("avatar.ring");
   const [searchQuery, setSearchQuery] = useState("");
 
   const filtered = searchQuery
@@ -79,13 +84,17 @@ export function ContactList({ conversations, selectedId, onSelect, onSelectAI, i
           filtered.map((conv) => (
             <button
               key={conv.id}
-              onClick={() => onSelect(conv)}
-              className={`w-full p-2.5 flex items-center gap-3 rounded-2xl premium-hover ${
+              onClick={() => { elRow.play(); onSelect(conv); }}
+              className={`w-full p-2.5 flex items-center gap-3 rounded-2xl premium-hover ${elRow.className} ${
                 selectedId === conv.id ? "bg-accent shadow-soft" : ""
               }`}
+              style={selectedId === conv.id ? undefined : elRow.style}
             >
               <div className="relative flex-shrink-0">
-                <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center text-sm font-semibold text-foreground ring-1 ring-border/60">
+                <div
+                  className={`w-12 h-12 rounded-full bg-secondary flex items-center justify-center text-sm font-semibold text-foreground ring-1 ring-border/60 ${elAvatar.className}`}
+                  style={elAvatar.style}
+                >
                   {conv.type === "group" ? (
                     <Users className="w-5 h-5 text-muted-foreground" />
                   ) : (
@@ -93,7 +102,10 @@ export function ContactList({ conversations, selectedId, onSelect, onSelectAI, i
                   )}
                 </div>
                 {conv.is_online && conv.type === "direct" && (
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-success rounded-full border-2 border-card" />
+                  <div
+                    className={`absolute bottom-0 right-0 w-3 h-3 bg-success rounded-full border-2 border-card ${elOnline.className}`}
+                    style={elOnline.overrides?.color ? { background: elOnline.overrides.color } : undefined}
+                  />
                 )}
               </div>
               <div className="flex-1 text-left min-w-0">
@@ -116,8 +128,8 @@ export function ContactList({ conversations, selectedId, onSelect, onSelectAI, i
                   </p>
                   {conv.unread_count > 0 && (
                     <div
-                      className="min-w-5 h-5 px-1.5 rounded-full flex items-center justify-center flex-shrink-0 text-white shadow-soft"
-                      style={{ background: "var(--messenger-gradient)" }}
+                      className={`min-w-5 h-5 px-1.5 rounded-full flex items-center justify-center flex-shrink-0 text-white shadow-soft ${elUnread.className}`}
+                      style={{ background: elUnread.overrides?.background ?? "var(--messenger-gradient)", ...(elUnread.overrides?.color ? { color: elUnread.overrides.color } : {}) }}
                     >
                       <span className="text-[10px] font-bold">{conv.unread_count}</span>
                     </div>

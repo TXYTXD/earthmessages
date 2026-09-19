@@ -104,6 +104,40 @@ export function useThemeMarket() {
     [user]
   );
 
+  // Authors can revise a theme they published. Everyone who added it sees
+  // the new version, which is why the install list is not touched here.
+  const updateTheme = useCallback(
+    async (
+      themeId: string,
+      patch: { name?: string; definition?: ThemeDefinition; effects?: ThemeEffects; customization?: ThemeCustomization; isPublic?: boolean }
+    ): Promise<CustomTheme | null> => {
+      if (!user) return null;
+      const row: Record<string, unknown> = {};
+      if (patch.name !== undefined) row.name = patch.name.trim();
+      if (patch.definition) row.definition = patch.definition;
+      if (patch.effects) row.effects = normalizeEffects(patch.effects);
+      if (patch.customization) row.customization = normalizeCustomization(patch.customization);
+      if (patch.isPublic !== undefined) row.is_public = patch.isPublic;
+      if (!Object.keys(row).length) return null;
+
+      const { data, error } = await table()
+        .update(row)
+        .eq("id", themeId)
+        .eq("author_id", user.id)
+        .select("*")
+        .single();
+      if (error) throw error;
+      const updated = {
+        ...(data as CustomTheme),
+        effects: normalizeEffects((data as any).effects),
+        customization: normalizeCustomization((data as any).customization),
+      };
+      setThemes((prev) => prev.map((t) => (t.id === themeId ? updated : t)));
+      return updated;
+    },
+    [user]
+  );
+
   const install = useCallback(async (themeId: string) => {
     const { error } = await supabase.rpc("install_theme" as any, { p_theme: themeId } as any);
     if (error) throw error;
@@ -116,5 +150,5 @@ export function useThemeMarket() {
     setThemes((prev) => prev.map((t) => (t.id === themeId ? { ...t, installs: Math.max(0, t.installs - 1) } : t)));
   }, []);
 
-  return { themes, loading, sort, setSort, refetch, publish, install, uninstall };
+  return { themes, loading, sort, setSort, refetch, publish, updateTheme, install, uninstall };
 }

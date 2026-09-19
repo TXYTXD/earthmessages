@@ -41,9 +41,6 @@ export const ELEMENTS: ElementSpec[] = [
   // Messages
   { id: "bubble.sent", label: "Your bubbles", group: "Messages", hint: "Messages you send", traits: ["color", "background", "animation", "sound"], cssVar: "bubble-sent" },
   { id: "bubble.received", label: "Their bubbles", group: "Messages", hint: "Messages you receive", traits: ["color", "background", "animation", "sound"], cssVar: "bubble-received" },
-  { id: "message.reaction", label: "Reactions", group: "Messages", hint: "Emoji on a message", traits: ["background", "animation", "sound"], cssVar: "reaction" },
-  { id: "message.typing", label: "Typing dots", group: "Messages", hint: "When someone is writing", traits: ["color", "animation"], cssVar: "typing" },
-  { id: "message.time", label: "Timestamps", group: "Messages", hint: "The little time under a message", traits: ["color"], cssVar: "msg-time" },
 
   // Buttons
   { id: "button.send", label: "Send button", group: "Buttons", hint: "Sends your message", traits: ["color", "background", "icon", "animation", "sound"], cssVar: "btn-send" },
@@ -56,7 +53,6 @@ export const ELEMENTS: ElementSpec[] = [
 
   // Chat list
   { id: "list.row", label: "Chat rows", group: "Chat list", hint: "Each chat in the list", traits: ["background", "animation", "sound"], cssVar: "list-row" },
-  { id: "list.active", label: "Open chat row", group: "Chat list", hint: "The chat you have open", traits: ["background", "color"], cssVar: "list-active" },
   { id: "list.unread", label: "Unread badge", group: "Chat list", hint: "The number bubble", traits: ["color", "background", "animation"], cssVar: "unread" },
   { id: "list.online", label: "Online dot", group: "Chat list", hint: "Shows who's online", traits: ["color", "animation"], cssVar: "online" },
   { id: "avatar.ring", label: "Avatars", group: "Chat list", hint: "Profile circles", traits: ["background", "animation"], cssVar: "avatar" },
@@ -68,9 +64,7 @@ export const ELEMENTS: ElementSpec[] = [
 
   // Surfaces
   { id: "surface.card", label: "Cards", group: "Surfaces", hint: "Panels and boxes", traits: ["background"], cssVar: "card" },
-  { id: "surface.header", label: "Chat header", group: "Surfaces", hint: "The bar above a chat", traits: ["background", "color"], cssVar: "header" },
   { id: "surface.dialog", label: "Pop-ups", group: "Surfaces", hint: "Dialogs and sheets", traits: ["background", "animation", "sound"], cssVar: "dialog" },
-  { id: "surface.toast", label: "Notifications", group: "Surfaces", hint: "The little pop-up messages", traits: ["background", "color", "animation", "sound"], cssVar: "toast" },
 ];
 
 export const ELEMENT_BY_ID = new Map(ELEMENTS.map((e) => [e.id, e]));

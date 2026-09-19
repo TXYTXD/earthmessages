@@ -5,6 +5,8 @@ import { useCall } from "@/contexts/CallContext";
 
 export function IncomingCallOverlay() {
   const { callState, answerCall, declineCall } = useCall();
+  const elAnswer = useElementStyle("call.answer");
+  const elDecline = useElementStyle("call.decline");
 
   if (callState.status !== "ringing" || !callState.isIncoming) return null;
 
@@ -60,12 +62,16 @@ export function IncomingCallOverlay() {
             whileTap={{ scale: 0.9 }}
             onClick={(e) => {
               e.stopPropagation();
+              elDecline.play();
               declineCall(callState.callId!);
             }}
             className="flex flex-col items-center gap-2"
           >
-            <div className="w-16 h-16 rounded-full bg-destructive flex items-center justify-center shadow-lg shadow-destructive/40">
-              <PhoneOff className="w-7 h-7 text-destructive-foreground" />
+            <div
+              className={`w-16 h-16 rounded-full bg-destructive flex items-center justify-center shadow-lg shadow-destructive/40 ${elDecline.className}`}
+              style={elDecline.style}
+            >
+              {elDecline.Icon ? <elDecline.Icon className="w-7 h-7 text-destructive-foreground" /> : <PhoneOff className="w-7 h-7 text-destructive-foreground" />}
             </div>
             <span className="text-sm font-medium text-muted-foreground">Ignore</span>
           </motion.button>
@@ -78,6 +84,7 @@ export function IncomingCallOverlay() {
             whileTap={{ scale: 0.9 }}
             onClick={(e) => {
               e.stopPropagation();
+              elAnswer.play();
               answerCall(callState.callId!, callState.type);
             }}
             className="flex flex-col items-center gap-2"
@@ -85,9 +92,10 @@ export function IncomingCallOverlay() {
             <motion.div
               animate={{ boxShadow: ["0 0 0 0 hsl(var(--success) / 0.6)", "0 0 0 18px hsl(var(--success) / 0)"] }}
               transition={{ duration: 1.4, repeat: Infinity }}
-              className="w-16 h-16 rounded-full bg-success flex items-center justify-center"
+              className={`w-16 h-16 rounded-full bg-success flex items-center justify-center ${elAnswer.className}`}
+              style={elAnswer.style}
             >
-              <Phone className="w-7 h-7 text-success-foreground" />
+              {elAnswer.Icon ? <elAnswer.Icon className="w-7 h-7 text-success-foreground" /> : <Phone className="w-7 h-7 text-success-foreground" />}
             </motion.div>
             <span className="text-sm font-medium text-muted-foreground">Accept</span>
           </motion.button>
@@ -325,19 +333,21 @@ export function ActiveCallOverlay() {
 function ControlButton({
   active, onClick, icon, activeIcon, label,
 }: { active: boolean; onClick: () => void; icon: React.ReactNode; activeIcon: React.ReactNode; label: string }) {
+  const el = useElementStyle("call.control");
   return (
     <motion.button
       whileHover={{ scale: 1.08 }}
       whileTap={{ scale: 0.9 }}
-      onClick={onClick}
+      onClick={() => { el.play(); onClick(); }}
       className="flex flex-col items-center gap-1"
     >
       <div
-        className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${
+        className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${el.className} ${
           active
             ? "bg-destructive text-destructive-foreground shadow-lg shadow-destructive/30"
             : "bg-accent/80 text-foreground backdrop-blur-md hover:bg-accent"
         }`}
+        style={active ? undefined : el.style}
       >
         {active ? activeIcon : icon}
       </div>

@@ -4,13 +4,14 @@ import { Globe, Volume2, Languages, Zap, Check, Shield, Bell, Palette, Sun, Moon
 import { useNavigate } from "react-router-dom";
 import { useMyThemes } from "@/hooks/useThemeMarket";
 import { ThemeCreatorDialog } from "@/components/ThemeCreatorDialog";
-import { gradientCss } from "@/lib/customThemes";
+import { gradientCss, type CustomTheme } from "@/lib/customThemes";
 import { BACKGROUNDS, SOUNDS, describeEffects } from "@/lib/themeEffects";
 import { countCustomizations } from "@/lib/themeCustomization";
 import { Input } from "@/components/ui/input";
 import { useThemeContext, ThemeName } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { usePin } from "@/hooks/usePin";
+import { useAuth } from "@/contexts/AuthContext";
 import { PinVerifyDialog } from "@/components/PinVerifyDialog";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Button } from "@/components/ui/button";
@@ -61,6 +62,8 @@ export default function SettingsPage() {
   const navigate = useNavigate();
   const myThemes = useMyThemes();
   const [creatingTheme, setCreatingTheme] = useState(false);
+  const [editingTheme, setEditingTheme] = useState<CustomTheme | null>(null);
+  const { user } = useAuth();
   const {
     primaryLang,
     setPrimaryLang,
@@ -248,6 +251,12 @@ export default function SettingsPage() {
           title="Verify current PIN"
         />
       <ThemeCreatorDialog open={creatingTheme} onClose={() => setCreatingTheme(false)} onCreated={myThemes.refetch} />
+      <ThemeCreatorDialog
+        open={!!editingTheme}
+        editing={editingTheme}
+        onClose={() => setEditingTheme(null)}
+        onCreated={myThemes.refetch}
+      />
 
 
         <div className="bg-card rounded-xl border border-border p-5">
@@ -347,17 +356,30 @@ export default function SettingsPage() {
               <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-2">Your themes</p>
               <div className="grid grid-cols-3 gap-2 mb-4">
                 {myThemes.themes.map((t) => (
-                  <button
+                  <div
                     key={t.id}
-                    onClick={() => setCustomTheme(t.id, t.definition, t.effects, t.customization)}
-                    className={`p-3 rounded-lg text-sm flex flex-col items-center gap-2 transition-all ${
+                    className={`relative p-3 rounded-lg text-sm flex flex-col items-center gap-2 transition-all ${
                       theme === `custom:${t.id}` ? "ring-2 ring-primary bg-primary/10" : "bg-accent hover:bg-accent/80"
                     }`}
                   >
-                    <div className="w-full h-6 rounded-md" style={{ background: gradientCss(t.definition) }} />
-                    <span className="text-xs font-medium truncate max-w-full">{t.name}</span>
-                    {theme === `custom:${t.id}` && <Check className="w-3.5 h-3.5 text-primary" />}
-                  </button>
+                    <button
+                      onClick={() => setCustomTheme(t.id, t.definition, t.effects, t.customization)}
+                      className="w-full flex flex-col items-center gap-2"
+                    >
+                      <div className="w-full h-6 rounded-md" style={{ background: gradientCss(t.definition) }} />
+                      <span className="text-xs font-medium truncate max-w-full">{t.name}</span>
+                      {theme === `custom:${t.id}` && <Check className="w-3.5 h-3.5 text-primary" />}
+                    </button>
+                    {t.author_id === user?.id && (
+                      <button
+                        onClick={() => setEditingTheme(t)}
+                        title="Edit this theme"
+                        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-background/80 hover:bg-background flex items-center justify-center"
+                      >
+                        <Pencil className="w-3 h-3 text-muted-foreground" />
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
               <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-2">Built-in</p>

@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Sparkles, Upload, Lock, Loader2, Wand2, RefreshCw, ChevronDown, Palette, Play, Volume2, SlidersHorizontal, CornerDownLeft } from "lucide-react";
 import {
-  BACKGROUNDS, DEFAULT_EFFECTS, MOTION_STYLES, SOUNDS, type ThemeEffects,
+  BACKGROUNDS, DEFAULT_EFFECTS, MOTION_STYLES, SOUNDS, normalizeEffects, type ThemeEffects,
 } from "@/lib/themeEffects";
 import { ThemeBackground } from "@/components/ThemeBackground";
 import { ThemeAdvancedEditor } from "@/components/ThemeAdvancedEditor";
@@ -16,12 +16,14 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useThemeContext } from "@/contexts/ThemeContext";
 import { useThemeMarket } from "@/hooks/useThemeMarket";
-import { DEFAULT_DEFINITION, completeDefinition, gradientCss, bubbleGradientCss, themeVariables, type ThemeDefinition } from "@/lib/customThemes";
+import { DEFAULT_DEFINITION, completeDefinition, gradientCss, bubbleGradientCss, themeVariables, type CustomTheme, type ThemeDefinition } from "@/lib/customThemes";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   onCreated?: () => void;
+  /** Pass a theme you made to revise it instead of creating a new one */
+  editing?: CustomTheme | null;
 }
 
 function ColorField({ label, hint, value, onChange }: { label: string; hint?: string; value: string; onChange: (v: string) => void }) {
@@ -103,10 +105,10 @@ export function ThemePreview({ definition, mode, name }: { definition: ThemeDefi
   );
 }
 
-export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
+export function ThemeCreatorDialog({ open, onClose, onCreated, editing }: Props) {
   const { toast } = useToast();
   const { colorMode, setCustomTheme } = useThemeContext();
-  const { publish } = useThemeMarket();
+  const { publish, updateTheme } = useThemeMarket();
   const [name, setName] = useState("");
   const [def, setDef] = useState<ThemeDefinition>(DEFAULT_DEFINITION);
   const [saving, setSaving] = useState(false);
@@ -193,6 +195,24 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
     generate(prompt, v);
   };
 
+  // Load whatever is being edited each time the dialog opens
+  useEffect(() => {
+    if (!open) return;
+    if (editing) {
+      setName(editing.name);
+      setDef(editing.definition);
+      setEffects(normalizeEffects(editing.effects));
+      setCustomization(editing.customization ?? {});
+    } else {
+      setName("");
+      setDef(DEFAULT_DEFINITION);
+      setEffects(DEFAULT_EFFECTS);
+      setCustomization({});
+    }
+    setAssistantLog([]);
+    setInstruction("");
+  }, [open, editing]);
+
   const previewMode = useMemo(() => colorMode, [colorMode]);
   // Every role resolved, so the editor can show a colour for roles the
   // theme hasn't set explicitly yet.
@@ -238,17 +258,25 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
     }
     setSaving(true);
     try {
-      const created = await publish(name, def, isPublic, effects, customization);
-      if (created) {
-        setCustomTheme(created.id, created.definition, created.effects ?? effects, created.customization ?? customization);
+      const saved = editing
+        ? await updateTheme(editing.id, { name, definition: def, effects, customization, isPublic })
+        : await publish(name, def, isPublic, effects, customization);
+      if (saved) {
+        setCustomTheme(saved.id, saved.definition, saved.effects ?? effects, saved.customization ?? customization);
         toast({
-          title: isPublic ? "Published to the Theme Market" : "Theme saved",
-          description: isPublic ? `"${created.name}" is now live for everyone.` : `"${created.name}" is in your themes.`,
+          title: editing
+            ? "Theme updated"
+            : isPublic
+              ? "Published to the Theme Market"
+              : "Theme saved",
+          description: editing
+            ? `Everyone using "${saved.name}" gets your changes.`
+            : isPublic
+              ? `"${saved.name}" is now live for everyone.`
+              : `"${saved.name}" is in your themes.`,
         });
         onCreated?.();
         onClose();
-        setName("");
-        setDef(DEFAULT_DEFINITION);
       }
     } catch (e: any) {
       toast({ title: "Couldn't save theme", description: e?.message, variant: "destructive" });
@@ -262,7 +290,7 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-primary" /> Create your theme
+            <Sparkles className="w-5 h-5 text-primary" /> {editing ? `Edit "${editing.name}"` : "Create your theme"}
           </DialogTitle>
           <DialogDescription>Pick your colors, watch the preview, then keep it or share it on the Theme Market.</DialogDescription>
         </DialogHeader>
@@ -549,10 +577,11 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
 
         <div className="flex flex-col sm:flex-row gap-2 pt-2">
           <Button onClick={() => save(true)} disabled={saving} className="rounded-full gap-2 flex-1">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Publish{changedCount ? ` (${changedCount} tweaks)` : " to Theme Market"}
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}{" "}
+            {editing ? "Save changes" : `Publish${changedCount ? ` (${changedCount} tweaks)` : " to Theme Market"}`}
           </Button>
           <Button onClick={() => save(false)} disabled={saving} variant="outline" className="rounded-full gap-2">
-            <Lock className="w-4 h-4" /> Keep private
+            <Lock className="w-4 h-4" /> {editing ? "Save as private" : "Keep private"}
           </Button>
         </div>
       </DialogContent>
