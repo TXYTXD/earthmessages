@@ -309,6 +309,36 @@ async function askClaude(key: string, instruction: string, state: unknown): Prom
   return extractJson(text);
 }
 
+// Any chat-completions service — GLM, Groq, Mistral, DeepSeek, OpenRouter,
+// or a model the owner hosts themselves.
+async function askOpenCompat(instruction: string, state: unknown): Promise<unknown> {
+  const base = Deno.env.get("OPEN_AI_BASE_URL")!.replace(/\/+$/, "");
+  const key = Deno.env.get("OPEN_AI_API_KEY") ?? "";
+  const model = Deno.env.get("OPEN_AI_MODEL")!;
+  const resp = await fetch(`${base}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(key ? { Authorization: `Bearer ${key}` } : {}),
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 4096,
+      temperature: 0.7,
+      // Most of these services support this; the ones that don't still
+      // return JSON because the prompt asks for it, and extractJson copes.
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: `${systemPrompt()}\n\nAnswer with a JSON object matching this schema:\n${JSON.stringify(RESPONSE_SCHEMA)}` },
+        { role: "user", content: userPrompt(instruction, state) },
+      ],
+    }),
+  });
+  if (!resp.ok) throw new Error(`AI service ${resp.status}: ${(await resp.text()).slice(0, 200)}`);
+  const data = await resp.json();
+  return extractJson(data?.choices?.[0]?.message?.content ?? "");
+}
+
 async function askGemini(key: string, instruction: string, state: unknown): Promise<unknown> {
   const resp = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`,
@@ -354,31 +384,41 @@ Deno.serve(async (req) => {
 
     const claude = Deno.env.get("ANTHROPIC_API_KEY");
     const gemini = Deno.env.get("GEMINI_API_KEY");
-    const preferGemini = (Deno.env.get("AI_PROVIDER") ?? "").toLowerCase() === "gemini" && gemini;
-    if (!claude && !gemini) {
+    const hasOpen = !!Deno.env.get("OPEN_AI_BASE_URL") && !!Deno.env.get("OPEN_AI_MODEL");
+    const preferred = (Deno.env.get("AI_PROVIDER") ?? "").toLowerCase();
+
+    const order: string[] = [];
+    if (preferred === "open" && hasOpen) order.push("open");
+    if (preferred === "gemini" && gemini) order.push("gemini");
+    if (preferred === "claude" && claude) order.push("claude");
+    if (claude) order.push("claude");
+    if (gemini) order.push("gemini");
+    if (hasOpen) order.push("open");
+    const chain = [...new Set(order)];
+
+    if (chain.length === 0) {
       // Not configured — the app uses its own on-device assistant instead
       return json({ configured: false });
     }
 
+    // Try the preferred provider, then any other that is configured
     let raw: unknown;
-    let provider = "claude";
-    try {
-      if (claude && !preferGemini) {
-        raw = await askClaude(claude, instruction, state);
-      } else {
-        raw = await askGemini(gemini!, instruction, state);
-        provider = "gemini";
-      }
-    } catch (e) {
-      // One provider failing should not lose the feature if the other is set
-      if (claude && gemini) {
-        console.error("Claude failed, trying Gemini:", e);
-        raw = await askGemini(gemini, instruction, state);
-        provider = "gemini";
-      } else {
-        throw e;
+    let provider = chain[0];
+    let lastError: unknown;
+    for (const candidate of chain) {
+      try {
+        if (candidate === "claude") raw = await askClaude(claude!, instruction, state);
+        else if (candidate === "gemini") raw = await askGemini(gemini!, instruction, state);
+        else raw = await askOpenCompat(instruction, state);
+        provider = candidate;
+        lastError = undefined;
+        break;
+      } catch (e) {
+        console.error(`${candidate} failed:`, e);
+        lastError = e;
       }
     }
+    if (lastError) throw lastError;
 
     const { patch, changed } = sanitize(raw);
     return json({ configured: true, provider, changed, ...patch });
