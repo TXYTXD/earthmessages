@@ -30,7 +30,7 @@ async function streamChat({
   messages: Msg[];
   onDelta: (text: string) => void;
   onDone: () => void;
-  onError: (status: number) => void;
+  onError: (status: number, detail?: string) => void;
 }) {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) { onError(401); return; }
@@ -45,7 +45,16 @@ async function streamChat({
   });
 
   if (!resp.ok || !resp.body) {
-    onError(resp.status);
+    // Pass the server's own explanation through so a misconfigured key
+    // says so instead of just "unavailable".
+    let detail: string | undefined;
+    try {
+      const body = await resp.json();
+      detail = body?.detail || body?.error;
+    } catch {
+      /* no JSON body */
+    }
+    onError(resp.status, detail);
     return;
   }
 
@@ -192,11 +201,11 @@ export default function AIChatPage({ onBack }: { onBack?: () => void }) {
             saveMessages(chatId, final, isNewTitle ? deriveTitle(final) : undefined);
           }
         },
-        onError: (status) => {
+        onError: (status, detail) => {
           setLoading(false);
-          if (status === 429) toast({ title: "Rate limited", description: "Please wait a moment and try again.", variant: "destructive" });
-          else if (status === 402) toast({ title: "Credits exhausted", description: "Please add AI credits to continue.", variant: "destructive" });
-          else toast({ title: "Error", description: "AI is unavailable right now.", variant: "destructive" });
+          if (status === 429) toast({ title: "Rate limited", description: detail || "Please wait a moment and try again.", variant: "destructive" });
+          else if (status === 402) toast({ title: "Credits exhausted", description: detail || "Please add AI credits to continue.", variant: "destructive" });
+          else toast({ title: "AI error", description: detail || "AI is unavailable right now.", variant: "destructive" });
         },
       });
     } catch {
