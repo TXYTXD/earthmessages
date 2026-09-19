@@ -1,9 +1,12 @@
 import { useMemo, useState } from "react";
-import { Sparkles, Upload, Lock, Loader2, Wand2, RefreshCw, ChevronDown, Palette, Play, Volume2 } from "lucide-react";
+import { Sparkles, Upload, Lock, Loader2, Wand2, RefreshCw, ChevronDown, Palette, Play, Volume2, SlidersHorizontal, CornerDownLeft } from "lucide-react";
 import {
   BACKGROUNDS, DEFAULT_EFFECTS, MOTION_STYLES, SOUNDS, type ThemeEffects,
 } from "@/lib/themeEffects";
 import { ThemeBackground } from "@/components/ThemeBackground";
+import { ThemeAdvancedEditor } from "@/components/ThemeAdvancedEditor";
+import { applyInstruction, ASSISTANT_EXAMPLES } from "@/lib/themeAssistant";
+import { countCustomizations, type ThemeCustomization } from "@/lib/themeCustomization";
 import { useAmbientSound } from "@/hooks/useAmbientSound";
 import { designThemes, THEME_AI_EXAMPLES, type ThemeSuggestion } from "@/lib/themeAI";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -106,7 +109,10 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
   const [name, setName] = useState("");
   const [def, setDef] = useState<ThemeDefinition>(DEFAULT_DEFINITION);
   const [saving, setSaving] = useState(false);
-  const [tab, setTab] = useState<"colours" | "effects">("colours");
+  const [tab, setTab] = useState<"colours" | "effects" | "advanced">("colours");
+  const [customization, setCustomization] = useState<ThemeCustomization>({});
+  const [instruction, setInstruction] = useState("");
+  const [assistantLog, setAssistantLog] = useState<{ text: string; ok: boolean }[]>([]);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [effects, setEffects] = useState<ThemeEffects>(DEFAULT_EFFECTS);
   const [previewSound, setPreviewSound] = useState(false);
@@ -132,6 +138,22 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
       }
     }, 350);
   };
+  // The advanced assistant edits this theme from an instruction
+  const runInstruction = (text: string) => {
+    const q = text.trim();
+    if (!q) return;
+    const result = applyInstruction(q, { customization, definition: def, effects });
+    if (result.customization) setCustomization(result.customization);
+    if (result.effects) setEffects(result.effects);
+    if (result.definition) setDef(result.definition);
+    setAssistantLog((prev) => [
+      ...prev.slice(-5),
+      { text: `You: ${q}`, ok: true },
+      ...result.summary.map((line) => ({ text: line, ok: result.understood })),
+    ]);
+    if (result.understood) setInstruction("");
+  };
+
   const generateAgain = () => {
     const v = variant + 1;
     setVariant(v);
@@ -174,6 +196,8 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
     });
   };
 
+  const changedCount = countCustomizations(customization);
+
   const save = async (isPublic: boolean) => {
     if (!name.trim()) {
       toast({ title: "Give your theme a name", variant: "destructive" });
@@ -181,9 +205,9 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
     }
     setSaving(true);
     try {
-      const created = await publish(name, def, isPublic, effects);
+      const created = await publish(name, def, isPublic, effects, customization);
       if (created) {
-        setCustomTheme(created.id, created.definition, created.effects ?? effects);
+        setCustomTheme(created.id, created.definition, created.effects ?? effects, created.customization ?? customization);
         toast({
           title: isPublic ? "Published to the Theme Market" : "Theme saved",
           description: isPublic ? `"${created.name}" is now live for everyone.` : `"${created.name}" is in your themes.`,
@@ -282,12 +306,13 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
             {([
               { id: "colours", label: "Colours", icon: <Palette className="w-3.5 h-3.5" /> },
               { id: "effects", label: "Animation & sound", icon: <Play className="w-3.5 h-3.5" /> },
+              { id: "advanced", label: "Advanced", icon: <SlidersHorizontal className="w-3.5 h-3.5" /> },
             ] as const).map((x) => (
               <button
                 key={x.id}
                 type="button"
                 onClick={() => setTab(x.id)}
-                className={`flex-1 px-3 py-1.5 rounded-full text-[12px] font-medium flex items-center justify-center gap-1.5 transition-colors ${
+                className={`flex-1 px-2 py-1.5 rounded-full text-[11px] font-medium flex items-center justify-center gap-1 transition-colors ${
                   tab === x.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -296,7 +321,65 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
             ))}
           </div>
 
-          {tab === "effects" ? (
+          {tab === "advanced" ? (
+            <div className="space-y-3">
+              {/* The assistant that edits this theme for you */}
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 space-y-2">
+                <div className="flex items-center gap-2 text-[13px] font-semibold">
+                  <Wand2 className="w-4 h-4 text-primary" /> Tell me what to change
+                  <span className="text-[10px] font-medium text-muted-foreground ml-auto">runs on your device</span>
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    value={instruction}
+                    onChange={(e) => setInstruction(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); runInstruction(instruction); } }}
+                    placeholder="e.g. make the send button red with a pop sound"
+                    className="rounded-lg"
+                  />
+                  <Button type="button" onClick={() => runInstruction(instruction)} disabled={!instruction.trim()} className="rounded-lg gap-1.5 flex-shrink-0">
+                    <CornerDownLeft className="w-4 h-4" /> Do it
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {ASSISTANT_EXAMPLES.slice(0, 5).map((ex) => (
+                    <button
+                      key={ex}
+                      type="button"
+                      onClick={() => runInstruction(ex)}
+                      className="text-[11px] px-2 py-1 rounded-full bg-accent hover:bg-accent/70 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {ex}
+                    </button>
+                  ))}
+                </div>
+                {assistantLog.length > 0 && (
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {assistantLog.map((line, i) => (
+                      <p
+                        key={i}
+                        className={`text-[11px] leading-snug ${
+                          line.text.startsWith("You: ")
+                            ? "text-muted-foreground"
+                            : line.ok
+                              ? "text-foreground"
+                              : "text-orange-500"
+                        }`}
+                      >
+                        {line.text}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <ThemeAdvancedEditor
+                customization={customization}
+                onChange={setCustomization}
+                palette={[def.primary, ...def.gradient, full.bubble[0], full.bubble[1], full.received, full.sidebar, full.surface]}
+              />
+            </div>
+          ) : tab === "effects" ? (
             <div className="space-y-3">
               <div>
                 <p className="text-[13px] font-medium mb-1.5">How the app moves</p>
@@ -433,7 +516,7 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
 
         <div className="flex flex-col sm:flex-row gap-2 pt-2">
           <Button onClick={() => save(true)} disabled={saving} className="rounded-full gap-2 flex-1">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Publish to Theme Market
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Publish{changedCount ? ` (${changedCount} tweaks)` : " to Theme Market"}
           </Button>
           <Button onClick={() => save(false)} disabled={saving} variant="outline" className="rounded-full gap-2">
             <Lock className="w-4 h-4" /> Keep private

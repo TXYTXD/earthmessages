@@ -3,6 +3,10 @@ import { applyThemeVariables, isValidDefinition, type ThemeDefinition } from "@/
 import {
   DEFAULT_EFFECTS, MOTION_TOKENS, normalizeEffects, type ThemeEffects,
 } from "@/lib/themeEffects";
+import {
+  applyCustomization, normalizeCustomization, type ThemeCustomization,
+} from "@/lib/themeCustomization";
+import { setUISoundVolume, unlockUISounds } from "@/lib/uiSounds";
 
 export type ThemeName =
   | "default" | "ocean" | "sunset" | "forest" | "midnight" | "rose"
@@ -16,7 +20,17 @@ interface ThemeContextType {
   theme: ThemeId;
   setTheme: (theme: ThemeName) => void;
   customDefinition: ThemeDefinition | null;
-  setCustomTheme: (id: string, definition: ThemeDefinition, effects?: ThemeEffects | null) => void;
+  setCustomTheme: (
+    id: string,
+    definition: ThemeDefinition,
+    effects?: ThemeEffects | null,
+    customization?: ThemeCustomization | null
+  ) => void;
+  /** Per-element overrides: colours, icons, sounds and animations */
+  customization: ThemeCustomization;
+  /** Whether interface sounds a theme attaches to buttons may play */
+  uiSoundsEnabled: boolean;
+  setUiSoundsEnabled: (on: boolean) => void;
   /** Motion, background and sound that came with the current theme */
   effects: ThemeEffects;
   /** Whether the person lets themes play background animation and sound */
@@ -34,6 +48,9 @@ const ThemeContext = createContext<ThemeContextType>({
   setTheme: () => {},
   customDefinition: null,
   setCustomTheme: () => {},
+  customization: {},
+  uiSoundsEnabled: true,
+  setUiSoundsEnabled: () => {},
   effects: DEFAULT_EFFECTS,
   effectsEnabled: true,
   setEffectsEnabled: () => {},
@@ -48,6 +65,8 @@ const CUSTOM_KEY = "app-custom-theme";
 const EFFECTS_KEY = "app-theme-effects";
 const EFFECTS_ON_KEY = "app-effects-enabled";
 const SOUND_ON_KEY = "app-ambience-enabled";
+const CUSTOM_ELEMENTS_KEY = "app-theme-elements";
+const UI_SOUNDS_KEY = "app-ui-sounds-enabled";
 
 function loadCustomDefinition(): ThemeDefinition | null {
   try {
@@ -55,6 +74,15 @@ function loadCustomDefinition(): ThemeDefinition | null {
     return isValidDefinition(parsed) ? parsed : null;
   } catch {
     return null;
+  }
+}
+
+function loadCustomization(): ThemeCustomization {
+  try {
+    const raw = localStorage.getItem(CUSTOM_ELEMENTS_KEY);
+    return raw ? normalizeCustomization(JSON.parse(raw)) : {};
+  } catch {
+    return {};
   }
 }
 
@@ -73,6 +101,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   });
   const [customDefinition, setCustomDefinition] = useState<ThemeDefinition | null>(loadCustomDefinition);
   const [effects, setEffects] = useState<ThemeEffects>(loadEffects);
+  const [customization, setCustomization] = useState<ThemeCustomization>(loadCustomization);
+  const [uiSoundsEnabled, setUiSoundsEnabledState] = useState<boolean>(
+    () => localStorage.getItem(UI_SOUNDS_KEY) !== "false"
+  );
   // Sound is off until the person asks for it — no app should start making
   // noise on its own. Visual effects are on but can be turned off.
   const [effectsEnabled, setEffectsEnabledState] = useState<boolean>(
@@ -95,19 +127,40 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const persistCustomization = (c: ThemeCustomization) => {
+    setCustomization(c);
+    try {
+      localStorage.setItem(CUSTOM_ELEMENTS_KEY, JSON.stringify(c));
+    } catch {
+      /* ignore */
+    }
+  };
+
   const setTheme = (t: ThemeName) => {
     setThemeState(t);
     localStorage.setItem("app-theme", t);
-    // Built-in themes carry no effects of their own
+    // Built-in themes carry no effects or element overrides of their own
     persistEffects(DEFAULT_EFFECTS);
+    persistCustomization({});
   };
 
-  const setCustomTheme = (id: string, definition: ThemeDefinition, themeEffects?: ThemeEffects | null) => {
+  const setUiSoundsEnabled = (on: boolean) => {
+    setUiSoundsEnabledState(on);
+    localStorage.setItem(UI_SOUNDS_KEY, String(on));
+  };
+
+  const setCustomTheme = (
+    id: string,
+    definition: ThemeDefinition,
+    themeEffects?: ThemeEffects | null,
+    themeCustomization?: ThemeCustomization | null
+  ) => {
     setCustomDefinition(definition);
     setThemeState(`custom:${id}`);
     localStorage.setItem("app-theme", `custom:${id}`);
     localStorage.setItem(CUSTOM_KEY, JSON.stringify(definition));
     persistEffects(normalizeEffects(themeEffects ?? DEFAULT_EFFECTS));
+    persistCustomization(normalizeCustomization(themeCustomization ?? {}));
   };
 
   const setEffectsEnabled = (on: boolean) => {
@@ -146,9 +199,26 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const isCustom = theme.startsWith("custom:");
     body.setAttribute("data-theme", isCustom ? "default" : theme);
     applyThemeVariables(body, isCustom && customDefinition ? customDefinition : null, colorMode);
+    applyCustomization(body, customization);
 
     return () => clearTimeout(transitionTimer.current);
-  }, [theme, customDefinition, colorMode]);
+  }, [theme, customDefinition, colorMode, customization]);
+
+  // Interface sounds need a real gesture before a browser will play them
+  useEffect(() => {
+    if (!uiSoundsEnabled) return;
+    const once = () => unlockUISounds();
+    window.addEventListener("pointerdown", once, { once: true });
+    window.addEventListener("keydown", once, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", once);
+      window.removeEventListener("keydown", once);
+    };
+  }, [uiSoundsEnabled]);
+
+  useEffect(() => {
+    setUISoundVolume(uiSoundsEnabled ? 100 : 0);
+  }, [uiSoundsEnabled]);
 
   // How fast the whole UI moves, as CSS variables the app animates against
   useEffect(() => {
@@ -172,6 +242,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     <ThemeContext.Provider
       value={{
         theme, setTheme, customDefinition, setCustomTheme,
+        customization, uiSoundsEnabled, setUiSoundsEnabled,
         effects, effectsEnabled, setEffectsEnabled, soundEnabled, setSoundEnabled,
         colorMode, setColorMode, toggleColorMode,
       }}

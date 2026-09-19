@@ -6,6 +6,7 @@ import { useMyThemes } from "@/hooks/useThemeMarket";
 import { ThemeCreatorDialog } from "@/components/ThemeCreatorDialog";
 import { gradientCss } from "@/lib/customThemes";
 import { BACKGROUNDS, SOUNDS, describeEffects } from "@/lib/themeEffects";
+import { countCustomizations } from "@/lib/themeCustomization";
 import { Input } from "@/components/ui/input";
 import { useThemeContext, ThemeName } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
@@ -55,6 +56,7 @@ export default function SettingsPage() {
   const {
     theme, setTheme, setCustomTheme, colorMode, toggleColorMode,
     effects, effectsEnabled, setEffectsEnabled, soundEnabled, setSoundEnabled,
+    uiSoundsEnabled, setUiSoundsEnabled, customization,
   } = useThemeContext();
   const navigate = useNavigate();
   const myThemes = useMyThemes();
@@ -347,7 +349,7 @@ export default function SettingsPage() {
                 {myThemes.themes.map((t) => (
                   <button
                     key={t.id}
-                    onClick={() => setCustomTheme(t.id, t.definition, t.effects)}
+                    onClick={() => setCustomTheme(t.id, t.definition, t.effects, t.customization)}
                     className={`p-3 rounded-lg text-sm flex flex-col items-center gap-2 transition-all ${
                       theme === `custom:${t.id}` ? "ring-2 ring-primary bg-primary/10" : "bg-accent hover:bg-accent/80"
                     }`}
@@ -416,6 +418,18 @@ export default function SettingsPage() {
             }
             value={soundEnabled}
             onChange={setSoundEnabled}
+          />
+          <div className="border-t border-border" />
+          <ToggleRow
+            icon={<Volume2 className="w-5 h-5 text-primary" />}
+            title="Button sounds"
+            desc={
+              countCustomizations(customization)
+                ? "Sounds this theme puts on buttons, tabs and messages"
+                : "This theme puts no sounds on buttons"
+            }
+            value={uiSoundsEnabled}
+            onChange={setUiSoundsEnabled}
           />
           {effects.background !== "none" && (
             <p className="text-[11px] text-muted-foreground">
