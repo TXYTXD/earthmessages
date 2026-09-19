@@ -48,25 +48,55 @@ serve(async (req) => {
       );
     }
 
-    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
+    const claudeKey = Deno.env.get("ANTHROPIC_API_KEY");
+    const geminiKey = Deno.env.get("GEMINI_API_KEY");
+    const preferred = (Deno.env.get("AI_PROVIDER") ?? "").toLowerCase();
+    const useGemini = geminiKey && (preferred === "gemini" || !claudeKey);
+    if (!claudeKey && !geminiKey) throw new Error("No AI key is configured");
 
     const targetName = LANG_NAMES[targetLang] || targetLang;
     const sourceHint = sourceLang ? `from ${LANG_NAMES[sourceLang] || sourceLang} ` : "";
 
-    const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+    const system = `You are a translator. Translate the user's message ${sourceHint}to ${targetName}. Return ONLY the translated text, nothing else. If the text is already in ${targetName}, return it unchanged. Preserve formatting, emojis, and special characters.`;
 
-    let response;
+    let translated = "";
     try {
-      response = await anthropic.messages.create({
-        model: "claude-haiku-4-5",
-        max_tokens: 1024,
-        system: `You are a translator. Translate the user's message ${sourceHint}to ${targetName}. Return ONLY the translated text, nothing else. If the text is already in ${targetName}, return it unchanged. Preserve formatting, emojis, and special characters.`,
-        messages: [{ role: "user", content: text }],
-      });
+      if (useGemini) {
+        const resp = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(geminiKey!)}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: system }] },
+              contents: [{ role: "user", parts: [{ text }] }],
+              generationConfig: { maxOutputTokens: 1024, temperature: 0.2 },
+            }),
+          }
+        );
+        if (!resp.ok) {
+          const err = new Error(`Gemini ${resp.status}`) as Error & { status?: number };
+          err.status = resp.status;
+          throw err;
+        }
+        const data = await resp.json();
+        translated = (data?.candidates?.[0]?.content?.parts ?? [])
+          .map((p: { text?: string }) => p.text ?? "")
+          .join("");
+      } else {
+        const anthropic = new Anthropic({ apiKey: claudeKey! });
+        const response = await anthropic.messages.create({
+          model: "claude-haiku-4-5",
+          max_tokens: 1024,
+          system,
+          messages: [{ role: "user", content: text }],
+        });
+        const textBlock = response.content.find((b) => b.type === "text");
+        translated = textBlock && "text" in textBlock ? textBlock.text : "";
+      }
     } catch (err) {
       const status = (err as { status?: number })?.status ?? 500;
-      console.error("Anthropic API error:", status, err);
+      console.error("Translation API error:", status, err);
       if (status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded, try again later" }),
@@ -76,8 +106,7 @@ serve(async (req) => {
       throw new Error("AI translation failed");
     }
 
-    const textBlock = response.content.find((b) => b.type === "text");
-    const translatedText = (textBlock && "text" in textBlock ? textBlock.text : "").trim() || text;
+    const translatedText = translated.trim() || text;
 
     // If translation is same as original, skip
     if (translatedText.toLowerCase() === text.toLowerCase()) {
