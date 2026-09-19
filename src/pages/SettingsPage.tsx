@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Globe, Volume2, Languages, Zap, Check, Shield, Bell, Palette, Sun, Moon, Lock, Sparkles, Store, Paintbrush, Wand2, Volume2 } from "lucide-react";
+import { Globe, Volume2, Languages, Zap, Check, Shield, Bell, Palette, Sun, Moon, Lock, Sparkles, Store, Paintbrush, Wand2, Pencil } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useMyThemes } from "@/hooks/useThemeMarket";
 import { ThemeCreatorDialog } from "@/components/ThemeCreatorDialog";
