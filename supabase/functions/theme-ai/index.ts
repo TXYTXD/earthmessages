@@ -354,6 +354,7 @@ Deno.serve(async (req) => {
 
     const claude = Deno.env.get("ANTHROPIC_API_KEY");
     const gemini = Deno.env.get("GEMINI_API_KEY");
+    const preferGemini = (Deno.env.get("AI_PROVIDER") ?? "").toLowerCase() === "gemini" && gemini;
     if (!claude && !gemini) {
       // Not configured — the app uses its own on-device assistant instead
       return json({ configured: false });
@@ -362,7 +363,7 @@ Deno.serve(async (req) => {
     let raw: unknown;
     let provider = "claude";
     try {
-      if (claude) {
+      if (claude && !preferGemini) {
         raw = await askClaude(claude, instruction, state);
       } else {
         raw = await askGemini(gemini!, instruction, state);
