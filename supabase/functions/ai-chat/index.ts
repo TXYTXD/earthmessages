@@ -73,6 +73,25 @@ export async function* sseText(
   }
 }
 
+// Ask a chat-completions service which models it will accept. Used to turn
+// "that model does not exist" into a list of ones that do.
+async function listModels(baseUrl: string, key: string): Promise<string[]> {
+  try {
+    const resp = await fetch(`${baseUrl.replace(/\/+$/, "")}/models`, {
+      headers: key ? { Authorization: `Bearer ${key}` } : {},
+    });
+    if (!resp.ok) return [];
+    const data = await resp.json();
+    const rows: unknown[] = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+    return rows
+      .map((m) => (m as { id?: string })?.id)
+      .filter((id): id is string => typeof id === "string")
+      .sort();
+  } catch {
+    return [];
+  }
+}
+
 // Any chat-completions service: GLM, Groq, Mistral, DeepSeek, OpenRouter...
 export async function openCompatStream(
   baseUrl: string,
@@ -97,7 +116,14 @@ export async function openCompatStream(
   });
   if (!resp.ok || !resp.body) {
     const detail = resp.body ? (await resp.text()).slice(0, 200) : "";
-    const err = new Error(`AI service ${resp.status}: ${detail}`) as Error & { status?: number };
+    // A wrong model name is the most common setup mistake, and the service
+    // knows which ones it has — so ask, and name them in the error.
+    let hint = "";
+    if (resp.status === 404 || /model/i.test(detail)) {
+      const names = await listModels(baseUrl, key);
+      if (names.length) hint = ` Models available to you: ${names.slice(0, 12).join(", ")}.`;
+    }
+    const err = new Error(`AI service ${resp.status}: ${detail}${hint}`) as Error & { status?: number };
     err.status = resp.status;
     throw err;
   }
@@ -257,7 +283,7 @@ serve(async (req) => {
       }
       const raw = err instanceof Error ? err.message : String(err);
       // Never echo a key back, even if a provider quoted it in its error
-      const safe = raw.replace(/(gsk_|sk-ant-|sk-|AIza)[A-Za-z0-9_\-]{6,}/g, "[key]").slice(0, 300);
+      const safe = raw.replace(/(gsk_|sk-ant-|sk-|AIza)[A-Za-z0-9_\-]{6,}/g, "[key]").slice(0, 600);
       return new Response(JSON.stringify({
         error: "AI service unavailable",
         detail: `${provider}: ${safe}`,
