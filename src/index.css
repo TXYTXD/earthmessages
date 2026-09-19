@@ -906,14 +906,14 @@
   }
 
   .glass {
-    background-color: hsl(var(--card) / 0.55);
+    background-color: var(--el-dialog-bg, hsl(var(--card) / 0.55));
     backdrop-filter: blur(32px) saturate(200%);
     -webkit-backdrop-filter: blur(32px) saturate(200%);
     border: 1px solid hsl(var(--border) / 0.5);
   }
 
   .glass-nav {
-    background-color: hsl(var(--card) / 0.55);
+    background-color: var(--el-nav-bar-bg, hsl(var(--card) / 0.55));
     backdrop-filter: blur(32px) saturate(200%);
     -webkit-backdrop-filter: blur(32px) saturate(200%);
     border: 1px solid hsl(var(--border) / 0.45);
@@ -924,7 +924,7 @@
   }
 
   .premium-card {
-    background-color: hsl(var(--card));
+    background-color: var(--el-card-bg, hsl(var(--card)));
     border: 1px solid hsl(var(--border) / 0.7);
     box-shadow:
       0 1px 0 0 hsl(var(--foreground) / 0.03) inset,

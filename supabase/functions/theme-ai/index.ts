@@ -46,9 +46,6 @@ const ELEMENTS: Record<string, string[]> = {
   "nav.logo": ["icon", "animation"],
   "bubble.sent": ["color", "background", "animation", "sound"],
   "bubble.received": ["color", "background", "animation", "sound"],
-  "message.reaction": ["background", "animation", "sound"],
-  "message.typing": ["color", "animation"],
-  "message.time": ["color"],
   "button.send": ["color", "background", "icon", "animation", "sound"],
   "button.primary": ["color", "background", "animation", "sound"],
   "button.emoji": ["color", "icon", "sound"],
@@ -57,7 +54,6 @@ const ELEMENTS: Record<string, string[]> = {
   "button.gif": ["color", "icon", "sound"],
   "input.box": ["background", "color"],
   "list.row": ["background", "animation", "sound"],
-  "list.active": ["background", "color"],
   "list.unread": ["color", "background", "animation"],
   "list.online": ["color", "animation"],
   "avatar.ring": ["background", "animation"],
@@ -65,9 +61,7 @@ const ELEMENTS: Record<string, string[]> = {
   "call.decline": ["color", "background", "icon", "animation", "sound"],
   "call.control": ["color", "background", "sound"],
   "surface.card": ["background"],
-  "surface.header": ["background", "color"],
   "surface.dialog": ["background", "animation", "sound"],
-  "surface.toast": ["background", "color", "animation", "sound"],
 };
 
 const ICONS = [
