@@ -26,13 +26,11 @@ async function streamChat({
   onDelta,
   onDone,
   onError,
-  onProvider,
 }: {
   messages: Msg[];
   onDelta: (text: string) => void;
   onDone: () => void;
   onError: (status: number, detail?: string) => void;
-  onProvider?: (name: string) => void;
 }) {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) { onError(401); return; }
@@ -59,10 +57,6 @@ async function streamChat({
     onError(resp.status, detail);
     return;
   }
-
-  // The server says which model answered, so the app can name it honestly
-  const who = resp.headers.get("X-AI-Provider");
-  if (who) onProvider?.(who);
 
   const reader = resp.body.getReader();
   const decoder = new TextDecoder();
@@ -119,8 +113,9 @@ export default function AIChatPage({ onBack }: { onBack?: () => void }) {
   const endRef = useRef<HTMLDivElement>(null);
   const initedRef = useRef(false);
   const { toast } = useToast();
-  // Whichever model is configured — shown instead of assuming it is Claude
-  const [aiName, setAiName] = useState<string>(() => localStorage.getItem("ums-ai-name") || "AI");
+  // The assistant belongs to UMS Messages, so it is simply "AI" no matter
+  // which model is answering behind it.
+  const aiName = "AI";
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -202,10 +197,6 @@ export default function AIChatPage({ onBack }: { onBack?: () => void }) {
       await streamChat({
         messages: base,
         onDelta: upsert,
-        onProvider: (name) => {
-          setAiName(name);
-          localStorage.setItem("ums-ai-name", name);
-        },
         onDone: () => {
           setLoading(false);
           if (chatId) {
@@ -246,7 +237,7 @@ export default function AIChatPage({ onBack }: { onBack?: () => void }) {
             AI Assistant
             <BadgeCheck className="w-4 h-4 text-primary" />
           </h3>
-          <span className="text-[11px] text-muted-foreground">Powered by {aiName} · Always available</span>
+          <span className="text-[11px] text-muted-foreground">Always available</span>
         </div>
         <button
           onClick={() => setShowHistory((v) => !v)}
