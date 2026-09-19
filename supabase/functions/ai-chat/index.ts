@@ -4,6 +4,7 @@ import Anthropic from "npm:@anthropic-ai/sdk";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
+  "Access-Control-Expose-Headers": "X-AI-Provider",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
@@ -175,11 +176,30 @@ async function geminiStream(
   );
 }
 
-const SYSTEM_PROMPT =
-  "You are Claude, made by Anthropic, acting as the friendly AI assistant inside a messaging app called UMS Messages. " +
-  "Keep your answers concise, helpful, and conversational. Feel free to use emojis whenever you want to match the chat vibe. " +
-  "You can also send a GIF whenever you want by writing a tag in the form [gif: search terms] (for example [gif: happy dance] or [gif: mind blown]) — " +
-  "it will be replaced with a real animated GIF in the chat. Put the tag on its own and keep the search terms short and descriptive.";
+// The assistant's instructions. Only the Claude branch claims to be Claude —
+// telling another company's model that it is Claude would have it misrepresent
+// itself to whoever is chatting with it.
+function systemPrompt(provider: Provider): string {
+  const identity =
+    provider === "claude"
+      ? "You are Claude, made by Anthropic, acting as the friendly AI assistant inside a messaging app called UMS Messages."
+      : "You are the friendly AI assistant inside a messaging app called UMS Messages. Answer honestly about what you are if anyone asks.";
+  return (
+    identity +
+    " Keep your answers concise, helpful, and conversational. Feel free to use emojis whenever you want to match the chat vibe. " +
+    "You can also send a GIF whenever you want by writing a tag in the form [gif: search terms] (for example [gif: happy dance] or [gif: mind blown]) — " +
+    "it will be replaced with a real animated GIF in the chat. Put the tag on its own and keep the search terms short and descriptive."
+  );
+}
+
+// A friendly name for whatever is actually answering, so the app can say so
+function providerLabel(provider: Provider): string {
+  if (provider === "claude") return "Claude";
+  if (provider === "gemini") return "Gemini";
+  const model = env("OPEN_AI_MODEL") ?? "";
+  // "openai/gpt-oss-120b" reads better as "gpt-oss-120b"
+  return model.split("/").pop() || "AI";
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -237,17 +257,19 @@ serve(async (req) => {
       });
     }
 
+    const prompt = systemPrompt(provider);
+
     // Both providers end up as an async stream of plain text pieces
     let textStream: AsyncIterable<string>;
     try {
       if (provider === "gemini") {
-        textStream = await geminiStream(env("GEMINI_API_KEY")!, SYSTEM_PROMPT, merged);
+        textStream = await geminiStream(env("GEMINI_API_KEY")!, prompt, merged);
       } else if (provider === "open") {
         textStream = await openCompatStream(
           env("OPEN_AI_BASE_URL")!,
           env("OPEN_AI_API_KEY") ?? "",
           env("OPEN_AI_MODEL")!,
-          SYSTEM_PROMPT,
+          prompt,
           merged
         );
       } else {
@@ -255,7 +277,7 @@ serve(async (req) => {
         const stream = await anthropic.messages.create({
           model: "claude-opus-5",
           max_tokens: 2048,
-          system: SYSTEM_PROMPT,
+          system: prompt,
           messages: merged,
           stream: true,
         });
@@ -320,7 +342,11 @@ serve(async (req) => {
     });
 
     return new Response(body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "X-AI-Provider": providerLabel(provider),
+      },
     });
   } catch (e) {
     console.error("ai-chat error:", e);
