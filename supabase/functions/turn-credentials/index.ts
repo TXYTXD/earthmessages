@@ -1,6 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Secrets are pasted by hand, so they often arrive with a trailing newline
+// or a stray space. Trim everything we read; an empty value counts as unset.
+function env(name: string): string | undefined {
+  const v = Deno.env.get(name)?.trim();
+  return v ? v : undefined;
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -43,9 +50,9 @@ serve(async (req) => {
 
     // Option A: static TURN credentials from any provider (e.g. ExpressTURN).
     // TURN_URLS is comma-separated, e.g. "turn:relay1.expressturn.com:3480"
-    const turnUrls = Deno.env.get("TURN_URLS");
-    const turnUsername = Deno.env.get("TURN_USERNAME");
-    const turnCredential = Deno.env.get("TURN_CREDENTIAL");
+    const turnUrls = env("TURN_URLS");
+    const turnUsername = env("TURN_USERNAME");
+    const turnCredential = env("TURN_CREDENTIAL");
     if (turnUrls && turnUsername && turnCredential) {
       const iceServers = turnUrls.split(",").map((u) => ({
         urls: u.trim(),
@@ -57,8 +64,8 @@ serve(async (req) => {
 
     // Option B: Twilio Network Traversal Service (short-lived credentials).
     // Both values are shown on the Twilio Console home page.
-    const twilioSid = Deno.env.get("TWILIO_ACCOUNT_SID");
-    const twilioToken = Deno.env.get("TWILIO_AUTH_TOKEN");
+    const twilioSid = env("TWILIO_ACCOUNT_SID");
+    const twilioToken = env("TWILIO_AUTH_TOKEN");
     if (twilioSid && twilioToken) {
       const resp = await fetch(
         `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(twilioSid)}/Tokens.json`,
@@ -87,8 +94,8 @@ serve(async (req) => {
     }
 
     // Option C: Cloudflare Realtime TURN (short-lived credentials).
-    const cfKeyId = Deno.env.get("CLOUDFLARE_TURN_KEY_ID");
-    const cfApiToken = Deno.env.get("CLOUDFLARE_TURN_API_TOKEN");
+    const cfKeyId = env("CLOUDFLARE_TURN_KEY_ID");
+    const cfApiToken = env("CLOUDFLARE_TURN_API_TOKEN");
     if (cfKeyId && cfApiToken) {
       const resp = await fetch(
         `https://rtc.live.cloudflare.com/v1/turn/keys/${encodeURIComponent(cfKeyId)}/credentials/generate-ice-servers`,
@@ -109,8 +116,8 @@ serve(async (req) => {
     }
 
     // Option D: metered.ca API (fresh short-lived credentials)
-    const apiKey = Deno.env.get("METERED_API_KEY");
-    const domain = Deno.env.get("METERED_DOMAIN"); // e.g. umsmessages.metered.live
+    const apiKey = env("METERED_API_KEY");
+    const domain = env("METERED_DOMAIN"); // e.g. umsmessages.metered.live
     if (!apiKey || !domain) {
       // Not configured yet — the app falls back to its built-in server list
       if (notes.length === 0) notes.push("No relay provider secrets are set in Supabase");

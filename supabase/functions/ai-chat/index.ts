@@ -7,6 +7,13 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Secrets are pasted by hand, so they often arrive with a trailing newline
+// or a stray space. Trim everything we read; an empty value counts as unset.
+function env(name: string): string | undefined {
+  const v = Deno.env.get(name)?.trim();
+  return v ? v : undefined;
+}
+
 // Which model answers.
 //   claude     — ANTHROPIC_API_KEY, paid credit
 //   gemini     — GEMINI_API_KEY, has a free tier
@@ -163,7 +170,7 @@ serve(async (req) => {
     }
 
     const { messages } = await req.json();
-    const provider = pickProvider((k) => Deno.env.get(k));
+    const provider = pickProvider(env);
     if (!provider) {
       console.error("No AI provider configured");
       return new Response(JSON.stringify({
@@ -200,17 +207,17 @@ serve(async (req) => {
     let textStream: AsyncIterable<string>;
     try {
       if (provider === "gemini") {
-        textStream = await geminiStream(Deno.env.get("GEMINI_API_KEY")!, SYSTEM_PROMPT, merged);
+        textStream = await geminiStream(env("GEMINI_API_KEY")!, SYSTEM_PROMPT, merged);
       } else if (provider === "open") {
         textStream = await openCompatStream(
-          Deno.env.get("OPEN_AI_BASE_URL")!,
-          Deno.env.get("OPEN_AI_API_KEY") ?? "",
-          Deno.env.get("OPEN_AI_MODEL")!,
+          env("OPEN_AI_BASE_URL")!,
+          env("OPEN_AI_API_KEY") ?? "",
+          env("OPEN_AI_MODEL")!,
           SYSTEM_PROMPT,
           merged
         );
       } else {
-        const anthropic = new Anthropic({ apiKey: Deno.env.get("ANTHROPIC_API_KEY")! });
+        const anthropic = new Anthropic({ apiKey: env("ANTHROPIC_API_KEY")! });
         const stream = await anthropic.messages.create({
           model: "claude-opus-5",
           max_tokens: 2048,

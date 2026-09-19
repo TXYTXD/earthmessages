@@ -10,6 +10,13 @@ import webpush from "npm:web-push@3.6.7";
 // and recipients are derived from the database. Every record is pushed at
 // most once (push_log), and only if it is recent.
 
+// Secrets are pasted by hand, so they often arrive with a trailing newline
+// or a stray space. Trim everything we read; an empty value counts as unset.
+function env(name: string): string | undefined {
+  const v = Deno.env.get(name)?.trim();
+  return v ? v : undefined;
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -26,7 +33,7 @@ const admin = createClient(
   { auth: { persistSession: false } }
 );
 
-const SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:support@umsmessages.net";
+const SUBJECT = env("VAPID_SUBJECT") ?? "mailto:support@umsmessages.net";
 
 async function getVapidKeys(): Promise<{ publicKey: string; privateKey: string }> {
   const { data } = await admin.from("push_config").select("public_key, private_key").eq("id", 1).maybeSingle();

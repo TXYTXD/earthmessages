@@ -10,6 +10,13 @@ import Anthropic from "npm:@anthropic-ai/sdk";
 // GEMINI_API_KEY is honoured instead if that is all the owner has. With
 // neither, the app falls back to its built-in on-device assistant.
 
+// Secrets are pasted by hand, so they often arrive with a trailing newline
+// or a stray space. Trim everything we read; an empty value counts as unset.
+function env(name: string): string | undefined {
+  const v = Deno.env.get(name)?.trim();
+  return v ? v : undefined;
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -312,9 +319,9 @@ async function askClaude(key: string, instruction: string, state: unknown): Prom
 // Any chat-completions service — GLM, Groq, Mistral, DeepSeek, OpenRouter,
 // or a model the owner hosts themselves.
 async function askOpenCompat(instruction: string, state: unknown): Promise<unknown> {
-  const base = Deno.env.get("OPEN_AI_BASE_URL")!.replace(/\/+$/, "");
-  const key = Deno.env.get("OPEN_AI_API_KEY") ?? "";
-  const model = Deno.env.get("OPEN_AI_MODEL")!;
+  const base = env("OPEN_AI_BASE_URL")!.replace(/\/+$/, "");
+  const key = env("OPEN_AI_API_KEY") ?? "";
+  const model = env("OPEN_AI_MODEL")!;
   const resp = await fetch(`${base}/chat/completions`, {
     method: "POST",
     headers: {
@@ -382,10 +389,10 @@ Deno.serve(async (req) => {
     if (!instruction) return json({ error: "Nothing to do" }, 400);
     const state = body?.state ?? {};
 
-    const claude = Deno.env.get("ANTHROPIC_API_KEY");
-    const gemini = Deno.env.get("GEMINI_API_KEY");
-    const hasOpen = !!Deno.env.get("OPEN_AI_BASE_URL") && !!Deno.env.get("OPEN_AI_MODEL");
-    const preferred = (Deno.env.get("AI_PROVIDER") ?? "").toLowerCase();
+    const claude = env("ANTHROPIC_API_KEY");
+    const gemini = env("GEMINI_API_KEY");
+    const hasOpen = !!env("OPEN_AI_BASE_URL") && !!env("OPEN_AI_MODEL");
+    const preferred = (env("AI_PROVIDER") ?? "").toLowerCase();
 
     const order: string[] = [];
     if (preferred === "open" && hasOpen) order.push("open");
