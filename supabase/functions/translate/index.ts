@@ -80,6 +80,9 @@ serve(async (req) => {
     let translated = "";
     try {
       if (provider === "open") {
+        if (!/^https?:\/\//i.test(openBase!)) {
+          throw new Error(`OPEN_AI_BASE_URL must start with https:// — it holds "${openBase}"`);
+        }
         const resp = await fetch(`${openBase!.replace(/\/+$/, "")}/chat/completions`, {
           method: "POST",
           headers: {
