@@ -176,14 +176,25 @@ async function geminiStream(
   );
 }
 
-// The assistant's instructions. Only the Claude branch claims to be Claude —
-// telling another company's model that it is Claude would have it misrepresent
-// itself to whoever is chatting with it.
+// The assistant's instructions. A model asked "are you Claude?" will happily
+// guess yes unless it is told otherwise, so we state plainly which model is
+// answering and forbid it from claiming to be one it is not.
 function systemPrompt(provider: Provider): string {
-  const identity =
-    provider === "claude"
-      ? "You are Claude, made by Anthropic, acting as the friendly AI assistant inside a messaging app called UMS Messages."
-      : "You are the friendly AI assistant inside a messaging app called UMS Messages. Answer honestly about what you are if anyone asks.";
+  let identity: string;
+  if (provider === "claude") {
+    identity = "You are Claude, made by Anthropic, acting as the friendly AI assistant inside a messaging app called UMS Messages.";
+  } else if (provider === "gemini") {
+    identity =
+      "You are Gemini, made by Google, acting as the friendly AI assistant inside a messaging app called UMS Messages. " +
+      "You are not Claude, ChatGPT, or any other assistant. If you are asked which model you are, say you are Gemini.";
+  } else {
+    const model = env("OPEN_AI_MODEL") ?? "an open-source model";
+    identity =
+      `You are the friendly AI assistant inside a messaging app called UMS Messages. You run on ${model}. ` +
+      "You are NOT Claude, you are NOT made by Anthropic, and you are not ChatGPT or Gemini. " +
+      `If you are asked which model or AI you are, answer truthfully that you are the UMS Messages assistant running on ${model}. ` +
+      "Never claim to be a model you are not, even if the person suggests one.";
+  }
   return (
     identity +
     " Keep your answers concise, helpful, and conversational. Feel free to use emojis whenever you want to match the chat vibe. " +
