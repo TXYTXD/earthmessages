@@ -100,9 +100,110 @@ const AUDIO_HOST = /^https:\/\/upload\.wikimedia\.org\/wikipedia\/commons\//;
 const isLibrarySound = (v: unknown) =>
   typeof v === "string" && v.startsWith("url:") && AUDIO_HOST.test(v.slice(4)) && v.length <= 500;
 
+// ---- Sounds and animations the model composes ------------------------------
+// Described as numbers only, and every number is clamped here, so a theme
+// can never carry anything but a tone at a frequency or a keyframe at a scale.
+const WAVES = ["sine", "square", "sawtooth", "triangle"];
+const FILTERS = ["lowpass", "highpass", "bandpass"];
+
+const clampNum = (v: unknown, min: number, max: number): number | undefined => {
+  if (typeof v !== "number" || !Number.isFinite(v)) return undefined;
+  return Math.min(max, Math.max(min, v));
+};
+
+function cleanGeneratedSound(raw: unknown): unknown {
+  const s = raw as { name?: unknown; layers?: unknown };
+  if (!s || typeof s !== "object" || !Array.isArray(s.layers)) return undefined;
+  const layers: Record<string, unknown>[] = [];
+  for (const entry of s.layers.slice(0, 4)) {
+    const l = entry as Record<string, unknown>;
+    if (!l || typeof l !== "object") continue;
+    const from = clampNum(l.from, 20, 12000);
+    const duration = clampNum(l.duration, 0.01, 1.5);
+    const gain = clampNum(l.gain, 0, 1) ?? 0.3;
+    if (from === undefined || duration === undefined) continue;
+    const layer: Record<string, unknown> = {
+      type: l.type === "noise" ? "noise" : "tone",
+      from, duration, gain,
+    };
+    if (typeof l.wave === "string" && WAVES.includes(l.wave)) layer.wave = l.wave;
+    const to = clampNum(l.to, 20, 12000);
+    if (to !== undefined) layer.to = to;
+    const delay = clampNum(l.delay, 0, 1);
+    if (delay) layer.delay = delay;
+    if (typeof l.filter === "string" && FILTERS.includes(l.filter)) layer.filter = l.filter;
+    const q = clampNum(l.q, 0.1, 20);
+    if (q !== undefined) layer.q = q;
+    layers.push(layer);
+  }
+  if (!layers.length) return undefined;
+  return { name: typeof s.name === "string" ? s.name.slice(0, 40) : "Custom sound", layers };
+}
+
+function cleanGeneratedAnimation(raw: unknown): unknown {
+  const a = raw as { name?: unknown; duration?: unknown; repeat?: unknown; keyframes?: unknown };
+  if (!a || typeof a !== "object" || !Array.isArray(a.keyframes)) return undefined;
+  const frames: Record<string, number>[] = [];
+  for (const entry of a.keyframes.slice(0, 8)) {
+    const k = entry as Record<string, unknown>;
+    if (!k || typeof k !== "object") continue;
+    const at = clampNum(k.at, 0, 100);
+    if (at === undefined) continue;
+    const frame: Record<string, number> = { at };
+    const fields: [string, number, number][] = [
+      ["scale", 0.2, 3], ["rotate", -720, 720], ["x", -100, 100],
+      ["y", -100, 100], ["opacity", 0, 1], ["brightness", 0.2, 3],
+    ];
+    for (const [name, min, max] of fields) {
+      const n = clampNum(k[name], min, max);
+      if (n !== undefined) frame[name] = n;
+    }
+    frames.push(frame);
+  }
+  if (frames.length < 2) return undefined;
+  frames.sort((p, q) => p.at - q.at);
+  return {
+    name: typeof a.name === "string" ? a.name.slice(0, 40) : "Custom animation",
+    duration: clampNum(a.duration, 80, 6000) ?? 400,
+    keyframes: frames,
+    ...(a.repeat === true ? { repeat: true } : {}),
+  };
+}
+
+// Find a real recording on Wikimedia Commons. The model only ever supplies
+// search words; the URL comes from Wikimedia, never from the model.
+async function findLibrarySound(query: string): Promise<string | undefined> {
+  try {
+    const params = new URLSearchParams({
+      action: "query", generator: "search",
+      gsrsearch: `filetype:audio ${query}`.slice(0, 200),
+      gsrnamespace: "6", gsrlimit: "10",
+      prop: "imageinfo", iiprop: "url|size|mime|metadata", format: "json", origin: "*",
+    });
+    const resp = await fetch(`https://commons.wikimedia.org/w/api.php?${params}`);
+    if (!resp.ok) return undefined;
+    const data = await resp.json();
+    const pages = Object.values((data?.query?.pages ?? {}) as Record<string, {
+      imageinfo?: { url: string; size: number; mime: string; metadata?: { name: string; value: unknown }[] }[];
+    }>);
+    for (const page of pages) {
+      const ii = page.imageinfo?.[0];
+      if (!ii || !AUDIO_HOST.test(ii.url)) continue;
+      if (!/^audio\/(ogg|mpeg|mp3|wav|x-wav|flac|webm)$/i.test(ii.mime)) continue;
+      if (ii.size > 800_000) continue;
+      const len = ii.metadata?.find((m) => m.name === "playtime_seconds" || m.name === "length");
+      if (Number(len?.value ?? 0) > 6) continue;
+      return `url:${ii.url}`;
+    }
+  } catch (e) {
+    console.warn("sound search failed:", e);
+  }
+  return undefined;
+}
+
 // ---- Turn whatever the model said into something safe ---------------------
 interface Patch {
-  customization?: Record<string, Record<string, string>>;
+  customization?: Record<string, Record<string, unknown>>;
   palette?: Record<string, unknown>;
   effects?: Record<string, unknown>;
   reply?: string;
@@ -116,11 +217,11 @@ function sanitize(raw: unknown): { patch: Patch; changed: number } {
   // Per-element overrides
   const elementMap = p.customization ?? elementsToMap((raw as { elements?: unknown })?.elements);
   if (elementMap && typeof elementMap === "object") {
-    const custom: Record<string, Record<string, string>> = {};
+    const custom: Record<string, Record<string, unknown>> = {};
     for (const [id, value] of Object.entries(elementMap)) {
       const traits = ELEMENTS[id];
       if (!traits || !value || typeof value !== "object") continue;
-      const style: Record<string, string> = {};
+      const style: Record<string, unknown> = {};
       const v = value as Record<string, unknown>;
       if (traits.includes("color") && typeof v.color === "string" && HEX.test(v.color)) style.color = v.color;
       if (traits.includes("background") && typeof v.background === "string" && HEX.test(v.background)) {
@@ -131,6 +232,18 @@ function sanitize(raw: unknown): { patch: Patch; changed: number } {
         style.sound = v.sound as string;
       }
       if (traits.includes("animation") && inList(v.animation, ANIMATIONS)) style.animation = v.animation as string;
+      if (traits.includes("sound")) {
+        const made = cleanGeneratedSound(v.generatedSound);
+        if (made) style.generatedSound = made;
+        // Search words are resolved to a real file after this pass
+        if (typeof v.soundSearch === "string" && v.soundSearch.trim()) {
+          style.soundSearch = v.soundSearch.trim().slice(0, 60);
+        }
+      }
+      if (traits.includes("animation")) {
+        const made = cleanGeneratedAnimation(v.generatedAnimation);
+        if (made) style.generatedAnimation = made;
+      }
       if (Object.keys(style).length) {
         custom[id] = style;
         changed++;
@@ -199,6 +312,69 @@ const RESPONSE_SCHEMA = {
           icon: { type: "string", enum: ICONS },
           sound: { type: "string", enum: SOUNDS },
           animation: { type: "string", enum: ANIMATIONS },
+          soundSearch: {
+            type: "string",
+            description: "Words to find a real recording on Wikimedia Commons, e.g. \"church bell\" or \"water drop\". Use when a real sound suits better than a synthesised one.",
+          },
+          generatedSound: {
+            type: "object",
+            description: "A sound you compose yourself, when nothing in the list fits.",
+            properties: {
+              name: { type: "string" },
+              layers: {
+                type: "array",
+                maxItems: 4,
+                items: {
+                  type: "object",
+                  properties: {
+                    type: { type: "string", enum: ["tone", "noise"] },
+                    wave: { type: "string", enum: ["sine", "square", "sawtooth", "triangle"] },
+                    from: { type: "number", description: "Starting frequency in Hz, 20-12000" },
+                    to: { type: "number", description: "Optional glide to this frequency" },
+                    duration: { type: "number", description: "Seconds, up to 1.5" },
+                    gain: { type: "number", description: "Loudness 0-1" },
+                    delay: { type: "number", description: "Seconds before this layer starts" },
+                    filter: { type: "string", enum: ["lowpass", "highpass", "bandpass"] },
+                    q: { type: "number" },
+                  },
+                  required: ["type", "from", "duration", "gain"],
+                  additionalProperties: false,
+                },
+              },
+            },
+            required: ["layers"],
+            additionalProperties: false,
+          },
+          generatedAnimation: {
+            type: "object",
+            description: "An animation you compose yourself, when nothing in the list fits.",
+            properties: {
+              name: { type: "string" },
+              duration: { type: "number", description: "Milliseconds, 80-6000" },
+              repeat: { type: "boolean", description: "true to run continuously" },
+              keyframes: {
+                type: "array",
+                minItems: 2,
+                maxItems: 8,
+                items: {
+                  type: "object",
+                  properties: {
+                    at: { type: "number", description: "Position through the animation, 0-100" },
+                    scale: { type: "number", description: "0.2-3" },
+                    rotate: { type: "number", description: "Degrees" },
+                    x: { type: "number", description: "Sideways, % of own size" },
+                    y: { type: "number", description: "Up/down, % of own size" },
+                    opacity: { type: "number", description: "0-1" },
+                    brightness: { type: "number", description: "0.2-3" },
+                  },
+                  required: ["at"],
+                  additionalProperties: false,
+                },
+              },
+            },
+            required: ["duration", "keyframes"],
+            additionalProperties: false,
+          },
         },
         required: ["id"],
         additionalProperties: false,
@@ -250,6 +426,12 @@ function systemPrompt(): string {
     "- When they name a part ('the send button'), change just that part.",
     "- 'everything' means give the whole app a coherent treatment, not one flat colour on every element.",
     "- Reply in the language they wrote in.",
+    "",
+    "Sounds and animations — you are not limited to the lists:",
+    "- generatedSound lets you compose a sound from layers of tones and noise. A tone is pitched (a chime, a blip); noise is unpitched (a click, a whoosh, rain). Layer two or three for something richer, using delay to stagger them.",
+    "- soundSearch finds a real recording on Wikimedia Commons. Prefer it when the person asks for something recognisable that synthesis cannot do well — a cat, a church bell, a camera shutter. Keep the words short.",
+    "- generatedAnimation lets you compose motion from keyframes. Set repeat only for a gentle idle motion; leave it off for a reaction to a tap.",
+    "- Compose something when the built-in lists do not fit what was asked for. Use a built-in name when one genuinely matches — it is lighter.",
   ].join("\n");
 }
 
@@ -265,16 +447,19 @@ function userPrompt(instruction: string, state: unknown): string {
 
 // The model answers with a list of element changes; the rest of this
 // function works in the same map shape the app stores.
-function elementsToMap(raw: unknown): Record<string, Record<string, string>> {
-  const out: Record<string, Record<string, string>> = {};
+function elementsToMap(raw: unknown): Record<string, Record<string, unknown>> {
+  const out: Record<string, Record<string, unknown>> = {};
   if (!Array.isArray(raw)) return out;
   for (const entry of raw) {
     if (!entry || typeof entry !== "object") continue;
     const { id, ...rest } = entry as Record<string, unknown>;
     if (typeof id !== "string") continue;
-    const style: Record<string, string> = {};
+    const style: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(rest)) {
       if (typeof v === "string" && v) style[k] = v;
+      else if ((k === "generatedSound" || k === "generatedAnimation") && v && typeof v === "object") {
+        style[k] = v;
+      }
     }
     if (Object.keys(style).length) out[id] = { ...(out[id] ?? {}), ...style };
   }
@@ -435,6 +620,33 @@ Deno.serve(async (req) => {
     if (lastError) throw lastError;
 
     const { patch, changed } = sanitize(raw);
+
+    // Turn any search words the model gave into real Wikimedia files. Doing
+    // it here means the model never supplies a URL itself.
+    if (patch.customization) {
+      const wanted = Object.entries(patch.customization).filter(
+        ([, style]) => typeof (style as Record<string, unknown>).soundSearch === "string"
+      );
+      // A handful at most, so one instruction cannot fan out into many lookups
+      const found = await Promise.all(
+        wanted.slice(0, 6).map(async ([id, style]) => {
+          const query = (style as Record<string, unknown>).soundSearch as string;
+          return [id, await findLibrarySound(query)] as const;
+        })
+      );
+      for (const [id, style] of wanted) {
+        const entry = style as Record<string, unknown>;
+        const hit = found.find(([foundId]) => foundId === id)?.[1];
+        delete entry.soundSearch;
+        // Only set it if nothing better was already chosen for this element
+        if (hit && !entry.generatedSound && !entry.sound) entry.sound = hit;
+      }
+      // An element left with nothing at all is dropped
+      for (const [id, style] of Object.entries(patch.customization)) {
+        if (!Object.keys(style as Record<string, unknown>).length) delete patch.customization[id];
+      }
+    }
+
     return json({ configured: true, provider, changed, ...patch });
   } catch (e) {
     console.error("theme-ai error:", e);

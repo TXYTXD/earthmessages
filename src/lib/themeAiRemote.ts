@@ -10,6 +10,8 @@ import { completeDefinition, isValidDefinition, type ThemeDefinition } from "@/l
 export interface RemoteThemeEdit {
   /** false when the owner has not configured a model key */
   configured: boolean;
+  /** Why the smart assistant could not answer, when it could not */
+  failure?: string;
   provider?: string;
   reply?: string;
   customization?: ThemeCustomization;
@@ -34,6 +36,7 @@ export async function askThemeAI(instruction: string, state: CurrentState): Prom
   try {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) return null;
+
 
     const full = completeDefinition(state.definition);
     const resp = await fetch(`${SUPABASE_URL}/functions/v1/theme-ai`, {
@@ -60,7 +63,16 @@ export async function askThemeAI(instruction: string, state: CurrentState): Prom
         },
       }),
     });
-    if (!resp.ok) return null;
+    if (!resp.ok) {
+      let why = `the AI service returned ${resp.status}`;
+      try {
+        const body = await resp.json();
+        if (body?.detail || body?.error) why = String(body.detail || body.error);
+      } catch {
+        /* no JSON body */
+      }
+      return { configured: true, failure: why, changed: 0 };
+    }
     const data = await resp.json();
 
     if (data?.configured === false) {
@@ -110,6 +122,6 @@ export async function askThemeAI(instruction: string, state: CurrentState): Prom
     };
   } catch (e) {
     console.warn("[ThemeAI] remote call failed:", e);
-    return null;
+    return { configured: true, failure: String((e as Error)?.message || e), changed: 0 };
   }
 }
