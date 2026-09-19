@@ -7,12 +7,14 @@ import {
   type ElementAnimation, type IconName,
 } from "@/lib/themeElements";
 import { isUISound, type UISoundName } from "@/lib/uiSounds";
+import { isLibrarySoundRef } from "@/lib/soundLibrary";
 
 export interface ElementStyle {
   color?: string;       // hex — text/icon colour
   background?: string;  // hex — fill
   icon?: IconName;
-  sound?: UISoundName;
+  /** A built-in sound, or "url:<Wikimedia audio URL>" from the sound library */
+  sound?: UISoundName | string;
   animation?: ElementAnimation;
 }
 
@@ -38,7 +40,9 @@ export function normalizeCustomization(raw: unknown): ThemeCustomization {
       style.background = v.background;
     }
     if (spec.traits.includes("icon") && isIconName(v.icon)) style.icon = v.icon;
-    if (spec.traits.includes("sound") && isUISound(v.sound)) style.sound = v.sound;
+    if (spec.traits.includes("sound") && (isUISound(v.sound) || isLibrarySoundRef(v.sound))) {
+      style.sound = v.sound;
+    }
     if (spec.traits.includes("animation") && isElementAnimation(v.animation)) style.animation = v.animation;
     if (Object.keys(style).length) {
       out[id] = style;

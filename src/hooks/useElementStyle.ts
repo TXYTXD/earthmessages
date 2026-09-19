@@ -1,8 +1,9 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import * as Icons from "lucide-react";
 import { useThemeContext } from "@/contexts/ThemeContext";
 import { ELEMENT_BY_ID } from "@/lib/themeElements";
-import { playUISound } from "@/lib/uiSounds";
+import { playUISound, type UISoundName } from "@/lib/uiSounds";
+import { isLibrarySoundRef, playLibrarySound, preloadSound } from "@/lib/soundLibrary";
 import type { ElementStyle } from "@/lib/themeCustomization";
 
 export interface ResolvedElement {
@@ -48,9 +49,16 @@ export function useElementStyle(elementId: string): ResolvedElement {
     return found ?? null;
   }, [overrides?.icon]);
 
+  // A clip from the sound library is fetched once, ahead of the first tap
+  useEffect(() => {
+    if (uiSoundsEnabled && isLibrarySoundRef(overrides?.sound)) preloadSound(overrides!.sound!);
+  }, [overrides?.sound, uiSoundsEnabled]);
+
   const play = useCallback(() => {
     if (!uiSoundsEnabled) return;
-    playUISound(overrides?.sound);
+    const sound = overrides?.sound;
+    if (isLibrarySoundRef(sound)) void playLibrarySound(sound);
+    else playUISound(sound as UISoundName | undefined);
   }, [overrides?.sound, uiSoundsEnabled]);
 
   void spec;

@@ -6,6 +6,7 @@ import {
 import { ThemeBackground } from "@/components/ThemeBackground";
 import { ThemeAdvancedEditor } from "@/components/ThemeAdvancedEditor";
 import { applyInstruction, ASSISTANT_EXAMPLES } from "@/lib/themeAssistant";
+import { askThemeAI } from "@/lib/themeAiRemote";
 import { countCustomizations, type ThemeCustomization } from "@/lib/themeCustomization";
 import { useAmbientSound } from "@/hooks/useAmbientSound";
 import { designThemes, THEME_AI_EXAMPLES, type ThemeSuggestion } from "@/lib/themeAI";
@@ -113,6 +114,7 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
   const [customization, setCustomization] = useState<ThemeCustomization>({});
   const [instruction, setInstruction] = useState("");
   const [assistantLog, setAssistantLog] = useState<{ text: string; ok: boolean }[]>([]);
+  const [working, setWorking] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [effects, setEffects] = useState<ThemeEffects>(DEFAULT_EFFECTS);
   const [previewSound, setPreviewSound] = useState(false);
@@ -138,20 +140,41 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
       }
     }, 350);
   };
-  // The advanced assistant edits this theme from an instruction
-  const runInstruction = (text: string) => {
+  // The advanced assistant edits this theme from an instruction. A real model
+  // handles it when one is configured; otherwise the on-device assistant does,
+  // so the feature works either way.
+  const runInstruction = async (text: string) => {
     const q = text.trim();
-    if (!q) return;
-    const result = applyInstruction(q, { customization, definition: def, effects });
-    if (result.customization) setCustomization(result.customization);
-    if (result.effects) setEffects(result.effects);
-    if (result.definition) setDef(result.definition);
-    setAssistantLog((prev) => [
-      ...prev.slice(-5),
-      { text: `You: ${q}`, ok: true },
-      ...result.summary.map((line) => ({ text: line, ok: result.understood })),
-    ]);
-    if (result.understood) setInstruction("");
+    if (!q || working) return;
+    setWorking(true);
+    setAssistantLog((prev) => [...prev.slice(-6), { text: `You: ${q}`, ok: true }]);
+
+    try {
+      const remote = await askThemeAI(q, { customization, definition: def, effects });
+      if (remote?.configured && (remote.changed > 0 || remote.reply)) {
+        if (remote.customization) setCustomization(remote.customization);
+        if (remote.effects) setEffects(remote.effects);
+        if (remote.definition) setDef(remote.definition);
+        setAssistantLog((prev) => [
+          ...prev.slice(-6),
+          { text: remote.reply || `Done — ${remote.changed} change${remote.changed === 1 ? "" : "s"}.`, ok: true },
+        ]);
+        setInstruction("");
+        return;
+      }
+
+      const result = applyInstruction(q, { customization, definition: def, effects });
+      if (result.customization) setCustomization(result.customization);
+      if (result.effects) setEffects(result.effects);
+      if (result.definition) setDef(result.definition);
+      setAssistantLog((prev) => [
+        ...prev.slice(-6),
+        ...result.summary.map((line) => ({ text: line, ok: result.understood })),
+      ]);
+      if (result.understood) setInstruction("");
+    } finally {
+      setWorking(false);
+    }
   };
 
   const generateAgain = () => {
@@ -333,12 +356,12 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
                   <Input
                     value={instruction}
                     onChange={(e) => setInstruction(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); runInstruction(instruction); } }}
-                    placeholder="e.g. make the send button red with a pop sound"
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void runInstruction(instruction); } }}
+                    placeholder="Tell it anything — e.g. make it feel like a thunderstorm"
                     className="rounded-lg"
                   />
-                  <Button type="button" onClick={() => runInstruction(instruction)} disabled={!instruction.trim()} className="rounded-lg gap-1.5 flex-shrink-0">
-                    <CornerDownLeft className="w-4 h-4" /> Do it
+                  <Button type="button" onClick={() => runInstruction(instruction)} disabled={!instruction.trim() || working} className="rounded-lg gap-1.5 flex-shrink-0">
+                    {working ? <Loader2 className="w-4 h-4 animate-spin" /> : <CornerDownLeft className="w-4 h-4" />} Do it
                   </Button>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -346,7 +369,7 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
                     <button
                       key={ex}
                       type="button"
-                      onClick={() => runInstruction(ex)}
+                      onClick={() => void runInstruction(ex)}
                       className="text-[11px] px-2 py-1 rounded-full bg-accent hover:bg-accent/70 text-muted-foreground hover:text-foreground transition-colors"
                     >
                       {ex}

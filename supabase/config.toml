@@ -19,3 +19,6 @@ verify_jwt = false
 verify_jwt = false
 [functions.send-push]
 verify_jwt = false
+
+[functions.theme-ai]
+verify_jwt = false

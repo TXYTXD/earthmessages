@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
 import * as Icons from "lucide-react";
-import { ChevronLeft, Check, Volume2, Sparkles, RotateCcw, Search } from "lucide-react";
+import { ChevronLeft, Check, Volume2, Sparkles, RotateCcw, Search, Globe, Loader2, Play } from "lucide-react";
+import {
+  isLibrarySoundRef, playLibrarySound, searchSounds, soundRefUrl, toSoundRef, type LibrarySound,
+} from "@/lib/soundLibrary";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -128,7 +131,9 @@ export function ThemeAdvancedEditor({ customization, onChange, palette }: Props)
                     playUISound(s.id);
                   }}
                   className={`px-1 py-1.5 rounded-lg text-[10px] font-medium transition-all ${
-                    (style.sound ?? "none") === s.id ? "ring-2 ring-primary bg-primary/10" : "bg-accent/60 hover:bg-accent"
+                    !isLibrarySoundRef(style.sound) && (style.sound ?? "none") === s.id
+                      ? "ring-2 ring-primary bg-primary/10"
+                      : "bg-accent/60 hover:bg-accent"
                   }`}
                 >
                   <span className="block text-sm leading-tight">{s.emoji}</span>
@@ -139,6 +144,10 @@ export function ThemeAdvancedEditor({ customization, onChange, palette }: Props)
             <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
               <Volume2 className="w-3 h-3" /> Tap one to hear it
             </p>
+            <SoundLibraryPicker
+              value={style.sound}
+              onPick={(ref) => update(selected.id, { sound: ref })}
+            />
           </div>
         )}
 
@@ -284,6 +293,120 @@ function Swatches({
           />
         </label>
       </div>
+    </div>
+  );
+}
+
+
+// Search Wikimedia Commons for a real recording and attach it to an element.
+// Free, openly licensed, and no account needed.
+function SoundLibraryPicker({
+  value, onPick,
+}: { value?: string; onPick: (ref: string | undefined) => void }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<LibrarySound[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const chosen = isLibrarySoundRef(value) ? value : null;
+
+  const run = async (q: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      setResults(await searchSounds(q));
+    } catch {
+      setError("Couldn't reach the sound library");
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="mt-2 rounded-lg border border-border p-2 space-y-2">
+      <button
+        type="button"
+        onClick={() => {
+          const next = !open;
+          setOpen(next);
+          if (next && !results.length) void run("");
+        }}
+        className="flex items-center gap-1.5 text-[12px] font-medium w-full"
+      >
+        <Globe className="w-3.5 h-3.5 text-primary" />
+        Sounds from the internet
+        <span className="ml-auto text-[10px] text-muted-foreground">{open ? "Hide" : "Browse"}</span>
+      </button>
+
+      {chosen && (
+        <div className="flex items-center gap-1.5 text-[11px] bg-primary/10 rounded-md px-2 py-1">
+          <Check className="w-3 h-3 text-primary flex-shrink-0" />
+          <span className="truncate flex-1">{decodeURIComponent(soundRefUrl(chosen)?.split("/").pop() ?? "")}</span>
+          <button type="button" onClick={() => void playLibrarySound(chosen)} className="text-primary">
+            <Play className="w-3 h-3" />
+          </button>
+          <button type="button" onClick={() => onPick(undefined)} className="text-destructive">
+            <RotateCcw className="w-3 h-3" />
+          </button>
+        </div>
+      )}
+
+      {open && (
+        <>
+          <div className="flex items-center gap-2 bg-accent/60 rounded-full px-2.5 py-1">
+            <Search className="w-3 h-3 text-muted-foreground" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void run(query); } }}
+              placeholder="bell, click, water, cat…"
+              className="flex-1 bg-transparent text-[12px] outline-none placeholder:text-muted-foreground"
+            />
+            {loading && <Loader2 className="w-3 h-3 animate-spin text-primary" />}
+          </div>
+
+          {error && <p className="text-[11px] text-destructive">{error}</p>}
+
+          {!loading && !error && results.length === 0 && (
+            <p className="text-[11px] text-muted-foreground">No short clips found. Try another word.</p>
+          )}
+
+          <div className="space-y-1 max-h-40 overflow-y-auto">
+            {results.map((snd) => (
+              <div
+                key={snd.id}
+                className={`flex items-center gap-1.5 rounded-md px-2 py-1 transition-colors ${
+                  chosen === toSoundRef(snd.url) ? "bg-primary/10" : "hover:bg-accent/60"
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => void playLibrarySound(toSoundRef(snd.url))}
+                  className="text-primary flex-shrink-0"
+                  title="Listen"
+                >
+                  <Play className="w-3 h-3" />
+                </button>
+                <span className="text-[11px] truncate flex-1" title={snd.title}>{snd.title}</span>
+                {snd.seconds > 0 && <span className="text-[10px] text-muted-foreground">{snd.seconds}s</span>}
+                <button
+                  type="button"
+                  onClick={() => onPick(toSoundRef(snd.url))}
+                  className="text-[10px] font-medium text-primary hover:underline flex-shrink-0"
+                >
+                  Use
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-[10px] text-muted-foreground leading-relaxed">
+            From Wikimedia Commons — free to use and credited to their creators. Only short clips are offered, so
+            buttons stay quick.
+          </p>
+        </>
+      )}
     </div>
   );
 }
