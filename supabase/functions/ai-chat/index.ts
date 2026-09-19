@@ -7,21 +7,99 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Which model answers. Claude needs paid credit; Gemini has a free tier.
-// AI_PROVIDER ("claude" or "gemini") picks when both keys are set; otherwise
-// whichever key exists is used.
-function pickProvider(): "claude" | "gemini" | null {
-  const claude = Deno.env.get("ANTHROPIC_API_KEY");
-  const gemini = Deno.env.get("GEMINI_API_KEY");
-  const preferred = (Deno.env.get("AI_PROVIDER") ?? "").toLowerCase();
-  if (preferred === "gemini" && gemini) return "gemini";
-  if (preferred === "claude" && claude) return "claude";
-  if (claude) return "claude";
-  if (gemini) return "gemini";
+// Which model answers.
+//   claude     — ANTHROPIC_API_KEY, paid credit
+//   gemini     — GEMINI_API_KEY, has a free tier
+//   open       — any service that speaks the widely used chat-completions
+//                format: GLM (Z.ai), Groq, Mistral, DeepSeek, OpenRouter,
+//                Cerebras, or a model you host yourself. Set
+//                OPEN_AI_BASE_URL, OPEN_AI_API_KEY and OPEN_AI_MODEL.
+// AI_PROVIDER picks when more than one is configured.
+export type Provider = "claude" | "gemini" | "open";
+
+export function pickProvider(env: (k: string) => string | undefined): Provider | null {
+  const has = {
+    claude: !!env("ANTHROPIC_API_KEY"),
+    gemini: !!env("GEMINI_API_KEY"),
+    open: !!env("OPEN_AI_BASE_URL") && !!env("OPEN_AI_MODEL"),
+  };
+  const preferred = (env("AI_PROVIDER") ?? "").toLowerCase();
+  if (preferred === "open" && has.open) return "open";
+  if (preferred === "gemini" && has.gemini) return "gemini";
+  if (preferred === "claude" && has.claude) return "claude";
+  if (has.claude) return "claude";
+  if (has.gemini) return "gemini";
+  if (has.open) return "open";
   return null;
 }
 
-// Gemini's streaming endpoint, re-shaped into the same events the app reads.
+// Read an SSE body and yield the text pieces a callback pulls out of each
+// frame. Frames can arrive split across chunks, so the buffer is kept.
+export async function* sseText(
+  body: ReadableStream<Uint8Array>,
+  pick: (data: unknown) => string
+): AsyncGenerator<string> {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    let cut = buffer.indexOf("\n\n");
+    while (cut !== -1) {
+      const frame = buffer.slice(0, cut);
+      buffer = buffer.slice(cut + 2);
+      for (const line of frame.split("\n")) {
+        if (!line.startsWith("data:")) continue;
+        const payload = line.slice(5).trim();
+        if (!payload || payload === "[DONE]") continue;
+        try {
+          const text = pick(JSON.parse(payload));
+          if (text) yield text;
+        } catch {
+          /* a partial or non-JSON frame — ignore it */
+        }
+      }
+      cut = buffer.indexOf("\n\n");
+    }
+  }
+}
+
+// Any chat-completions service: GLM, Groq, Mistral, DeepSeek, OpenRouter...
+export async function openCompatStream(
+  baseUrl: string,
+  key: string,
+  model: string,
+  system: string,
+  messages: { role: "user" | "assistant"; content: string }[]
+): Promise<AsyncIterable<string>> {
+  const url = `${baseUrl.replace(/\/+$/, "")}/chat/completions`;
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(key ? { Authorization: `Bearer ${key}` } : {}),
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 2048,
+      stream: true,
+      messages: [{ role: "system", content: system }, ...messages],
+    }),
+  });
+  if (!resp.ok || !resp.body) {
+    const detail = resp.body ? (await resp.text()).slice(0, 200) : "";
+    const err = new Error(`AI service ${resp.status}: ${detail}`) as Error & { status?: number };
+    err.status = resp.status;
+    throw err;
+  }
+  return sseText(resp.body, (d) => (d as {
+    choices?: { delta?: { content?: string } }[];
+  })?.choices?.[0]?.delta?.content ?? "");
+}
+
+// Gemini's streaming endpoint, re-shaped into the same pieces of text.
 async function geminiStream(
   key: string,
   system: string,
@@ -48,39 +126,12 @@ async function geminiStream(
     err.status = resp.status;
     throw err;
   }
-
-  const body = resp.body;
-  return (async function* () {
-    const reader = body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      // SSE frames are separated by a blank line
-      let cut = buffer.indexOf("\n\n");
-      while (cut !== -1) {
-        const frame = buffer.slice(0, cut);
-        buffer = buffer.slice(cut + 2);
-        for (const line of frame.split("\n")) {
-          if (!line.startsWith("data:")) continue;
-          const payload = line.slice(5).trim();
-          if (!payload || payload === "[DONE]") continue;
-          try {
-            const data = JSON.parse(payload);
-            const text = (data?.candidates?.[0]?.content?.parts ?? [])
-              .map((part: { text?: string }) => part.text ?? "")
-              .join("");
-            if (text) yield text;
-          } catch {
-            /* a partial frame — ignore it */
-          }
-        }
-        cut = buffer.indexOf("\n\n");
-      }
-    }
-  })();
+  return sseText(resp.body, (d) =>
+    ((d as { candidates?: { content?: { parts?: { text?: string }[] } }[] })
+      ?.candidates?.[0]?.content?.parts ?? [])
+      .map((part) => part.text ?? "")
+      .join("")
+  );
 }
 
 const SYSTEM_PROMPT =
@@ -112,9 +163,9 @@ serve(async (req) => {
     }
 
     const { messages } = await req.json();
-    const provider = pickProvider();
+    const provider = pickProvider((k) => Deno.env.get(k));
     if (!provider) {
-      console.error("No AI key configured (ANTHROPIC_API_KEY or GEMINI_API_KEY)");
+      console.error("No AI provider configured");
       return new Response(JSON.stringify({ error: "AI is not configured yet" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -147,6 +198,14 @@ serve(async (req) => {
     try {
       if (provider === "gemini") {
         textStream = await geminiStream(Deno.env.get("GEMINI_API_KEY")!, SYSTEM_PROMPT, merged);
+      } else if (provider === "open") {
+        textStream = await openCompatStream(
+          Deno.env.get("OPEN_AI_BASE_URL")!,
+          Deno.env.get("OPEN_AI_API_KEY") ?? "",
+          Deno.env.get("OPEN_AI_MODEL")!,
+          SYSTEM_PROMPT,
+          merged
+        );
       } else {
         const anthropic = new Anthropic({ apiKey: Deno.env.get("ANTHROPIC_API_KEY")! });
         const stream = await anthropic.messages.create({
@@ -182,7 +241,7 @@ serve(async (req) => {
         });
       }
       if (status === 400) {
-        return new Response(JSON.stringify({ error: provider === "gemini" ? "The free AI limit was reached. Try again shortly." : "AI credits exhausted. Please add funds." }), {
+        return new Response(JSON.stringify({ error: provider === "claude" ? "AI credits exhausted. Please add funds." : "The AI limit was reached. Try again shortly." }), {
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }

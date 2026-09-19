@@ -50,9 +50,20 @@ serve(async (req) => {
 
     const claudeKey = Deno.env.get("ANTHROPIC_API_KEY");
     const geminiKey = Deno.env.get("GEMINI_API_KEY");
+    const openBase = Deno.env.get("OPEN_AI_BASE_URL");
+    const openModel = Deno.env.get("OPEN_AI_MODEL");
+    const hasOpen = !!openBase && !!openModel;
     const preferred = (Deno.env.get("AI_PROVIDER") ?? "").toLowerCase();
-    const useGemini = geminiKey && (preferred === "gemini" || !claudeKey);
-    if (!claudeKey && !geminiKey) throw new Error("No AI key is configured");
+
+    const provider: "claude" | "gemini" | "open" | null =
+      preferred === "open" && hasOpen ? "open"
+      : preferred === "gemini" && geminiKey ? "gemini"
+      : preferred === "claude" && claudeKey ? "claude"
+      : claudeKey ? "claude"
+      : geminiKey ? "gemini"
+      : hasOpen ? "open"
+      : null;
+    if (!provider) throw new Error("No AI provider is configured");
 
     const targetName = LANG_NAMES[targetLang] || targetLang;
     const sourceHint = sourceLang ? `from ${LANG_NAMES[sourceLang] || sourceLang} ` : "";
@@ -61,7 +72,31 @@ serve(async (req) => {
 
     let translated = "";
     try {
-      if (useGemini) {
+      if (provider === "open") {
+        const resp = await fetch(`${openBase!.replace(/\/+$/, "")}/chat/completions`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(Deno.env.get("OPEN_AI_API_KEY") ? { Authorization: `Bearer ${Deno.env.get("OPEN_AI_API_KEY")}` } : {}),
+          },
+          body: JSON.stringify({
+            model: openModel,
+            max_tokens: 1024,
+            temperature: 0.2,
+            messages: [
+              { role: "system", content: system },
+              { role: "user", content: text },
+            ],
+          }),
+        });
+        if (!resp.ok) {
+          const err = new Error(`AI service ${resp.status}`) as Error & { status?: number };
+          err.status = resp.status;
+          throw err;
+        }
+        const data = await resp.json();
+        translated = data?.choices?.[0]?.message?.content ?? "";
+      } else if (provider === "gemini") {
         const resp = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(geminiKey!)}`,
           {
