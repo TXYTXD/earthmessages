@@ -2,6 +2,13 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk";
 
+// Secrets are pasted by hand, so they often arrive with a trailing newline
+// or a stray space. Trim everything we read; an empty value counts as unset.
+function env(name: string): string | undefined {
+  const v = Deno.env.get(name)?.trim();
+  return v ? v : undefined;
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -48,12 +55,12 @@ serve(async (req) => {
       );
     }
 
-    const claudeKey = Deno.env.get("ANTHROPIC_API_KEY");
-    const geminiKey = Deno.env.get("GEMINI_API_KEY");
-    const openBase = Deno.env.get("OPEN_AI_BASE_URL");
-    const openModel = Deno.env.get("OPEN_AI_MODEL");
+    const claudeKey = env("ANTHROPIC_API_KEY");
+    const geminiKey = env("GEMINI_API_KEY");
+    const openBase = env("OPEN_AI_BASE_URL");
+    const openModel = env("OPEN_AI_MODEL");
     const hasOpen = !!openBase && !!openModel;
-    const preferred = (Deno.env.get("AI_PROVIDER") ?? "").toLowerCase();
+    const preferred = (env("AI_PROVIDER") ?? "").toLowerCase();
 
     const provider: "claude" | "gemini" | "open" | null =
       preferred === "open" && hasOpen ? "open"
@@ -77,7 +84,7 @@ serve(async (req) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            ...(Deno.env.get("OPEN_AI_API_KEY") ? { Authorization: `Bearer ${Deno.env.get("OPEN_AI_API_KEY")}` } : {}),
+            ...(env("OPEN_AI_API_KEY") ? { Authorization: `Bearer ${env("OPEN_AI_API_KEY")}` } : {}),
           },
           body: JSON.stringify({
             model: openModel,

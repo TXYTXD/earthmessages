@@ -4,6 +4,13 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 // Tenor API enabled). Results are cached in memory so repeated searches
 // and the trending list come back instantly.
 
+// Secrets are pasted by hand, so they often arrive with a trailing newline
+// or a stray space. Trim everything we read; an empty value counts as unset.
+function env(name: string): string | undefined {
+  const v = Deno.env.get(name)?.trim();
+  return v ? v : undefined;
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -67,7 +74,7 @@ Deno.serve(async (req) => {
     const hit = cache.get(cacheKey);
     if (hit && Date.now() - hit.at < TTL) return json({ gifs: hit.gifs, cached: true });
 
-    const key = Deno.env.get('TENOR_API_KEY');
+    const key = env('TENOR_API_KEY');
     if (!key) {
       return json({ error: 'GIFs are not set up yet (missing TENOR_API_KEY)', gifs: [] });
     }
