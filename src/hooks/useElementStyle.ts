@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo } from "react";
 import * as Icons from "lucide-react";
 import { useThemeContext } from "@/contexts/ThemeContext";
 import { ELEMENT_BY_ID } from "@/lib/themeElements";
-import { playUISound, type UISoundName } from "@/lib/uiSounds";
+import { playGeneratedSound, playUISound, type UISoundName } from "@/lib/uiSounds";
 import { isLibrarySoundRef, playLibrarySound, preloadSound } from "@/lib/soundLibrary";
-import type { ElementStyle } from "@/lib/themeCustomization";
+import { animationName, type ElementStyle } from "@/lib/themeCustomization";
 
 export interface ResolvedElement {
   /** Inline style carrying the theme's colours for this element */
@@ -34,14 +34,23 @@ export function useElementStyle(elementId: string): ResolvedElement {
     const s: React.CSSProperties = {};
     if (overrides.color) s.color = overrides.color;
     if (overrides.background) s.background = overrides.background;
+    const gen = overrides.generatedAnimation;
+    if (gen && effectsEnabled) {
+      s.animationName = animationName(elementId);
+      s.animationDuration = `${gen.duration}ms`;
+      s.animationIterationCount = gen.repeat ? "infinite" : 1;
+    }
     return s;
-  }, [overrides?.color, overrides?.background]);
+  }, [overrides?.color, overrides?.background, overrides?.generatedAnimation, effectsEnabled, elementId]);
 
   const className = useMemo(() => {
+    if (!effectsEnabled) return "";
+    // One the theme invented takes precedence over the built-in list
+    if (overrides?.generatedAnimation) return "el-anim el-anim-generated";
     const anim = overrides?.animation;
-    if (!anim || anim === "none" || !effectsEnabled) return "";
+    if (!anim || anim === "none") return "";
     return `el-anim el-anim-${anim}`;
-  }, [overrides?.animation, effectsEnabled]);
+  }, [overrides?.animation, overrides?.generatedAnimation, effectsEnabled]);
 
   const Icon = useMemo(() => {
     if (!overrides?.icon) return null;
@@ -56,10 +65,15 @@ export function useElementStyle(elementId: string): ResolvedElement {
 
   const play = useCallback(() => {
     if (!uiSoundsEnabled) return;
+    // A sound the theme invented wins, then one from the library, then a built-in
+    if (overrides?.generatedSound) {
+      playGeneratedSound(overrides.generatedSound);
+      return;
+    }
     const sound = overrides?.sound;
     if (isLibrarySoundRef(sound)) void playLibrarySound(sound);
     else playUISound(sound as UISoundName | undefined);
-  }, [overrides?.sound, uiSoundsEnabled]);
+  }, [overrides?.sound, overrides?.generatedSound, uiSoundsEnabled]);
 
   void spec;
   void effects;

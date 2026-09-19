@@ -945,6 +945,8 @@
     animation-timing-function: var(--motion-ease);
     animation-fill-mode: both;
   }
+  /* A generated animation supplies its own name and timing inline */
+  .el-anim-generated { animation-fill-mode: both; }
   .el-anim-pop:active, .el-anim-pop:hover { animation-name: el-pop; }
   .el-anim-bounce:active, .el-anim-bounce:hover { animation-name: el-bounce; }
   .el-anim-pulse { animation-name: el-pulse; animation-iteration-count: infinite; animation-duration: calc(2s * var(--motion-scale, 1)); }

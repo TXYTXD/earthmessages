@@ -26,6 +26,8 @@ export type UISoundName = (typeof UI_SOUNDS)[number]["id"];
 const SOUND_SET = new Set<string>(UI_SOUNDS.map((s) => s.id));
 export const isUISound = (v: unknown): v is UISoundName => typeof v === "string" && SOUND_SET.has(v);
 
+import type { GeneratedSound } from "@/lib/generatedAssets";
+
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let unlocked = false;
@@ -151,5 +153,37 @@ export function playUISound(name: UISoundName | undefined | null) {
       tone(c, d, { type: "square", from: 220, dur: 0.18, gain: 0.18, delay: 0.11 });
       break;
     default: break;
+  }
+}
+
+
+// Play a sound a theme invented. Every value has already been clamped to a
+// sensible range, so this just builds the layers it describes.
+export function playGeneratedSound(sound: GeneratedSound) {
+  if (!unlocked) return;
+  const c = audio();
+  if (!c || !master) return;
+  if (c.state === "suspended") void c.resume();
+
+  for (const layer of sound.layers) {
+    if (layer.type === "noise") {
+      noise(c, master, {
+        dur: layer.duration,
+        freq: layer.from,
+        q: layer.q,
+        type: layer.filter ?? "bandpass",
+        gain: layer.gain,
+        delay: layer.delay,
+      });
+    } else {
+      tone(c, master, {
+        type: layer.wave ?? "sine",
+        from: layer.from,
+        to: layer.to,
+        dur: layer.duration,
+        gain: layer.gain,
+        delay: layer.delay,
+      });
+    }
   }
 }

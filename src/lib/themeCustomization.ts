@@ -7,6 +7,10 @@ import {
   type ElementAnimation, type IconName,
 } from "@/lib/themeElements";
 import { isUISound, type UISoundName } from "@/lib/uiSounds";
+import {
+  animationCss, animationName, normalizeAnimation, normalizeSound,
+  type GeneratedAnimation, type GeneratedSound,
+} from "@/lib/generatedAssets";
 import { isLibrarySoundRef } from "@/lib/soundLibrary";
 
 export interface ElementStyle {
@@ -15,7 +19,11 @@ export interface ElementStyle {
   icon?: IconName;
   /** A built-in sound, or "url:<Wikimedia audio URL>" from the sound library */
   sound?: UISoundName | string;
+  /** A sound the theme invented, played instead of `sound` */
+  generatedSound?: GeneratedSound;
   animation?: ElementAnimation;
+  /** An animation the theme invented, used instead of `animation` */
+  generatedAnimation?: GeneratedAnimation;
 }
 
 export type ThemeCustomization = Record<string, ElementStyle>;
@@ -44,6 +52,14 @@ export function normalizeCustomization(raw: unknown): ThemeCustomization {
       style.sound = v.sound;
     }
     if (spec.traits.includes("animation") && isElementAnimation(v.animation)) style.animation = v.animation;
+    if (spec.traits.includes("sound")) {
+      const made = normalizeSound(v.generatedSound);
+      if (made) style.generatedSound = made;
+    }
+    if (spec.traits.includes("animation")) {
+      const made = normalizeAnimation(v.generatedAnimation);
+      if (made) style.generatedAnimation = made;
+    }
     if (Object.keys(style).length) {
       out[id] = style;
       count++;
@@ -81,8 +97,34 @@ const ALL_CUSTOM_VARS = (() => {
   return names;
 })();
 
+// Generated animations live in one stylesheet the app owns and rewrites
+// whenever the theme changes.
+const GENERATED_STYLE_ID = "ums-generated-animations";
+
+function applyGeneratedAnimations(c: ThemeCustomization | null) {
+  if (typeof document === "undefined") return;
+  let tag = document.getElementById(GENERATED_STYLE_ID) as HTMLStyleElement | null;
+  const rules: string[] = [];
+  for (const [id, style] of Object.entries(c ?? {})) {
+    if (style.generatedAnimation) rules.push(animationCss(id, style.generatedAnimation));
+  }
+  if (!rules.length) {
+    tag?.remove();
+    return;
+  }
+  if (!tag) {
+    tag = document.createElement("style");
+    tag.id = GENERATED_STYLE_ID;
+    document.head.appendChild(tag);
+  }
+  tag.textContent = rules.join("\n");
+}
+
+export { animationName };
+
 export function applyCustomization(el: HTMLElement, c: ThemeCustomization | null) {
   ALL_CUSTOM_VARS.forEach((v) => el.style.removeProperty(v));
+  applyGeneratedAnimations(c);
   if (!c) return;
   const vars = customizationVariables(c);
   Object.entries(vars).forEach(([k, v]) => el.style.setProperty(k, v));

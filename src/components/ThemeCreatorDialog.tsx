@@ -151,7 +151,17 @@ export function ThemeCreatorDialog({ open, onClose, onCreated }: Props) {
 
     try {
       const remote = await askThemeAI(q, { customization, definition: def, effects });
-      if (remote?.configured && (remote.changed > 0 || remote.reply)) {
+
+      // Say when the smart assistant could not answer, rather than quietly
+      // handing over to the simpler built-in one and looking dim.
+      if (remote?.failure) {
+        setAssistantLog((prev) => [
+          ...prev.slice(-6),
+          { text: `The AI couldn't answer (${remote.failure}). Using the built-in assistant instead.`, ok: false },
+        ]);
+      }
+
+      if (remote?.configured && !remote.failure && (remote.changed > 0 || remote.reply)) {
         if (remote.customization) setCustomization(remote.customization);
         if (remote.effects) setEffects(remote.effects);
         if (remote.definition) setDef(remote.definition);
