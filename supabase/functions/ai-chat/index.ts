@@ -166,7 +166,10 @@ serve(async (req) => {
     const provider = pickProvider((k) => Deno.env.get(k));
     if (!provider) {
       console.error("No AI provider configured");
-      return new Response(JSON.stringify({ error: "AI is not configured yet" }), {
+      return new Response(JSON.stringify({
+        error: "AI is not set up yet",
+        detail: "No AI key is configured in Supabase. Add ANTHROPIC_API_KEY, GEMINI_API_KEY, or OPEN_AI_BASE_URL + OPEN_AI_MODEL.",
+      }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -245,7 +248,13 @@ serve(async (req) => {
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      return new Response(JSON.stringify({ error: "AI service unavailable" }), {
+      const raw = err instanceof Error ? err.message : String(err);
+      // Never echo a key back, even if a provider quoted it in its error
+      const safe = raw.replace(/(gsk_|sk-ant-|sk-|AIza)[A-Za-z0-9_\-]{6,}/g, "[key]").slice(0, 300);
+      return new Response(JSON.stringify({
+        error: "AI service unavailable",
+        detail: `${provider}: ${safe}`,
+      }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
