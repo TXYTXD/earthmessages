@@ -319,7 +319,14 @@ async function askClaude(key: string, instruction: string, state: unknown): Prom
 // Any chat-completions service — GLM, Groq, Mistral, DeepSeek, OpenRouter,
 // or a model the owner hosts themselves.
 async function askOpenCompat(instruction: string, state: unknown): Promise<unknown> {
-  const base = env("OPEN_AI_BASE_URL")!.replace(/\/+$/, "");
+  const rawBase = env("OPEN_AI_BASE_URL")!;
+  if (!/^https?:\/\//i.test(rawBase)) {
+    throw new Error(
+      `OPEN_AI_BASE_URL must be a web address starting with https:// — it holds "${rawBase}". ` +
+      `If that is the model name, it belongs in OPEN_AI_MODEL.`
+    );
+  }
+  const base = rawBase.replace(/\/+$/, "");
   const key = env("OPEN_AI_API_KEY") ?? "";
   const model = env("OPEN_AI_MODEL")!;
   const resp = await fetch(`${base}/chat/completions`, {

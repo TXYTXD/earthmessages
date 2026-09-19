@@ -100,6 +100,14 @@ export async function openCompatStream(
   system: string,
   messages: { role: "user" | "assistant"; content: string }[]
 ): Promise<AsyncIterable<string>> {
+  // The two settings are easy to swap, since some model names look like a
+  // path. Say so plainly rather than failing on a malformed URL.
+  if (!/^https?:\/\//i.test(baseUrl)) {
+    throw new Error(
+      `OPEN_AI_BASE_URL must be a web address starting with https:// — it currently holds "${baseUrl}". ` +
+      `If that is the model name, it belongs in OPEN_AI_MODEL instead.`
+    );
+  }
   const url = `${baseUrl.replace(/\/+$/, "")}/chat/completions`;
   const resp = await fetch(url, {
     method: "POST",
