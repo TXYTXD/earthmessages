@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useElementStyle } from "@/hooks/useElementStyle";
+import { useT } from "@/contexts/LanguageContext";
 import { Search, MessageCircle, Users, Bot, BadgeCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import { type Conversation } from "@/hooks/useConversations";
@@ -15,6 +16,7 @@ interface ContactListProps {
 }
 
 export function ContactList({ conversations, selectedId, onSelect, onSelectAI, isAISelected, loading }: ContactListProps) {
+  const t = useT();
   const elRow = useElementStyle("list.row");
   const elUnread = useElementStyle("list.unread");
   const elOnline = useElementStyle("list.online");
@@ -65,7 +67,7 @@ export function ContactList({ conversations, selectedId, onSelect, onSelectAI, i
               <span className="text-[15px] font-semibold tracking-tight">AI Assistant</span>
               <BadgeCheck className="w-4 h-4 text-primary flex-shrink-0" />
             </div>
-            <p className="text-[13px] text-muted-foreground truncate">Ask me anything · Always online</p>
+            <p className="text-[13px] text-muted-foreground truncate">{t("presence.alwaysOnline")}</p>
           </div>
         </button>
 
@@ -124,7 +126,7 @@ export function ContactList({ conversations, selectedId, onSelect, onSelectAI, i
                 </div>
                 <div className="flex items-center justify-between gap-2 mt-0.5">
                   <p className={`text-[13px] truncate ${conv.unread_count > 0 ? "text-foreground font-medium" : "text-muted-foreground"}`}>
-                    {conv.last_message || "No messages yet"}
+                    {conv.last_message || t("chats.noMessages")}
                   </p>
                   {conv.unread_count > 0 && (
                     <div

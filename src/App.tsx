@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { CallProvider } from "@/contexts/CallContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import { TranslationProvider } from "@/contexts/TranslationContext";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useAppUpdate } from "@/hooks/useAppUpdate";
@@ -114,6 +115,7 @@ function UpdatePrompt() {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <LanguageProvider>
     <ThemeProvider>
       <TranslationProvider>
       <TooltipProvider>
@@ -138,6 +140,7 @@ const App = () => (
       </TooltipProvider>
       </TranslationProvider>
     </ThemeProvider>
+    </LanguageProvider>
   </QueryClientProvider>
 );
 
