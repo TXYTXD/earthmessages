@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { lastSeenLabel } from "@/lib/presence";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { useFriends } from "@/hooks/useFriends";
@@ -58,7 +59,7 @@ export function NewChatDialog({ open, onClose, onSelect }: NewChatDialogProps) {
                     <div className="text-left">
                       <span className="text-[15px] font-medium flex items-center gap-1">{friend.display_name}<VerifiedBadge verified={friend.verified} /></span>
                       <span className="text-[11px] text-muted-foreground">
-                        {friend.is_online ? "Active now" : "Offline"}
+                        {lastSeenLabel(friend)}
                       </span>
                     </div>
                   </button>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { PRESENCE_WINDOW_MS, isOnline } from "@/lib/presence";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -119,10 +120,11 @@ export function useConversations() {
     // Fetch online status
     const { data: statuses } = await supabase
       .from("user_status")
-      .select("user_id, is_online")
+      .select("user_id, is_online, last_seen")
       .in("user_id", allUserIds);
 
-    const statusMap = new Map(statuses?.map((s) => [s.user_id, s.is_online]) || []);
+    // Keep the whole row: a flag on its own says nothing without a timestamp
+    const statusMap = new Map(statuses?.map((s) => [s.user_id, s]) || []);
 
     // Build conversation objects
     const result: Conversation[] = convs.map((conv) => {
@@ -148,14 +150,14 @@ export function useConversations() {
 
       let displayName = conv.name || "Group Chat";
       let displayAvatar = "";
-      let isOnline = false;
+      let online = false;
       let displayVerified = false;
 
       if (conv.type === "direct" && otherMembers.length > 0) {
         const other = otherMembers[0];
         displayName = other.nickname || other.display_name || "Unknown";
         displayAvatar = (other.display_name || "?").slice(0, 2).toUpperCase();
-        isOnline = statusMap.get(other.user_id) || false;
+        online = isOnline(statusMap.get(other.user_id));
         displayVerified = other.verified || false;
       } else {
         displayAvatar = (displayName || "G").slice(0, 2).toUpperCase();
@@ -190,7 +192,7 @@ export function useConversations() {
         last_message_time: lastMsg?.created_at,
         last_message_sender: lastMsg?.sender_id,
         unread_count: unreadCount,
-        is_online: isOnline,
+        is_online: online,
         members,
       };
     });
@@ -212,6 +214,17 @@ export function useConversations() {
 
   useEffect(() => {
     fetchConversations();
+    // Presence expires quietly, so re-check on a timer and whenever the app
+    // comes back to the foreground — a stale green dot should not outlive it.
+    const tick = setInterval(fetchConversations, PRESENCE_WINDOW_MS / 2);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") fetchConversations();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(tick);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [fetchConversations]);
 
   const createDirectConversation = async (otherUserId: string): Promise<string | null> => {
