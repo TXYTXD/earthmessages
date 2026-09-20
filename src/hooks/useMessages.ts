@@ -23,6 +23,10 @@ export interface Message {
   reactions: MessageReaction[];
   reply_to?: Message | null;
   is_encrypted?: boolean;
+  /** Still on its way to the server */
+  sending?: boolean;
+  /** The server refused it */
+  failed?: boolean;
 }
 
 export interface MessageReaction {
@@ -32,31 +36,26 @@ export interface MessageReaction {
   user_name?: string;
 }
 
+/** How many messages are loaded at a time; older ones load on demand. */
+const PAGE_SIZE = 100;
+
 export function useMessages(conversationId: string | null) {
   const { user } = useAuth();
   const { playMessageSound } = useNotificationSound();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  const [hasOlder, setHasOlder] = useState(false);
+  // Set when this person has cleared the chat; anything older stays hidden
+  const clearedAtRef = useRef<string | null>(null);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
-  const fetchMessages = useCallback(async () => {
-    if (!conversationId || !user) return;
-    setLoading(true);
-
-    const { data: msgs } = await supabase
-      .from("messages")
-      .select("*")
-      .eq("conversation_id", conversationId)
-      .order("created_at", { ascending: true })
-      .limit(100);
-
-    if (!msgs) {
-      setMessages([]);
-      setLoading(false);
-      return;
-    }
-
+  // Turn raw message rows into everything the UI needs: sender names,
+  // reactions, replies and decrypted text. Shared by the first page and by
+  // older pages loaded afterwards.
+  const hydrate = useCallback(async (msgs: any[]): Promise<Message[]> => {
+    if (!msgs.length || !conversationId) return [];
     // Fetch sender profiles
     const senderIds = [...new Set(msgs.map((m) => m.sender_id))];
     const { data: profiles } = await supabase
@@ -130,6 +129,42 @@ export function useMessages(conversationId: string | null) {
         };
       })
     );
+    return result;
+  }, [conversationId]);
+
+  const fetchMessages = useCallback(async () => {
+    if (!conversationId || !user) return;
+    setLoading(true);
+
+    // Has this person cleared this chat? Anything before that is theirs to
+    // not see again, even though it still exists for everyone else.
+    const { data: clearRow } = await (supabase.from("conversation_clears") as any)
+      .select("cleared_at")
+      .eq("conversation_id", conversationId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    clearedAtRef.current = clearRow?.cleared_at ?? null;
+
+    // Newest first, then flipped back — asking for the oldest hundred meant
+    // a long conversation never showed anything recent.
+    let query = supabase
+      .from("messages")
+      .select("*")
+      .eq("conversation_id", conversationId);
+    if (clearedAtRef.current) query = query.gt("created_at", clearedAtRef.current);
+    const { data: newestFirst } = await query
+      .order("created_at", { ascending: false })
+      .limit(PAGE_SIZE);
+
+    if (!newestFirst) {
+      setMessages([]);
+      setLoading(false);
+      return;
+    }
+    setHasOlder(newestFirst.length === PAGE_SIZE);
+    const msgs = [...newestFirst].reverse();
+
+    const result = await hydrate(newestFirst.slice().reverse());
 
     setMessages(result);
     setLoading(false);
@@ -348,6 +383,54 @@ export function useMessages(conversationId: string | null) {
     };
   }, [conversationId, user, enrichMessage]);
 
+  // Nothing is ever dropped — the rest of the history is a scroll away.
+  const loadOlderMessages = useCallback(async () => {
+    if (!conversationId || !hasOlder || loadingOlder) return;
+    const oldest = messages[0];
+    if (!oldest) return;
+    setLoadingOlder(true);
+    try {
+      let olderQuery = supabase
+        .from("messages")
+        .select("*")
+        .eq("conversation_id", conversationId)
+        .lt("created_at", oldest.created_at);
+      if (clearedAtRef.current) olderQuery = olderQuery.gt("created_at", clearedAtRef.current);
+      const { data: older } = await olderQuery
+        .order("created_at", { ascending: false })
+        .limit(PAGE_SIZE);
+
+      setHasOlder((older?.length ?? 0) === PAGE_SIZE);
+      if (older?.length) {
+        const hydrated = await hydrate(older.slice().reverse());
+        setMessages((prev) => {
+          const seen = new Set(prev.map((m) => m.id));
+          return [...hydrated.filter((m) => !seen.has(m.id)), ...prev];
+        });
+      }
+    } finally {
+      setLoadingOlder(false);
+    }
+  }, [conversationId, hasOlder, loadingOlder, messages, hydrate]);
+
+  // Clear this conversation for yourself. The other person keeps theirs.
+  const clearChat = useCallback(async (): Promise<boolean> => {
+    if (!conversationId || !user) return false;
+    const now = new Date().toISOString();
+    const { error } = await (supabase.from("conversation_clears") as any).upsert(
+      { user_id: user.id, conversation_id: conversationId, cleared_at: now },
+      { onConflict: "user_id,conversation_id" }
+    );
+    if (error) {
+      console.error("Failed to clear chat:", error);
+      return false;
+    }
+    clearedAtRef.current = now;
+    setMessages([]);
+    setHasOlder(false);
+    return true;
+  }, [conversationId, user]);
+
   const sendMessage = async (
     content: string,
     type: string = "text",
@@ -355,6 +438,29 @@ export function useMessages(conversationId: string | null) {
     mediaMetadata?: any,
     replyToId?: string
   ) => {
+    if (!user || !conversationId) return;
+
+    // Show it straight away rather than after a round trip to the server and
+    // back. The id is replaced when the real row arrives.
+    const pendingId = `pending-${crypto.randomUUID()}`;
+    const optimistic: Message = {
+      id: pendingId,
+      conversation_id: conversationId,
+      sender_id: user.id,
+      content,
+      type,
+      media_url: mediaUrl || null,
+      media_metadata: mediaMetadata || null,
+      reply_to_id: replyToId || null,
+      is_edited: false,
+      deleted_at: null,
+      created_at: new Date().toISOString(),
+      reactions: [],
+      reply_to: messages.find((m) => m.id === replyToId) ?? null,
+      sending: true,
+    };
+    setMessages((prev) => [...prev, optimistic]);
+
     // Encrypt text messages before storing
     let encryptedContent = content;
     if (type === "text" && content) {
@@ -362,21 +468,42 @@ export function useMessages(conversationId: string | null) {
       encryptedContent = await encryptMessage(content, encKey);
     }
 
-    const { error } = await supabase.from("messages").insert({
-      conversation_id: conversationId,
-      sender_id: user.id,
-      content: encryptedContent,
-      type,
-      media_url: mediaUrl || null,
-      media_metadata: mediaMetadata || null,
-      reply_to_id: replyToId || null,
-    });
+    const { data: inserted, error } = await supabase
+      .from("messages")
+      .insert({
+        conversation_id: conversationId,
+        sender_id: user.id,
+        content: encryptedContent,
+        type,
+        media_url: mediaUrl || null,
+        media_metadata: mediaMetadata || null,
+        reply_to_id: replyToId || null,
+      })
+      .select("id, created_at")
+      .single();
+
     if (error) {
+      // Leave it visible but marked, so nothing typed is silently lost
+      setMessages((prev) =>
+        prev.map((m) => (m.id === pendingId ? { ...m, sending: false, failed: true } : m))
+      );
       // Most common cause: muted in this community by its owner
       toast({
         title: "Message not sent",
         description: "You may have been muted in this community.",
         variant: "destructive",
+      });
+    } else if (inserted) {
+      // Adopt the real id so the realtime echo does not duplicate it
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === inserted.id)) {
+          return prev.filter((m) => m.id !== pendingId);
+        }
+        return prev.map((m) =>
+          m.id === pendingId
+            ? { ...m, id: inserted.id, created_at: inserted.created_at, sending: false }
+            : m
+        );
       });
     }
 
@@ -449,6 +576,10 @@ export function useMessages(conversationId: string | null) {
 
   return {
     messages,
+    hasOlder,
+    loadingOlder,
+    loadOlderMessages,
+    clearChat,
     loading,
     typingUsers,
     sendMessage,

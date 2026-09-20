@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Flag, Ban, ShieldCheck, ChevronLeft } from "lucide-react";
+import { Flag, Ban, ShieldCheck, ChevronLeft , Eraser } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,10 +20,12 @@ interface UserSafetyDialogProps {
   onBlock: () => Promise<boolean> | boolean;
   onUnblock: () => Promise<boolean> | boolean;
   onReport: (reason: string, details?: string) => Promise<boolean> | boolean;
+  /** Hide this conversation's history for the person viewing it */
+  onClearChat?: () => Promise<boolean> | boolean;
 }
 
-export function UserSafetyDialog({ open, onClose, userName, isBlocked, onBlock, onUnblock, onReport }: UserSafetyDialogProps) {
-  const [mode, setMode] = useState<"menu" | "report">("menu");
+export function UserSafetyDialog({ open, onClose, userName, isBlocked, onBlock, onUnblock, onReport, onClearChat }: UserSafetyDialogProps) {
+  const [mode, setMode] = useState<"menu" | "report" | "clear">("menu");
   const [reason, setReason] = useState<string | null>(null);
   const [details, setDetails] = useState("");
   const [busy, setBusy] = useState(false);
@@ -55,13 +57,13 @@ export function UserSafetyDialog({ open, onClose, userName, isBlocked, onBlock, 
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {mode === "report" && (
+            {mode !== "menu" && (
               <button onClick={() => setMode("menu")} className="text-muted-foreground hover:text-foreground">
                 <ChevronLeft className="w-4 h-4" />
               </button>
             )}
             <ShieldCheck className="w-4 h-4 text-primary" />
-            {mode === "menu" ? userName : `Report ${userName}`}
+            {mode === "menu" ? userName : mode === "clear" ? "Clear chat" : `Report ${userName}`}
           </DialogTitle>
         </DialogHeader>
 
@@ -92,6 +94,48 @@ export function UserSafetyDialog({ open, onClose, userName, isBlocked, onBlock, 
                 </p>
               </div>
             </button>
+            {onClearChat && (
+              <button
+                onClick={() => setMode("clear")}
+                className="w-full flex items-center gap-3 p-3 rounded-xl border border-border hover:bg-accent transition-colors text-left"
+              >
+                <Eraser className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium">Clear chat</p>
+                  <p className="text-[12px] text-muted-foreground">
+                    Empties this chat for you. {userName} keeps their copy.
+                  </p>
+                </div>
+              </button>
+            )}
+          </div>
+        ) : mode === "clear" ? (
+          <div className="space-y-3">
+            <p className="text-sm">
+              Clear every message in this chat? It will look brand new for you.
+            </p>
+            <p className="text-[12px] text-muted-foreground">
+              This only affects your side. {userName} will still have the conversation, and
+              anything sent after this will appear as normal. You cannot undo it.
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setMode("menu")} disabled={busy}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  const ok = await onClearChat!();
+                  setBusy(false);
+                  if (ok) close();
+                }}
+              >
+                {busy ? "Clearing…" : "Yes, clear it"}
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="space-y-3">
