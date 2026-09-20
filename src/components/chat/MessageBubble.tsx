@@ -125,6 +125,8 @@ export function MessageBubble({ message, onReact, onReply, onEdit, onDelete, onF
         <div
           style={bubble.style}
           className={`px-3 py-2 rounded-2xl text-[15px] leading-relaxed relative ${bubble.className} ${
+            message.sending ? "opacity-60" : ""
+          } ${message.failed ? "ring-1 ring-destructive" : ""} ${
             isDeleted
               ? "bg-accent/50 text-muted-foreground italic"
               : isMe

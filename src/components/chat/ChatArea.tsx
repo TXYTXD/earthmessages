@@ -31,6 +31,10 @@ export function ChatArea({ conversation, conversations, onBack }: ChatAreaProps)
     deleteMessage,
     addReaction,
     setTyping,
+    hasOlder,
+    loadingOlder,
+    loadOlderMessages,
+    clearChat,
   } = useMessages(conversation.id);
 
   const { scheduleMessage } = useScheduledMessages(conversation.id);
@@ -162,7 +166,19 @@ export function ChatArea({ conversation, conversations, onBack }: ChatAreaProps)
             {searchQuery ? "No messages found" : "No messages yet. Say hello! 👋"}
           </div>
         ) : (
-          filteredMessages.map((msg, i) => {
+          <>
+          {hasOlder && !searchQuery && (
+            <div className="flex justify-center pb-2">
+              <button
+                onClick={loadOlderMessages}
+                disabled={loadingOlder}
+                className="text-[12px] px-3 py-1.5 rounded-full bg-accent hover:bg-accent/70 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-60"
+              >
+                {loadingOlder ? "Loading…" : "Load earlier messages"}
+              </button>
+            </div>
+          )}
+          {filteredMessages.map((msg, i) => {
             const prevMsg = i > 0 ? filteredMessages[i - 1] : null;
             const showAvatar = !prevMsg || prevMsg.sender_id !== msg.sender_id;
 
@@ -187,7 +203,8 @@ export function ChatArea({ conversation, conversations, onBack }: ChatAreaProps)
                 />
               </motion.div>
             );
-          })
+          })}
+          </>
         )}
 
         {/* Typing indicator */}
@@ -230,6 +247,7 @@ export function ChatArea({ conversation, conversations, onBack }: ChatAreaProps)
           onBlock={() => blockUser(otherMember.user_id)}
           onUnblock={() => unblockUser(otherMember.user_id)}
           onReport={(reason, details) => reportUser(otherMember.user_id, reason, details)}
+          onClearChat={clearChat}
         />
       )}
     </div>
