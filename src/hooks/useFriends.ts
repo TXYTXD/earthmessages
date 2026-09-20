@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { PRESENCE_WINDOW_MS, isOnline } from "@/lib/presence";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -54,7 +55,7 @@ export function useFriends() {
           user_id: p.user_id,
           display_name: p.display_name || "Unknown",
           avatar_url: p.avatar_url,
-          is_online: status?.is_online || false,
+          is_online: isOnline(status),
           last_seen: status?.last_seen || null,
           verified: (p as any).is_verified || false,
         };
@@ -65,6 +66,17 @@ export function useFriends() {
 
   useEffect(() => {
     fetchFriends();
+    // Someone can go quiet without telling us, so re-check regularly —
+    // otherwise a green dot would sit there until the page was reloaded.
+    const tick = setInterval(fetchFriends, PRESENCE_WINDOW_MS / 2);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") fetchFriends();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(tick);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [fetchFriends]);
 
   return { friends, loading, refetch: fetchFriends };

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { PRESENCE_WINDOW_MS } from "@/lib/presence";
 
 export function useOnlineStatus() {
   const { user } = useAuth();
@@ -35,13 +36,18 @@ export function useOnlineStatus() {
 
     document.addEventListener("visibilitychange", handleVisibility);
     window.addEventListener("beforeunload", handleBeforeUnload);
+    // Phones frequently kill a page without ever firing beforeunload;
+    // pagehide is the one that actually fires there.
+    window.addEventListener("pagehide", handleBeforeUnload);
 
-    // Heartbeat every 30s
-    const heartbeat = setInterval(setOnline, 30000);
+    // Beat comfortably more often than the window others judge us by, so a
+    // single missed beat does not make us look offline.
+    const heartbeat = setInterval(setOnline, Math.floor(PRESENCE_WINDOW_MS / 3));
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("pagehide", handleBeforeUnload);
       clearInterval(heartbeat);
       setOffline();
     };
