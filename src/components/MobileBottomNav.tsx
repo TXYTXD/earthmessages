@@ -3,20 +3,22 @@ import { MessageCircle, CircleDot, Phone, Bot, Settings, User, CalendarDays, Glo
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useElementStyle } from "@/hooks/useElementStyle";
+import { useT } from "@/contexts/LanguageContext";
 
 const navItems = [
-  { icon: MessageCircle, label: "Chats", path: "/", el: "nav.chats" },
-  { icon: CircleDot, label: "Stories", path: "/stories", el: "nav.stories" },
-  { icon: Globe2, label: "Groups", path: "/communities", el: "nav.communities" },
-  { icon: Phone, label: "Calls", path: "/calls", el: "nav.calls" },
-  { icon: Bot, label: "AI", path: "/ai", el: "nav.ai" },
-  { icon: CalendarDays, label: "Plan", path: "/calendar", el: "nav.calendar" },
-  { icon: Settings, label: "Settings", path: "/settings", el: "nav.settings" },
-  { icon: User, label: "Account", path: "/account", el: "nav.account" },
+  { icon: MessageCircle, labelKey: "nav.chats" as const, path: "/", el: "nav.chats" },
+  { icon: CircleDot, labelKey: "nav.stories" as const, path: "/stories", el: "nav.stories" },
+  { icon: Globe2, labelKey: "nav.groups" as const, path: "/communities", el: "nav.communities" },
+  { icon: Phone, labelKey: "nav.calls" as const, path: "/calls", el: "nav.calls" },
+  { icon: Bot, labelKey: "nav.ai" as const, path: "/ai", el: "nav.ai" },
+  { icon: CalendarDays, labelKey: "nav.plan" as const, path: "/calendar", el: "nav.calendar" },
+  { icon: Settings, labelKey: "nav.settings" as const, path: "/settings", el: "nav.settings" },
+  { icon: User, labelKey: "nav.account" as const, path: "/account", el: "nav.account" },
 ];
 
 // One tab, wearing whatever the theme says about it
 function BottomNavItem({ item, isActive }: { item: (typeof navItems)[number]; isActive: boolean }) {
+  const t = useT();
   const own = useElementStyle(item.el);
   const active = useElementStyle("nav.active");
   const idle = useElementStyle("nav.idle");
@@ -68,7 +70,7 @@ function BottomNavItem({ item, isActive }: { item: (typeof navItems)[number]; is
         animate={{ opacity: isActive ? 1 : 0.75, y: isActive ? 0 : 1 }}
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
       >
-        {item.label}
+        {t(item.labelKey)}
       </motion.span>
     </NavLink>
   );

@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from "react";
+import { useT } from "@/contexts/LanguageContext";
 import { Phone, Video, Info, Search as SearchIcon, ArrowLeft, Lock, BadgeCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import { MessageBubble } from "./MessageBubble";
@@ -22,6 +23,7 @@ interface ChatAreaProps {
 export function ChatArea({ conversation, conversations, onBack }: ChatAreaProps) {
   const { user } = useAuth();
   const { startCall } = useCall();
+  const t = useT();
   const {
     messages,
     loading,
@@ -94,8 +96,8 @@ export function ChatArea({ conversation, conversations, onBack }: ChatAreaProps)
             <span className="text-[11px] text-muted-foreground flex items-center gap-1">
               <Lock className="w-2.5 h-2.5" />
               {conversation.type === "direct"
-                ? conversation.is_online ? "Encrypted · Active now" : "Encrypted · Offline"
-                : `Encrypted · ${conversation.members.length} members`}
+                ? `${t("presence.encrypted")} · ${conversation.is_online ? t("presence.activeNow") : t("presence.offline")}`
+                : `${t("presence.encrypted")} · ${t("presence.members", { count: String(conversation.members.length) })}`}
             </span>
           </div>
         </div>
@@ -134,7 +136,7 @@ export function ChatArea({ conversation, conversations, onBack }: ChatAreaProps)
             <button
               onClick={() => setShowSafety(true)}
               className="w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary"
-              title="Report or block"
+              title={t("safety.title")}
             >
               <Info className="w-5 h-5" />
             </button>
@@ -148,7 +150,7 @@ export function ChatArea({ conversation, conversations, onBack }: ChatAreaProps)
           <input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search in conversation..."
+            placeholder={t("chats.searchIn")}
             className="w-full px-4 py-2 bg-accent rounded-full text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/20"
             autoFocus
           />
@@ -163,7 +165,7 @@ export function ChatArea({ conversation, conversations, onBack }: ChatAreaProps)
           </div>
         ) : filteredMessages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-            {searchQuery ? "No messages found" : "No messages yet. Say hello! 👋"}
+            {searchQuery ? t("chats.noneFound") : t("chats.sayHello")}
           </div>
         ) : (
           <>
@@ -174,7 +176,7 @@ export function ChatArea({ conversation, conversations, onBack }: ChatAreaProps)
                 disabled={loadingOlder}
                 className="text-[12px] px-3 py-1.5 rounded-full bg-accent hover:bg-accent/70 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-60"
               >
-                {loadingOlder ? "Loading…" : "Load earlier messages"}
+                {loadingOlder ? t("chats.loading") : t("chats.loadEarlier")}
               </button>
             </div>
           )}
@@ -215,7 +217,9 @@ export function ChatArea({ conversation, conversations, onBack }: ChatAreaProps)
               <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
               <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
             </div>
-            <span>{typingUsers.join(", ")} {typingUsers.length === 1 ? "is" : "are"} typing...</span>
+            <span>
+              {t(typingUsers.length === 1 ? "chats.typingOne" : "chats.typingMany", { names: typingUsers.join(", ") })}
+            </span>
           </div>
         )}
 

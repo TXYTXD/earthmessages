@@ -2,21 +2,23 @@ import { NavLink, useLocation } from "react-router-dom";
 import { MessageCircle, Video, Phone, Settings, User, CircleDot, Bot, CalendarDays, Globe2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useElementStyle } from "@/hooks/useElementStyle";
+import { useT } from "@/contexts/LanguageContext";
 
 const navItems = [
-  { icon: MessageCircle, label: "Chats", path: "/", el: "nav.chats" },
-  { icon: CircleDot, label: "Stories", path: "/stories", el: "nav.stories" },
-  { icon: Globe2, label: "Communities", path: "/communities", el: "nav.communities" },
-  { icon: Phone, label: "Calls", path: "/calls", el: "nav.calls" },
-  { icon: Video, label: "Video", path: "/video", el: "nav.calls" },
-  { icon: Bot, label: "AI Chat", path: "/ai", el: "nav.ai" },
-  { icon: CalendarDays, label: "Calendar", path: "/calendar", el: "nav.calendar" },
-  { icon: Settings, label: "Settings", path: "/settings", el: "nav.settings" },
-  { icon: User, label: "Account", path: "/account", el: "nav.account" },
+  { icon: MessageCircle, labelKey: "nav.chats" as const, path: "/", el: "nav.chats" },
+  { icon: CircleDot, labelKey: "nav.stories" as const, path: "/stories", el: "nav.stories" },
+  { icon: Globe2, labelKey: "nav.communities" as const, path: "/communities", el: "nav.communities" },
+  { icon: Phone, labelKey: "nav.calls" as const, path: "/calls", el: "nav.calls" },
+  { icon: Video, labelKey: "nav.video" as const, path: "/video", el: "nav.calls" },
+  { icon: Bot, labelKey: "nav.aiChat" as const, path: "/ai", el: "nav.ai" },
+  { icon: CalendarDays, labelKey: "nav.calendar" as const, path: "/calendar", el: "nav.calendar" },
+  { icon: Settings, labelKey: "nav.settings" as const, path: "/settings", el: "nav.settings" },
+  { icon: User, labelKey: "nav.account" as const, path: "/account", el: "nav.account" },
 ];
 
 // One nav button, wearing whatever the theme says about it
 function SidebarItem({ item, isActive }: { item: (typeof navItems)[number]; isActive: boolean }) {
+  const t = useT();
   const own = useElementStyle(item.el);
   const active = useElementStyle("nav.active");
   const idle = useElementStyle("nav.idle");
@@ -36,7 +38,7 @@ function SidebarItem({ item, isActive }: { item: (typeof navItems)[number]; isAc
     >
       <Icon className="w-5 h-5" />
       <span className="absolute left-full ml-2 px-2 py-1 rounded-md bg-foreground text-background text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
-        {item.label}
+        {t(item.labelKey)}
       </span>
       {isActive && (
         <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary rounded-r-full" />

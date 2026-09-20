@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useT } from "@/contexts/LanguageContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, Volume2, VolumeX, User, SwitchCamera, ZoomIn, MonitorUp, MonitorX } from "lucide-react";
 import { useCall } from "@/contexts/CallContext";
@@ -6,6 +7,7 @@ import { useElementStyle } from "@/hooks/useElementStyle";
 
 export function IncomingCallOverlay() {
   const { callState, answerCall, declineCall } = useCall();
+  const t = useT();
   const elAnswer = useElementStyle("call.answer");
   const elDecline = useElementStyle("call.decline");
 
@@ -74,7 +76,7 @@ export function IncomingCallOverlay() {
             >
               {elDecline.Icon ? <elDecline.Icon className="w-7 h-7 text-destructive-foreground" /> : <PhoneOff className="w-7 h-7 text-destructive-foreground" />}
             </div>
-            <span className="text-sm font-medium text-muted-foreground">Ignore</span>
+            <span className="text-sm font-medium text-muted-foreground">{t("call.ignore")}</span>
           </motion.button>
 
           <motion.button
@@ -98,7 +100,7 @@ export function IncomingCallOverlay() {
             >
               {elAnswer.Icon ? <elAnswer.Icon className="w-7 h-7 text-success-foreground" /> : <Phone className="w-7 h-7 text-success-foreground" />}
             </motion.div>
-            <span className="text-sm font-medium text-muted-foreground">Accept</span>
+            <span className="text-sm font-medium text-muted-foreground">{t("call.answer")}</span>
           </motion.button>
         </div>
       </motion.div>

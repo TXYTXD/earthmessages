@@ -8,6 +8,7 @@ import { useVoiceRecorder } from "@/hooks/useVoiceRecorder";
 import EmojiPicker, { Theme } from "emoji-picker-react";
 import { StickerPicker } from "./StickerPicker";
 import { useElementStyle } from "@/hooks/useElementStyle";
+import { useT } from "@/contexts/LanguageContext";
 import { GifPicker } from "./GifPicker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -40,6 +41,7 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply, onSchedule
   const [showEmoji, setShowEmoji] = useState(false);
   const [showStickers, setShowStickers] = useState(false);
   // What the theme says about each control in this bar
+  const t = useT();
   const elSend = useElementStyle("button.send");
   const elEmoji = useElementStyle("button.emoji");
   const elAttach = useElementStyle("button.attach");
@@ -341,7 +343,7 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply, onSchedule
               onTyping();
             }}
             onKeyDown={handleKeyDown}
-            placeholder={uploading ? "Uploading..." : "Aa"}
+            placeholder={uploading ? t("composer.uploading") : t("composer.placeholder")}
             disabled={uploading}
             className="w-full px-4 py-2 bg-accent rounded-full text-[15px] text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/20 transition-all"
             style={elInput.style}
@@ -363,7 +365,7 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply, onSchedule
               disabled={uploading}
               className={cn("w-9 h-9 rounded-full hover:bg-accent transition-colors flex items-center justify-center text-primary flex-shrink-0", elMic.className)}
               style={elMic.style}
-              title="Record a voice message"
+              title={t("composer.recordVoice")}
             >
               {elMic.Icon ? <elMic.Icon className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
             </button>

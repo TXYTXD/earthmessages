@@ -1,16 +1,19 @@
 import { useState } from "react";
+import { useT } from "@/contexts/LanguageContext";
 import { Flag, Ban, ShieldCheck, ChevronLeft , Eraser } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+// The label shown to the reporter is translated; the reason stored with the
+// report stays in English so moderation always reads the same words.
 const REPORT_REASONS = [
-  "Spam",
-  "Harassment or bullying",
-  "Inappropriate content",
-  "Pretending to be someone else",
-  "Something else",
-];
+  { value: "Spam", key: "safety.reasonSpam" },
+  { value: "Harassment or bullying", key: "safety.reasonHarassment" },
+  { value: "Inappropriate content", key: "safety.reasonContent" },
+  { value: "Pretending to be someone else", key: "safety.reasonImpersonation" },
+  { value: "Something else", key: "safety.reasonOther" },
+] as const;
 
 interface UserSafetyDialogProps {
   open: boolean;
@@ -25,6 +28,7 @@ interface UserSafetyDialogProps {
 }
 
 export function UserSafetyDialog({ open, onClose, userName, isBlocked, onBlock, onUnblock, onReport, onClearChat }: UserSafetyDialogProps) {
+  const t = useT();
   const [mode, setMode] = useState<"menu" | "report" | "clear">("menu");
   const [reason, setReason] = useState<string | null>(null);
   const [details, setDetails] = useState("");
@@ -63,7 +67,7 @@ export function UserSafetyDialog({ open, onClose, userName, isBlocked, onBlock, 
               </button>
             )}
             <ShieldCheck className="w-4 h-4 text-primary" />
-            {mode === "menu" ? userName : mode === "clear" ? "Clear chat" : `Report ${userName}`}
+            {mode === "menu" ? userName : mode === "clear" ? t("safety.clear") : t("safety.report", { name: userName })}
           </DialogTitle>
         </DialogHeader>
 
@@ -75,8 +79,8 @@ export function UserSafetyDialog({ open, onClose, userName, isBlocked, onBlock, 
             >
               <Flag className="w-4 h-4 text-orange-500 flex-shrink-0" />
               <div>
-                <p className="text-sm font-medium">Report {userName}</p>
-                <p className="text-[12px] text-muted-foreground">Tell us what's wrong. Reports are private.</p>
+                <p className="text-sm font-medium">{t("safety.report", { name: userName })}</p>
+                <p className="text-[12px] text-muted-foreground">{t("safety.reportHint")}</p>
               </div>
             </button>
             <button
@@ -86,11 +90,9 @@ export function UserSafetyDialog({ open, onClose, userName, isBlocked, onBlock, 
             >
               <Ban className="w-4 h-4 text-destructive flex-shrink-0" />
               <div>
-                <p className="text-sm font-medium">{isBlocked ? `Unblock ${userName}` : `Block ${userName}`}</p>
+                <p className="text-sm font-medium">{isBlocked ? t("safety.unblock", { name: userName }) : t("safety.block", { name: userName })}</p>
                 <p className="text-[12px] text-muted-foreground">
-                  {isBlocked
-                    ? "You'll see their messages and calls again."
-                    : "You won't see their messages, and their calls won't ring."}
+                  {isBlocked ? t("safety.unblockHint") : t("safety.blockHint")}
                 </p>
               </div>
             </button>
@@ -101,9 +103,9 @@ export function UserSafetyDialog({ open, onClose, userName, isBlocked, onBlock, 
               >
                 <Eraser className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium">Clear chat</p>
+                  <p className="text-sm font-medium">{t("safety.clear")}</p>
                   <p className="text-[12px] text-muted-foreground">
-                    Empties this chat for you. {userName} keeps their copy.
+                    {t("safety.clearHint", { name: userName })}
                   </p>
                 </div>
               </button>
@@ -112,15 +114,14 @@ export function UserSafetyDialog({ open, onClose, userName, isBlocked, onBlock, 
         ) : mode === "clear" ? (
           <div className="space-y-3">
             <p className="text-sm">
-              Clear every message in this chat? It will look brand new for you.
+              {t("safety.clearConfirm")}
             </p>
             <p className="text-[12px] text-muted-foreground">
-              This only affects your side. {userName} will still have the conversation, and
-              anything sent after this will appear as normal. You cannot undo it.
+              {t("safety.clearDetail", { name: userName })}
             </p>
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setMode("menu")} disabled={busy}>
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 variant="destructive"
@@ -133,7 +134,7 @@ export function UserSafetyDialog({ open, onClose, userName, isBlocked, onBlock, 
                   if (ok) close();
                 }}
               >
-                {busy ? "Clearing…" : "Yes, clear it"}
+                {busy ? t("safety.clearing") : t("safety.clearYes")}
               </Button>
             </div>
           </div>
@@ -142,24 +143,24 @@ export function UserSafetyDialog({ open, onClose, userName, isBlocked, onBlock, 
             <div className="space-y-1.5">
               {REPORT_REASONS.map((r) => (
                 <button
-                  key={r}
-                  onClick={() => setReason(r)}
+                  key={r.value}
+                  onClick={() => setReason(r.value)}
                   className={`w-full p-2.5 rounded-lg border text-left text-sm transition-colors ${
-                    reason === r ? "border-primary bg-primary/10 font-medium" : "border-border hover:bg-accent"
+                    reason === r.value ? "border-primary bg-primary/10 font-medium" : "border-border hover:bg-accent"
                   }`}
                 >
-                  {r}
+                  {t(r.key)}
                 </button>
               ))}
             </div>
             <Input
-              placeholder="Anything else we should know? (optional)"
+              placeholder={t("safety.details")}
               value={details}
               onChange={(e) => setDetails(e.target.value)}
               maxLength={300}
             />
             <Button className="w-full" disabled={!reason || busy} onClick={submitReport}>
-              {busy ? "Sending…" : "Send report"}
+              {busy ? t("safety.sending") : t("safety.sendReport")}
             </Button>
           </div>
         )}

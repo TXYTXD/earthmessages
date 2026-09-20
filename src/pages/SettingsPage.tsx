@@ -12,6 +12,9 @@ import { useThemeContext, ThemeName } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { usePin } from "@/hooks/usePin";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { APP_LANGUAGES } from "@/i18n/languages";
+import { coverage } from "@/i18n";
 import { PinVerifyDialog } from "@/components/PinVerifyDialog";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Button } from "@/components/ui/button";
@@ -64,6 +67,7 @@ export default function SettingsPage() {
   const [creatingTheme, setCreatingTheme] = useState(false);
   const [editingTheme, setEditingTheme] = useState<CustomTheme | null>(null);
   const { user } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
   const {
     primaryLang,
     setPrimaryLang,
@@ -155,7 +159,7 @@ export default function SettingsPage() {
           </h3>
           <ToggleRow
             icon={<Shield className="w-5 h-5 text-primary" />}
-            title="Stay signed in"
+            title={t("settings.staySignedIn")}
             desc="Keep you logged in between sessions"
             value={staySignedIn}
             onChange={handleStaySignedIn}
@@ -163,7 +167,7 @@ export default function SettingsPage() {
           <div className="border-t border-border" />
           <ToggleRow
             icon={<Bell className="w-5 h-5 text-warning" />}
-            title="Notifications"
+            title={t("settings.notifications")}
             desc={
               push.needsHomeScreen
                 ? "On iPhone/iPad: add UMS to your Home Screen first (Share → Add to Home Screen), then turn this on"
@@ -332,6 +336,50 @@ export default function SettingsPage() {
         </div>
 
 
+        {/* App language */}
+        <div className="bg-card rounded-xl border border-border p-5">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center">
+              <Languages className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-[15px]">{t("settings.language")}</h3>
+              <p className="text-[13px] text-muted-foreground">{t("settings.languageHint")}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {APP_LANGUAGES.map((lang) => {
+              const done = coverage(lang.code);
+              return (
+                <button
+                  key={lang.code}
+                  onClick={() => setLanguage(lang.code)}
+                  className={`px-3 py-2.5 rounded-lg text-left transition-all ${
+                    language === lang.code ? "ring-2 ring-primary bg-primary/10" : "bg-accent hover:bg-accent/80"
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="text-base leading-none">{lang.flag}</span>
+                    <span className="text-[13px] font-medium truncate">{lang.native}</span>
+                    {language === lang.code && <Check className="w-3.5 h-3.5 text-primary ml-auto flex-shrink-0" />}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground block truncate">
+                    {done >= 1
+                      ? lang.english
+                      : done > 0
+                        ? `${lang.english} · ${Math.round(done * 100)}%`
+                        : `${lang.english} · coming soon`}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-3 leading-relaxed">
+            Anything not yet translated stays in English, so nothing goes missing while a
+            language is still being filled in.
+          </p>
+        </div>
+
         {/* Theme Picker */}
         <div className="bg-card rounded-xl border border-border p-5">
           <div className="flex items-center gap-3 mb-4">
@@ -339,21 +387,21 @@ export default function SettingsPage() {
               <Palette className="w-5 h-5 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-[15px]">App Theme</h3>
-              <p className="text-[13px] text-muted-foreground">Choose a color theme for the entire app</p>
+              <h3 className="font-semibold text-[15px]">{t("settings.appearance")}</h3>
+              <p className="text-[13px] text-muted-foreground">{t("settings.appearanceHint")}</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2 mb-4">
             <Button onClick={() => setCreatingTheme(true)} className="rounded-full gap-2" size="sm">
-              <Paintbrush className="w-4 h-4" /> Create your own
+              <Paintbrush className="w-4 h-4" /> {t("settings.createTheme")}
             </Button>
             <Button onClick={() => navigate("/themes")} variant="outline" className="rounded-full gap-2" size="sm">
-              <Store className="w-4 h-4" /> Theme Market
+              <Store className="w-4 h-4" /> {t("settings.themeMarket")}
             </Button>
           </div>
           {myThemes.themes.length > 0 && (
             <>
-              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-2">Your themes</p>
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-2">{t("settings.yourThemes")}</p>
               <div className="grid grid-cols-3 gap-2 mb-4">
                 {myThemes.themes.map((t) => (
                   <div
@@ -382,7 +430,7 @@ export default function SettingsPage() {
                   </div>
                 ))}
               </div>
-              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-2">Built-in</p>
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-2">{t("settings.builtIn")}</p>
             </>
           )}
           <div className="grid grid-cols-3 gap-2">
@@ -414,7 +462,7 @@ export default function SettingsPage() {
               <Wand2 className="w-5 h-5 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-[15px]">Animation &amp; sound</h3>
+              <h3 className="font-semibold text-[15px]">{t("settings.effects")}</h3>
               <p className="text-[13px] text-muted-foreground">
                 {describeEffects(effects).length
                   ? `This theme brings: ${describeEffects(effects).join(", ")}`
@@ -424,7 +472,7 @@ export default function SettingsPage() {
           </div>
           <ToggleRow
             icon={<Sparkles className="w-5 h-5 text-primary" />}
-            title="Theme animations"
+            title={t("settings.themeAnimations")}
             desc="Background animation and the theme's motion style"
             value={effectsEnabled}
             onChange={setEffectsEnabled}
@@ -432,7 +480,7 @@ export default function SettingsPage() {
           <div className="border-t border-border" />
           <ToggleRow
             icon={<Volume2 className="w-5 h-5 text-primary" />}
-            title="Background sound"
+            title={t("settings.backgroundSound")}
             desc={
               effects.sound === "none"
                 ? "This theme has no sound"
@@ -444,7 +492,7 @@ export default function SettingsPage() {
           <div className="border-t border-border" />
           <ToggleRow
             icon={<Volume2 className="w-5 h-5 text-primary" />}
-            title="Button sounds"
+            title={t("settings.buttonSounds")}
             desc={
               countCustomizations(customization)
                 ? "Sounds this theme puts on buttons, tabs and messages"

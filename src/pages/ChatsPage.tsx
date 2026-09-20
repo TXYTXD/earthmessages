@@ -11,6 +11,7 @@ import { NewGroupDialog } from "@/components/chat/NewGroupDialog";
 import AIChatPage from "@/pages/AIChatPage";
 import { useConversations, type Conversation } from "@/hooks/useConversations";
 import { useIsSinglePane } from "@/hooks/use-mobile";
+import { useT } from "@/contexts/LanguageContext";
 import { type Friend } from "@/hooks/useFriends";
 
 export default function ChatsPage() {
@@ -21,6 +22,7 @@ export default function ChatsPage() {
   const [showNewGroup, setShowNewGroup] = useState(false);
   // On a narrow window the list and the chat take turns rather than share
   const singlePane = useIsSinglePane();
+  const t = useT();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Deep link from a notification: /?chat=<conversationId>
@@ -117,19 +119,19 @@ export default function ChatsPage() {
         <div className={`${singlePane ? "w-full" : "w-[320px] xl:w-[360px] flex-shrink-0"} flex flex-col border-r border-border/60 glass-nav`}>
           <div className="px-4 pt-4 pb-2">
             <div className="flex items-center justify-between mb-4">
-              <h1 className="text-2xl font-bold">Chats</h1>
+              <h1 className="text-2xl font-bold">{t("chats.title")}</h1>
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => setShowNewChat(true)}
                   className="w-9 h-9 rounded-full bg-accent hover:bg-accent/80 flex items-center justify-center transition-colors text-foreground"
-                  title="New message"
+                  title={t("chats.newMessage")}
                 >
                   <Edit className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setShowNewGroup(true)}
                   className="w-9 h-9 rounded-full bg-accent hover:bg-accent/80 flex items-center justify-center transition-colors text-foreground"
-                  title="New group"
+                  title={t("chats.newGroup")}
                 >
                   <Users className="w-4 h-4" />
                 </button>
@@ -164,9 +166,9 @@ export default function ChatsPage() {
           <div className="w-20 h-20 rounded-full flex items-center justify-center mb-4" style={{ background: "var(--messenger-gradient)" }}>
             <MessageCircle className="w-10 h-10 text-white" />
           </div>
-          <h2 className="text-xl font-bold mb-1">Your Messages</h2>
+          <h2 className="text-xl font-bold mb-1">{t("chats.emptyTitle")}</h2>
           <p className="text-sm text-muted-foreground max-w-xs">
-            Send private messages or add friends to start a conversation
+            {t("chats.emptyBody")}
           </p>
         </div>
       ) : null}
