@@ -10,7 +10,7 @@ import { NewChatDialog } from "@/components/chat/NewChatDialog";
 import { NewGroupDialog } from "@/components/chat/NewGroupDialog";
 import AIChatPage from "@/pages/AIChatPage";
 import { useConversations, type Conversation } from "@/hooks/useConversations";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsSinglePane } from "@/hooks/use-mobile";
 import { type Friend } from "@/hooks/useFriends";
 
 export default function ChatsPage() {
@@ -19,7 +19,8 @@ export default function ChatsPage() {
   const [showAI, setShowAI] = useState(false);
   const [showNewChat, setShowNewChat] = useState(false);
   const [showNewGroup, setShowNewGroup] = useState(false);
-  const isMobile = useIsMobile();
+  // On a narrow window the list and the chat take turns rather than share
+  const singlePane = useIsSinglePane();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Deep link from a notification: /?chat=<conversationId>
@@ -106,14 +107,14 @@ export default function ChatsPage() {
     ? conversations.find((c) => c.id === selectedConversation.id) || selectedConversation
     : null;
 
-  const showChatArea = isMobile && (activeConv || showAI);
-  const showSidebar = !isMobile || (!activeConv && !showAI);
+  const showChatArea = singlePane && (activeConv || showAI);
+  const showSidebar = !singlePane || (!activeConv && !showAI);
 
   return (
     <div className="flex flex-1 h-screen">
       {/* Contact List Sidebar */}
       {showSidebar && (
-        <div className={`${isMobile ? 'w-full' : 'w-[360px]'} flex flex-col border-r border-border/60 glass-nav`}>
+        <div className={`${singlePane ? "w-full" : "w-[320px] xl:w-[360px] flex-shrink-0"} flex flex-col border-r border-border/60 glass-nav`}>
           <div className="px-4 pt-4 pb-2">
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-2xl font-bold">Chats</h1>
@@ -151,14 +152,14 @@ export default function ChatsPage() {
 
       {/* Chat Area */}
       {showAI ? (
-        <AIChatPage onBack={isMobile ? () => setShowAI(false) : undefined} />
-      ) : showChatArea || (!isMobile && activeConv) ? (
+        <AIChatPage onBack={singlePane ? () => setShowAI(false) : undefined} />
+      ) : showChatArea || (!singlePane && activeConv) ? (
         <ChatArea
           conversation={activeConv!}
           conversations={conversations}
-          onBack={isMobile ? () => setSelectedConversation(null) : undefined}
+          onBack={singlePane ? () => setSelectedConversation(null) : undefined}
         />
-      ) : !isMobile ? (
+      ) : !singlePane ? (
         <div className="flex-1 flex flex-col items-center justify-center text-center px-8 bg-background">
           <div className="w-20 h-20 rounded-full flex items-center justify-center mb-4" style={{ background: "var(--messenger-gradient)" }}>
             <MessageCircle className="w-10 h-10 text-white" />
