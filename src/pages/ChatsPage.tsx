@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { MessageCircle, Edit, Users, PenLine } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { MessageCircle, UsersRound, SquarePen } from "lucide-react";
+import { motion } from "framer-motion";
 import { springy, snappy, riseIn } from "@/lib/motion";
 import { FriendRequestBar } from "@/components/FriendRequestBar";
 import { ContactList } from "@/components/chat/ContactList";
@@ -130,14 +130,14 @@ export default function ChatsPage() {
               : "w-[320px] xl:w-[368px] flex-shrink-0 flex flex-col rounded-[28px] overflow-hidden glass-tint glass-float"
           }
         >
-          <div className={singlePane ? "px-3.5 pt-3.5 pb-2 sticky top-0 z-20" : "px-4 pt-4 pb-2"}>
-            <div className={singlePane ? "rounded-[28px] glass-tint glass-float px-4 pt-3.5 pb-3.5" : ""}>
+          <div className={singlePane ? "px-3 pt-3 pb-1.5 sticky top-0 z-20" : "px-4 pt-4 pb-2"}>
+            <div className={singlePane ? "rounded-[24px] glass-tint glass-float px-4 py-2.5" : ""}>
               <div className="flex items-center justify-between">
                 <motion.h1
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={springy}
-                  className="text-[28px] font-bold tracking-tight"
+                  className="text-[24px] font-bold tracking-tight"
                 >
                   {t("chats.title")}
                 </motion.h1>
@@ -150,20 +150,18 @@ export default function ChatsPage() {
                     className="w-10 h-10 rounded-full glass-inset flex items-center justify-center text-foreground press"
                     title={t("chats.newGroup")}
                   >
-                    <Users className="w-[18px] h-[18px]" />
+                    <UsersRound className="w-[18px] h-[18px]" />
                   </motion.button>
-                  {!singlePane && (
-                    <motion.button
-                      whileTap={{ scale: 0.86, rotate: -8 }}
-                      whileHover={{ scale: 1.06 }}
-                      transition={snappy}
-                      onClick={() => setShowNewChat(true)}
-                      className="w-10 h-10 rounded-full glass-inset flex items-center justify-center text-foreground press"
-                      title={t("chats.newMessage")}
-                    >
-                      <Edit className="w-[18px] h-[18px]" />
-                    </motion.button>
-                  )}
+                  <motion.button
+                    whileTap={{ scale: 0.86, rotate: -8 }}
+                    whileHover={{ scale: 1.06 }}
+                    transition={snappy}
+                    onClick={() => setShowNewChat(true)}
+                    className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center press-lift shadow-soft"
+                    title={t("chats.newMessage")}
+                  >
+                    <SquarePen className="w-[18px] h-[18px]" />
+                  </motion.button>
                   <FriendRequestBar />
                 </div>
               </div>
@@ -180,26 +178,6 @@ export default function ChatsPage() {
             loading={loading}
           />
 
-          {/* Start a new chat, within reach of a thumb rather than up in
-              the corner. Floats clear of the tab bar. */}
-          {singlePane && (
-            <AnimatePresence>
-              <motion.button
-                key="compose-fab"
-                initial={{ scale: 0, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0, opacity: 0 }}
-                whileTap={{ scale: 0.86, rotate: -12 }}
-                whileHover={{ scale: 1.07 }}
-                transition={springy}
-                onClick={() => setShowNewChat(true)}
-                aria-label={t("chats.newMessage")}
-                className="fixed right-5 bottom-[118px] z-40 w-[60px] h-[60px] rounded-full bg-primary text-primary-foreground flex items-center justify-center fab-breathe sheen"
-              >
-                <PenLine className="w-6 h-6" />
-              </motion.button>
-            </AnimatePresence>
-          )}
         </motion.div>
       )}
 

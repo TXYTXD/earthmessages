@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 220 16% 96%;
     --foreground: 224 10% 10%;
 
     --card: 0 0% 100%;
@@ -17,20 +17,20 @@
     --primary-foreground: 0 0% 100%;
     --primary-glow: 222 100% 70%;
 
-    --secondary: 220 14% 96%;
+    --secondary: 220 14% 91%;
     --secondary-foreground: 224 10% 20%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 220 14% 93%;
+    --muted-foreground: 220 9% 44%;
 
-    --accent: 220 14% 96%;
+    --accent: 220 14% 92%;
     --accent-foreground: 224 10% 10%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
+    --border: 220 13% 88%;
+    --input: 220 13% 88%;
     --ring: 214 100% 50%;
 
     --radius: 1rem;
@@ -53,10 +53,10 @@
   }
 
   .dark {
-    --background: 224 20% 4%;
+    --background: 224 20% 5%;
     --foreground: 210 40% 96%;
 
-    --card: 224 18% 8%;
+    --card: 224 16% 10%;
     --card-foreground: 210 40% 96%;
 
     --popover: 224 18% 8%;
@@ -879,7 +879,7 @@
   }
 
   .messenger-bubble-sent {
-    background: var(--bubble-sent-gradient, var(--messenger-gradient));
+    background: var(--bubble-sent-gradient, hsl(var(--primary)));
     color: white;
     box-shadow:
       0 1px 0 0 hsl(0 0% 100% / 0.18) inset,
@@ -1021,72 +1021,30 @@
      default tint for surfaces that have none of their own.
      ------------------------------------------------------------------ */
   .glass-float {
-    backdrop-filter: blur(28px) saturate(185%);
-    -webkit-backdrop-filter: blur(28px) saturate(185%);
-    border: 1px solid hsl(0 0% 100% / 0.42);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid hsl(var(--foreground) / 0.07);
     box-shadow:
-      0 1px 0 0 hsl(0 0% 100% / 0.55) inset,
-      0 12px 36px -12px hsl(var(--foreground) / 0.28),
-      0 3px 10px -5px hsl(var(--foreground) / 0.16);
+      0 1px 0 0 hsl(0 0% 100% / 0.40) inset,
+      0 6px 20px -10px hsl(var(--foreground) / 0.16),
+      0 1px 3px -1px hsl(var(--foreground) / 0.08);
   }
 
   .dark .glass-float {
-    border-color: hsl(0 0% 100% / 0.10);
+    border-color: hsl(0 0% 100% / 0.08);
     box-shadow:
-      0 1px 0 0 hsl(0 0% 100% / 0.08) inset,
-      0 14px 40px -12px hsl(0 0% 0% / 0.65),
-      0 3px 10px -5px hsl(0 0% 0% / 0.45);
+      0 1px 0 0 hsl(0 0% 100% / 0.06) inset,
+      0 8px 24px -10px hsl(0 0% 0% / 0.55),
+      0 1px 3px -1px hsl(0 0% 0% / 0.40);
   }
 
   .glass-tint {
-    background-color: hsl(var(--card) / 0.62);
+    background-color: hsl(var(--card) / 0.74);
   }
 
   .glass-inset {
     background-color: hsl(var(--background) / 0.55);
     border: 1px solid hsl(var(--foreground) / 0.06);
-  }
-
-  /* ------------------------------------------------------------------
-     Ambient colour pools. Blur over a flat colour looks like nothing at
-     all, so the glass needs something behind it to actually blur. These
-     sit under the whole app and drift slowly.
-     ------------------------------------------------------------------ */
-  .halo-field {
-    position: fixed;
-    inset: 0;
-    overflow: hidden;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .halo {
-    position: absolute;
-    border-radius: 999px;
-    filter: blur(80px);
-    opacity: 0.40;
-    will-change: transform;
-  }
-
-  .dark .halo {
-    opacity: 0.26;
-  }
-
-  .halo-drift-a { animation: ums-drift-a calc(24s * var(--motion-scale, 1)) ease-in-out infinite; }
-  .halo-drift-b { animation: ums-drift-b calc(31s * var(--motion-scale, 1)) ease-in-out infinite; }
-  .halo-drift-c { animation: ums-drift-c calc(27s * var(--motion-scale, 1)) ease-in-out infinite; }
-
-  @keyframes ums-drift-a {
-    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-    50% { transform: translate3d(7%, 9%, 0) scale(1.14); }
-  }
-  @keyframes ums-drift-b {
-    0%, 100% { transform: translate3d(0, 0, 0) scale(1.08); }
-    50% { transform: translate3d(-9%, -7%, 0) scale(0.94); }
-  }
-  @keyframes ums-drift-c {
-    0%, 100% { transform: translate3d(0, 0, 0) scale(0.96); }
-    50% { transform: translate3d(5%, -10%, 0) scale(1.12); }
   }
 
   /* ------------------------------------------------------------------
@@ -1145,14 +1103,6 @@
   /* ------------------------------------------------------------------
      Living details
      ------------------------------------------------------------------ */
-  .fab-breathe {
-    animation: ums-breathe calc(3.6s * var(--motion-scale, 1)) ease-in-out infinite;
-  }
-  @keyframes ums-breathe {
-    0%, 100% { box-shadow: 0 10px 26px -8px hsl(var(--primary) / 0.60), 0 2px 6px -2px hsl(var(--foreground) / 0.20); }
-    50% { box-shadow: 0 16px 38px -8px hsl(var(--primary) / 0.82), 0 2px 6px -2px hsl(var(--foreground) / 0.20); }
-  }
-
   /* A green dot that quietly announces itself. The dot it is put on is
      already positioned, so this must not set position of its own. */
   .online-ping::after {
