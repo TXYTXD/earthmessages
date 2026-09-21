@@ -3,7 +3,7 @@ import { useElementStyle } from "@/hooks/useElementStyle";
 import { useT } from "@/contexts/LanguageContext";
 import { Search, UsersRound, Sparkles, BadgeCheck } from "lucide-react";
 import { motion } from "framer-motion";
-import { springy, snappy, riseIn, stagger, tapSoft } from "@/lib/motion";
+import { springy, snappy, riseIn, stagger } from "@/lib/motion";
 import { type Conversation } from "@/hooks/useConversations";
 import { formatDistanceToNow } from "date-fns";
 
@@ -52,23 +52,19 @@ export function ContactList({ conversations, selectedId, onSelect, onSelectAI, i
       {/* Conversations */}
       <div className="flex-1 overflow-y-auto px-2 py-1 space-y-0.5">
         {/* AI Assistant - Pinned at top */}
-        <motion.button
+        <button
           onClick={onSelectAI}
-          whileTap={tapSoft}
-          transition={snappy}
           className={`w-full p-2.5 flex items-center gap-3 rounded-[20px] press-soft ${
             isAISelected ? "bg-primary/12 ring-1 ring-primary/20" : "hover:bg-accent/50"
           }`}
         >
           <div className="relative flex-shrink-0">
-            <motion.div
-              animate={{ scale: [1, 1.04, 1] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            <div
               className="w-12 h-12 rounded-full flex items-center justify-center text-primary-foreground shadow-soft"
               style={{ background: "hsl(var(--primary))" }}
             >
               <Sparkles className="w-6 h-6" />
-            </motion.div>
+            </div>
             <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-success rounded-full border-2 border-card online-ping" />
           </div>
           <div className="flex-1 text-left min-w-0">
@@ -78,7 +74,7 @@ export function ContactList({ conversations, selectedId, onSelect, onSelectAI, i
             </div>
             <p className="text-[13px] text-muted-foreground truncate">{t("presence.alwaysOnline")}</p>
           </div>
-        </motion.button>
+        </button>
 
         {loading ? (
           <div className="flex items-center justify-center h-32">
@@ -92,13 +88,11 @@ export function ContactList({ conversations, selectedId, onSelect, onSelectAI, i
             <p className="text-xs text-muted-foreground mt-1">Add friends to start chatting</p>
           </div>
         ) : (
-          <motion.div variants={stagger(0.03)} initial="hidden" animate="show" className="space-y-0.5">
+          <motion.div variants={stagger(0.016)} initial="hidden" animate="show" className="space-y-0.5">
           {filtered.map((conv) => (
             <motion.button
               key={conv.id}
               variants={riseIn}
-              whileTap={tapSoft}
-              transition={snappy}
               onClick={() => { elRow.play(); onSelect(conv); }}
               className={`w-full p-2.5 flex items-center gap-3 rounded-[20px] press-soft ${elRow.className} ${
                 selectedId === conv.id ? "bg-primary/12 ring-1 ring-primary/20" : "hover:bg-accent/50"
