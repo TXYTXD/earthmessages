@@ -6,10 +6,6 @@ import { useElementStyle } from "@/hooks/useElementStyle";
 import { useT } from "@/contexts/LanguageContext";
 import { springy, snappy } from "@/lib/motion";
 
-// Every destination is back in the bar, the way it was. What changed is that
-// they no longer all shout at once: the seven you are not on are icons, and
-// the one you are on opens into a pill with its name. Eight labels at nine
-// pixels was what made the old bar unreadable, not the eight buttons.
 const navItems = [
   { icon: MessageCircle, labelKey: "nav.chats" as const, path: "/", el: "nav.chats" },
   { icon: Camera, labelKey: "nav.stories" as const, path: "/stories", el: "nav.stories" },
@@ -21,6 +17,8 @@ const navItems = [
   { icon: CircleUser, labelKey: "nav.account" as const, path: "/account", el: "nav.account" },
 ];
 
+const COLS = navItems.length;
+
 function BottomNavItem({ item, isActive }: { item: (typeof navItems)[number]; isActive: boolean }) {
   const t = useT();
   const own = useElementStyle(item.el);
@@ -28,46 +26,29 @@ function BottomNavItem({ item, isActive }: { item: (typeof navItems)[number]; is
   const idle = useElementStyle("nav.idle");
   const state = isActive ? active : idle;
   const Icon = own.Icon ?? item.icon;
+  const label = t(item.labelKey);
 
   return (
     <NavLink
       to={item.path}
       onClick={() => { own.play(); state.play(); }}
-      aria-label={t(item.labelKey)}
-      // Flex weights rather than fixed widths, so eight of these always fit,
-      // on a narrow phone as much as a wide one.
+      aria-label={label}
+      title={label}
       className={cn(
-        "relative min-w-0 h-11 rounded-full flex items-center justify-center gap-1.5 px-0",
-        isActive ? "flex-[2.3] text-primary" : "flex-1 text-muted-foreground",
+        "relative h-full flex items-center justify-center rounded-full",
+        isActive ? "text-primary" : "text-muted-foreground",
         own.className || state.className
       )}
       style={{ ...state.style, ...own.style }}
     >
-      {isActive && (
-        <motion.span
-          layoutId="bottom-nav-pill"
-          className="absolute inset-0 rounded-full bg-primary/10 ring-1 ring-inset ring-primary/15 pointer-events-none"
-          transition={springy}
-        />
-      )}
       <motion.span
-        className="relative flex-shrink-0"
-        whileTap={{ scale: 0.82 }}
-        animate={{ scale: isActive ? 1.04 : 1 }}
+        className="relative block"
+        whileTap={{ scale: 0.78 }}
+        animate={{ scale: isActive ? 1.1 : 1 }}
         transition={snappy}
       >
-        <Icon className={cn("w-5 h-5", isActive ? "[stroke-width:2.1]" : "[stroke-width:1.7]")} />
+        <Icon className={cn("w-[21px] h-[21px]", isActive ? "[stroke-width:2.2]" : "[stroke-width:1.7]")} />
       </motion.span>
-      {isActive && (
-        <motion.span
-          initial={{ opacity: 0, width: 0 }}
-          animate={{ opacity: 1, width: "auto" }}
-          transition={springy}
-          className="relative text-[12px] font-semibold truncate pr-1"
-        >
-          {t(item.labelKey)}
-        </motion.span>
-      )}
     </NavLink>
   );
 }
@@ -75,21 +56,35 @@ function BottomNavItem({ item, isActive }: { item: (typeof navItems)[number]; is
 export function MobileBottomNav() {
   const location = useLocation();
   const bar = useElementStyle("nav.bar");
+  const activeIndex = navItems.findIndex((i) => i.path === location.pathname);
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden safe-bottom pointer-events-none">
       <div className="px-3 pt-1.5 pb-3.5 pointer-events-auto">
-        <motion.div
-          initial={{ y: 34, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={springy}
-          className="glass-nav glass-float rounded-full flex items-center h-[60px] px-1.5 gap-0.5"
+        <div
+          className="glass-nav glass-float rounded-full h-[58px] px-1.5 gpu"
           style={bar.style}
         >
-          {navItems.map((item) => (
-            <BottomNavItem key={item.path} item={item} isActive={location.pathname === item.path} />
-          ))}
-        </motion.div>
+          {/* Eight equal columns that never change size. The highlight is one
+              element sliding across them on a transform — nothing here
+              re-measures or re-lays-out when you switch tab, which is what
+              made jumping from the first tab to the last stutter. */}
+          <div className="relative h-full grid items-center" style={{ gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))` }}>
+            {activeIndex >= 0 && (
+              <motion.span
+                aria-hidden="true"
+                className="absolute top-1.5 bottom-1.5 left-0 rounded-full bg-primary/12 ring-1 ring-inset ring-primary/15 pointer-events-none gpu"
+                style={{ width: `${100 / COLS}%` }}
+                initial={false}
+                animate={{ x: `${activeIndex * 100}%` }}
+                transition={springy}
+              />
+            )}
+            {navItems.map((item) => (
+              <BottomNavItem key={item.path} item={item} isActive={location.pathname === item.path} />
+            ))}
+          </div>
+        </div>
       </div>
     </nav>
   );

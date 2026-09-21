@@ -122,10 +122,8 @@ export function MessageBubble({ message, onReact, onReply, onEdit, onDelete, onF
         )}
 
         {/* Bubble */}
-        <motion.div
+        <div
           style={bubble.style}
-          whileTap={{ scale: 0.975 }}
-          transition={{ type: "spring", stiffness: 520, damping: 30, mass: 0.6 }}
           className={`px-3.5 py-2.5 rounded-[20px] text-[15px] leading-relaxed relative ${bubble.className} ${
             message.sending ? "opacity-60" : ""
           } ${message.failed ? "ring-1 ring-destructive" : ""} ${
@@ -190,7 +188,7 @@ export function MessageBubble({ message, onReact, onReply, onEdit, onDelete, onF
           {message.is_encrypted && !isDeleted && (
             <Lock className="w-2.5 h-2.5 inline-block ml-1 opacity-50" />
           )}
-        </motion.div>
+        </div>
 
         {/* Reactions display */}
         {Object.keys(reactionGroups).length > 0 && (

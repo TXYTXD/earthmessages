@@ -827,6 +827,17 @@
     @apply border-border;
   }
 
+  button,
+  a,
+  [role="button"],
+  input,
+  textarea,
+  select,
+  label {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
@@ -907,15 +918,15 @@
 
   .glass {
     background-color: var(--el-dialog-bg, hsl(var(--card) / 0.55));
-    backdrop-filter: blur(32px) saturate(200%);
-    -webkit-backdrop-filter: blur(32px) saturate(200%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border: 1px solid hsl(var(--border) / 0.5);
   }
 
   .glass-nav {
     background-color: var(--el-nav-bar-bg, hsl(var(--card) / 0.55));
-    backdrop-filter: blur(32px) saturate(200%);
-    -webkit-backdrop-filter: blur(32px) saturate(200%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border: 1px solid hsl(var(--border) / 0.45);
     box-shadow:
       0 1px 0 0 hsl(var(--foreground) / 0.06) inset,
@@ -933,9 +944,8 @@
   }
 
   .premium-hover {
-    transition: transform calc(220ms * var(--motion-scale, 1)) var(--motion-ease),
-      background-color calc(220ms * var(--motion-scale, 1)) ease,
-      box-shadow calc(220ms * var(--motion-scale, 1)) ease;
+    transition: transform calc(140ms * var(--motion-scale, 1)) var(--motion-ease),
+      background-color calc(120ms * var(--motion-scale, 1)) ease;
   }
 
   /* Per-element animations a theme can attach to anything. They run on
@@ -1021,8 +1031,9 @@
      default tint for surfaces that have none of their own.
      ------------------------------------------------------------------ */
   .glass-float {
-    backdrop-filter: blur(24px) saturate(160%);
-    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transform: translateZ(0);
     border: 1px solid hsl(var(--foreground) / 0.07);
     box-shadow:
       0 1px 0 0 hsl(0 0% 100% / 0.40) inset,
@@ -1052,39 +1063,44 @@
      ------------------------------------------------------------------ */
   .press {
     transition:
-      transform calc(180ms * var(--motion-scale, 1)) var(--motion-ease),
-      background-color calc(180ms * var(--motion-scale, 1)) ease,
-      box-shadow calc(220ms * var(--motion-scale, 1)) ease;
+      transform calc(140ms * var(--motion-scale, 1)) var(--motion-ease),
+      background-color calc(120ms * var(--motion-scale, 1)) ease;
   }
-  .press:active { transform: scale(0.90); }
+  .press:active { transform: scale(0.89); transition-duration: 0ms; }
   .press:hover { background-color: hsl(var(--accent) / 0.75); }
 
   .press-soft {
     transition:
-      transform calc(200ms * var(--motion-scale, 1)) var(--motion-ease),
-      background-color calc(200ms * var(--motion-scale, 1)) ease;
+      transform calc(150ms * var(--motion-scale, 1)) var(--motion-ease),
+      background-color calc(120ms * var(--motion-scale, 1)) ease;
   }
-  .press-soft:active { transform: scale(0.975); }
+  .press-soft:active { transform: scale(0.97); transition-duration: 0ms; }
 
   .press-lift {
     transition:
-      transform calc(220ms * var(--motion-scale, 1)) var(--motion-ease),
-      box-shadow calc(220ms * var(--motion-scale, 1)) ease;
+      transform calc(150ms * var(--motion-scale, 1)) var(--motion-ease),
+      box-shadow calc(150ms * var(--motion-scale, 1)) ease;
   }
-  .press-lift:hover { transform: translateY(-2px); }
-  .press-lift:active { transform: scale(0.94); }
+  .press-lift:hover { transform: translateY(-1px); }
+  .press-lift:active { transform: scale(0.92); transition-duration: 0ms; }
+
+  /* Hand a surface to the compositor so it is not repainted every frame */
+  .gpu {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
 
   /* ------------------------------------------------------------------
      Entrances
      ------------------------------------------------------------------ */
   .rise-in {
-    animation: ums-rise calc(460ms * var(--motion-scale, 1)) var(--motion-ease) both;
+    animation: ums-rise calc(280ms * var(--motion-scale, 1)) var(--motion-ease) both;
   }
   .drop-in {
-    animation: ums-drop calc(520ms * var(--motion-scale, 1)) var(--motion-ease) both;
+    animation: ums-drop calc(280ms * var(--motion-scale, 1)) var(--motion-ease) both;
   }
   .fade-in {
-    animation: ums-fade calc(380ms * var(--motion-scale, 1)) var(--motion-ease) both;
+    animation: ums-fade calc(200ms * var(--motion-scale, 1)) var(--motion-ease) both;
   }
 
   @keyframes ums-rise {

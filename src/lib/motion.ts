@@ -7,17 +7,22 @@
 
 import type { Transition, Variants } from "framer-motion";
 
-/** Quick and tight — for something answering a press right now. */
-export const snappy: Transition = { type: "spring", stiffness: 520, damping: 30, mass: 0.6 };
+// These are deliberately stiff and light. A spring that takes half a second
+// to settle reads as lag, however pretty the curve is: the eye reads the
+// START of a movement as the response, so what has to be immediate is the
+// first few frames, not the whole journey.
 
-/** The everyday one — panels, pills, badges. */
-export const springy: Transition = { type: "spring", stiffness: 340, damping: 28, mass: 0.8 };
+/** Immediate — anything answering a finger. Settles in about a tenth of a second. */
+export const snappy: Transition = { type: "spring", stiffness: 900, damping: 38, mass: 0.42 };
 
-/** Heavier, with a little overshoot — sheets and overlays. */
-export const weighty: Transition = { type: "spring", stiffness: 260, damping: 26, mass: 1 };
+/** The everyday one — pills, panels, badges. About a fifth of a second. */
+export const springy: Transition = { type: "spring", stiffness: 620, damping: 34, mass: 0.55 };
+
+/** Heavier, with a touch of overshoot — sheets and overlays. */
+export const weighty: Transition = { type: "spring", stiffness: 440, damping: 34, mass: 0.75 };
 
 /** For things that should simply appear without bouncing. */
-export const gentle: Transition = { type: "tween", duration: 0.28, ease: [0.22, 1, 0.36, 1] };
+export const gentle: Transition = { type: "tween", duration: 0.16, ease: [0.22, 1, 0.36, 1] };
 
 /** What a tappable thing does under a finger. */
 export const tap = { scale: 0.9 };
@@ -26,13 +31,15 @@ export const hoverLift = { scale: 1.04 };
 
 /** A row, a card, a list item arriving. */
 export const riseIn: Variants = {
-  hidden: { opacity: 0, y: 14, scale: 0.985 },
-  show: { opacity: 1, y: 0, scale: 1, transition: springy },
-  exit: { opacity: 0, y: -8, scale: 0.985, transition: gentle },
+  hidden: { opacity: 0, y: 10 },
+  show: { opacity: 1, y: 0, transition: springy },
+  exit: { opacity: 0, y: -6, transition: gentle },
 };
 
-/** A list that deals its children out one after another. */
-export const stagger = (step = 0.035, delay = 0): Variants => ({
+/** A list that deals its children out one after another.
+ *  Kept short on purpose: a long cascade means the last row of a big list
+ *  arrives a second after the first, which reads as the app being slow. */
+export const stagger = (step = 0.018, delay = 0): Variants => ({
   hidden: {},
   show: { transition: { staggerChildren: step, delayChildren: delay } },
 });
@@ -42,7 +49,7 @@ export const bubbleIn = (mine: boolean): Variants => ({
   hidden: { opacity: 0, y: 12, scale: 0.86, x: mine ? 14 : -14 },
   show: {
     opacity: 1, y: 0, scale: 1, x: 0,
-    transition: { type: "spring", stiffness: 420, damping: 26, mass: 0.7 },
+    transition: { type: "spring", stiffness: 700, damping: 34, mass: 0.5 },
   },
 });
 
@@ -50,7 +57,7 @@ export const bubbleIn = (mine: boolean): Variants => ({
 export const sheetUp: Variants = {
   hidden: { y: "100%" },
   show: { y: 0, transition: weighty },
-  exit: { y: "100%", transition: { type: "tween", duration: 0.22, ease: [0.4, 0, 1, 1] } },
+  exit: { y: "100%", transition: { type: "tween", duration: 0.16, ease: [0.4, 0, 1, 1] } },
 };
 
 /** The dimmed backdrop behind a sheet or dialog. */
