@@ -1,22 +1,61 @@
+import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { MessageCircle, CircleDot, Phone, Bot, Settings, User, CalendarDays, Globe2 } from "lucide-react";
+import { MessageCircle, Phone, Bot, LayoutGrid } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useElementStyle } from "@/hooks/useElementStyle";
 import { useT } from "@/contexts/LanguageContext";
+import { MoreSheet } from "@/components/MoreSheet";
+import { springy, snappy } from "@/lib/motion";
 
+// Four tabs, not eight. Everything else moved into the More sheet, where a
+// name has room to be read. The bar itself floats clear of the screen edge
+// and the chat list slides underneath it.
 const navItems = [
   { icon: MessageCircle, labelKey: "nav.chats" as const, path: "/", el: "nav.chats" },
-  { icon: CircleDot, labelKey: "nav.stories" as const, path: "/stories", el: "nav.stories" },
-  { icon: Globe2, labelKey: "nav.groups" as const, path: "/communities", el: "nav.communities" },
   { icon: Phone, labelKey: "nav.calls" as const, path: "/calls", el: "nav.calls" },
-  { icon: Bot, labelKey: "nav.ai" as const, path: "/ai", el: "nav.ai" },
-  { icon: CalendarDays, labelKey: "nav.plan" as const, path: "/calendar", el: "nav.calendar" },
-  { icon: Settings, labelKey: "nav.settings" as const, path: "/settings", el: "nav.settings" },
-  { icon: User, labelKey: "nav.account" as const, path: "/account", el: "nav.account" },
+  { icon: Bot, labelKey: "nav.assistant" as const, path: "/ai", el: "nav.ai" },
 ];
 
-// One tab, wearing whatever the theme says about it
+const MORE_PATHS = ["/stories", "/communities", "/calendar", "/themes", "/settings", "/account"];
+
+function TabPill() {
+  return (
+    <motion.span
+      layoutId="bottom-nav-pill"
+      className="absolute inset-0 rounded-[20px] pointer-events-none"
+      style={{
+        background: "hsl(var(--primary) / 0.13)",
+        boxShadow: "0 0 0 1px hsl(var(--primary) / 0.18) inset",
+      }}
+      transition={springy}
+    />
+  );
+}
+
+function TabInner({ Icon, label, active }: { Icon: React.ComponentType<{ className?: string }>; label: string; active: boolean }) {
+  return (
+    <>
+      {active && <TabPill />}
+      <motion.span
+        className="relative block"
+        animate={{ scale: active ? 1.12 : 1, y: active ? -1 : 0 }}
+        whileTap={{ scale: 0.82, rotate: -6 }}
+        transition={snappy}
+      >
+        <Icon className={cn("w-[22px] h-[22px]", active ? "[stroke-width:2.2]" : "[stroke-width:1.8]")} />
+      </motion.span>
+      <motion.span
+        className="relative text-[11px] font-semibold"
+        animate={{ opacity: active ? 1 : 0.78 }}
+        transition={springy}
+      >
+        {label}
+      </motion.span>
+    </>
+  );
+}
+
 function BottomNavItem({ item, isActive }: { item: (typeof navItems)[number]; isActive: boolean }) {
   const t = useT();
   const own = useElementStyle(item.el);
@@ -30,48 +69,13 @@ function BottomNavItem({ item, isActive }: { item: (typeof navItems)[number]; is
       to={item.path}
       onClick={() => { own.play(); state.play(); }}
       className={cn(
-        "relative flex flex-col items-center justify-center gap-0.5 flex-1 h-12 rounded-2xl transition-colors duration-300",
-        isActive ? "text-primary" : "text-muted-foreground hover:text-foreground",
+        "relative flex-1 basis-0 flex flex-col items-center justify-center gap-[3px] h-[54px] rounded-[20px]",
+        isActive ? "text-primary" : "text-muted-foreground",
         own.className || state.className
       )}
       style={{ ...state.style, ...own.style }}
     >
-      {isActive && (
-        <motion.div
-          layoutId="bottom-nav-pill"
-          className="absolute inset-0 rounded-2xl pointer-events-none"
-          style={{
-            background: "linear-gradient(180deg, hsl(var(--primary) / 0.12) 0%, hsl(var(--primary) / 0.04) 100%)",
-            boxShadow: "0 0 20px -4px hsl(var(--primary) / 0.35), 0 1px 0 0 hsl(var(--primary) / 0.15) inset",
-            border: "1px solid hsl(var(--primary) / 0.15)",
-            backdropFilter: "blur(16px) saturate(150%)",
-            WebkitBackdropFilter: "blur(16px) saturate(150%)",
-          }}
-          transition={{ type: "spring", stiffness: 300, damping: 28, mass: 0.8 }}
-        />
-      )}
-
-      <motion.div
-        animate={{ scale: isActive ? 1.15 : 1, y: isActive ? -2 : 0 }}
-        transition={{ type: "spring", stiffness: 400, damping: 20, mass: 0.6 }}
-        className="relative"
-      >
-        <Icon
-          className={cn(
-            "w-[1.15rem] h-[1.15rem] transition-all duration-300",
-            isActive && "drop-shadow-[0_0_8px_hsl(var(--primary)/0.5)]"
-          )}
-          strokeWidth={isActive ? 2.5 : 1.75}
-        />
-      </motion.div>
-
-      <motion.span
-        className="text-[9px] font-semibold tracking-wide relative uppercase"
-        animate={{ opacity: isActive ? 1 : 0.75, y: isActive ? 0 : 1 }}
-        transition={{ type: "spring", stiffness: 300, damping: 25 }}
-      >
-        {t(item.labelKey)}
-      </motion.span>
+      <TabInner Icon={Icon} label={t(item.labelKey)} active={isActive} />
     </NavLink>
   );
 }
@@ -79,22 +83,44 @@ function BottomNavItem({ item, isActive }: { item: (typeof navItems)[number]; is
 export function MobileBottomNav() {
   const location = useLocation();
   const bar = useElementStyle("nav.bar");
+  const moreEl = useElementStyle("nav.settings");
+  const t = useT();
+  const [showMore, setShowMore] = useState(false);
+
+  const moreActive = showMore || MORE_PATHS.includes(location.pathname);
+  const MoreIcon = moreEl.Icon ?? LayoutGrid;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden safe-bottom">
-      {/* Ambient glow behind the nav bar */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[85%] h-16 bg-primary/10 blur-[48px] rounded-full pointer-events-none" />
-      
-      <div className="px-3 pt-2 pb-2">
-        <div className="glass-nav rounded-3xl flex items-center justify-around h-[3.75rem] px-1 relative overflow-hidden" style={bar.style}>
-          {/* Subtle top highlight line */}
-          <div className="absolute top-0 left-4 right-4 h-[1px] bg-gradient-to-r from-transparent via-primary/25 to-transparent pointer-events-none" />
-          
-          {navItems.map((item) => (
-            <BottomNavItem key={item.path} item={item} isActive={location.pathname === item.path} />
-          ))}
+    <>
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden safe-bottom pointer-events-none">
+        <div className="px-3.5 pt-2 pb-[18px] pointer-events-auto">
+          <motion.div
+            initial={{ y: 40, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={springy}
+            className="glass-nav glass-float rounded-[30px] flex items-center h-[70px] px-1"
+            style={bar.style}
+          >
+            {navItems.map((item) => (
+              <BottomNavItem key={item.path} item={item} isActive={location.pathname === item.path} />
+            ))}
+
+            <button
+              type="button"
+              onClick={() => { moreEl.play(); setShowMore(true); }}
+              aria-label={t("more.title")}
+              className={cn(
+                "relative flex-1 basis-0 flex flex-col items-center justify-center gap-[3px] h-[54px] rounded-[20px]",
+                moreActive ? "text-primary" : "text-muted-foreground"
+              )}
+            >
+              <TabInner Icon={MoreIcon} label={t("nav.more")} active={moreActive} />
+            </button>
+          </motion.div>
         </div>
-      </div>
-    </nav>
+      </nav>
+
+      <MoreSheet open={showMore} onClose={() => setShowMore(false)} />
+    </>
   );
 }

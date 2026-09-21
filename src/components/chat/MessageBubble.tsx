@@ -122,9 +122,11 @@ export function MessageBubble({ message, onReact, onReply, onEdit, onDelete, onF
         )}
 
         {/* Bubble */}
-        <div
+        <motion.div
           style={bubble.style}
-          className={`px-3 py-2 rounded-2xl text-[15px] leading-relaxed relative ${bubble.className} ${
+          whileTap={{ scale: 0.975 }}
+          transition={{ type: "spring", stiffness: 520, damping: 30, mass: 0.6 }}
+          className={`px-3.5 py-2.5 rounded-[20px] text-[15px] leading-relaxed relative ${bubble.className} ${
             message.sending ? "opacity-60" : ""
           } ${message.failed ? "ring-1 ring-destructive" : ""} ${
             isDeleted
@@ -188,21 +190,25 @@ export function MessageBubble({ message, onReact, onReply, onEdit, onDelete, onF
           {message.is_encrypted && !isDeleted && (
             <Lock className="w-2.5 h-2.5 inline-block ml-1 opacity-50" />
           )}
-        </div>
+        </motion.div>
 
         {/* Reactions display */}
         {Object.keys(reactionGroups).length > 0 && (
           <div className={`flex flex-wrap gap-1 mt-0.5 ${isMe ? "justify-end" : "justify-start"} px-2`}>
             {Object.entries(reactionGroups).map(([emoji, count]) => (
-              <button
+              <motion.button
                 key={emoji}
+                initial={{ scale: 0.4, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                whileTap={{ scale: 0.85 }}
+                transition={{ type: "spring", stiffness: 500, damping: 24 }}
                 onClick={() => onReact(message.id, emoji)}
-                className={`text-[12px] px-1.5 py-0.5 rounded-full border transition-colors ${
+                className={`text-[12px] px-2 py-0.5 rounded-full border transition-colors ${
                   myReactions.has(emoji) ? "border-primary bg-primary/10" : "border-border bg-card hover:bg-accent"
                 }`}
               >
                 {emoji} {count > 1 && count}
-              </button>
+              </motion.button>
             ))}
           </div>
         )}
@@ -278,19 +284,25 @@ export function MessageBubble({ message, onReact, onReply, onEdit, onDelete, onF
         <AnimatePresence>
           {showReactions && (
             <motion.div
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 4 }}
-              className={`absolute bottom-full mb-1 ${isMe ? "right-0" : "left-0"} flex gap-0.5 glass rounded-full shadow-premium px-1.5 py-1 z-20`}
+              initial={{ opacity: 0, y: 10, scale: 0.8 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.85 }}
+              transition={{ type: "spring", stiffness: 420, damping: 26, mass: 0.7 }}
+              className={`absolute bottom-full mb-1 ${isMe ? "right-0" : "left-0"} flex gap-0.5 glass-tint glass-float rounded-full px-1.5 py-1 z-20`}
             >
-              {QUICK_REACTIONS.map((emoji) => (
-                <button
+              {QUICK_REACTIONS.map((emoji, i) => (
+                <motion.button
                   key={emoji}
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 22, delay: i * 0.028 }}
+                  whileHover={{ scale: 1.3, y: -3 }}
+                  whileTap={{ scale: 0.8 }}
                   onClick={() => { onReact(message.id, emoji); setShowReactions(false); }}
-                  className="w-8 h-8 rounded-full hover:bg-accent flex items-center justify-center text-lg transition-transform hover:scale-125"
+                  className="w-9 h-9 rounded-full hover:bg-accent flex items-center justify-center text-lg"
                 >
                   {emoji}
-                </button>
+                </motion.button>
               ))}
             </motion.div>
           )}

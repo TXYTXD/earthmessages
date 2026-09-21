@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { MessageCircle, Edit, Users } from "lucide-react";
+import { MessageCircle, Edit, Users, PenLine } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { springy, snappy, riseIn } from "@/lib/motion";
 import { FriendRequestBar } from "@/components/FriendRequestBar";
 import { ContactList } from "@/components/chat/ContactList";
 import { ChatArea } from "@/components/chat/ChatArea";
@@ -113,29 +115,57 @@ export default function ChatsPage() {
   const showSidebar = !singlePane || (!activeConv && !showAI);
 
   return (
-    <div className="flex flex-1 h-screen">
-      {/* Contact List Sidebar */}
+    <div className={`flex flex-1 h-screen ${singlePane ? "" : "gap-3 p-3"}`}>
+      {/* The chat list. On a wide screen it is a panel floating on the
+          ambient background; on a phone it fills the screen and the header
+          floats above it. */}
       {showSidebar && (
-        <div className={`${singlePane ? "w-full" : "w-[320px] xl:w-[360px] flex-shrink-0"} flex flex-col border-r border-border/60 glass-nav`}>
-          <div className="px-4 pt-4 pb-2">
-            <div className="flex items-center justify-between mb-4">
-              <h1 className="text-2xl font-bold">{t("chats.title")}</h1>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setShowNewChat(true)}
-                  className="w-9 h-9 rounded-full bg-accent hover:bg-accent/80 flex items-center justify-center transition-colors text-foreground"
-                  title={t("chats.newMessage")}
+        <motion.div
+          initial={{ opacity: 0, x: -18 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={springy}
+          className={
+            singlePane
+              ? "w-full flex flex-col relative"
+              : "w-[320px] xl:w-[368px] flex-shrink-0 flex flex-col rounded-[28px] overflow-hidden glass-tint glass-float"
+          }
+        >
+          <div className={singlePane ? "px-3.5 pt-3.5 pb-2 sticky top-0 z-20" : "px-4 pt-4 pb-2"}>
+            <div className={singlePane ? "rounded-[28px] glass-tint glass-float px-4 pt-3.5 pb-3.5" : ""}>
+              <div className="flex items-center justify-between">
+                <motion.h1
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={springy}
+                  className="text-[28px] font-bold tracking-tight"
                 >
-                  <Edit className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setShowNewGroup(true)}
-                  className="w-9 h-9 rounded-full bg-accent hover:bg-accent/80 flex items-center justify-center transition-colors text-foreground"
-                  title={t("chats.newGroup")}
-                >
-                  <Users className="w-4 h-4" />
-                </button>
-                <FriendRequestBar />
+                  {t("chats.title")}
+                </motion.h1>
+                <div className="flex items-center gap-1.5">
+                  <motion.button
+                    whileTap={{ scale: 0.86, rotate: -8 }}
+                    whileHover={{ scale: 1.06 }}
+                    transition={snappy}
+                    onClick={() => setShowNewGroup(true)}
+                    className="w-10 h-10 rounded-full glass-inset flex items-center justify-center text-foreground press"
+                    title={t("chats.newGroup")}
+                  >
+                    <Users className="w-[18px] h-[18px]" />
+                  </motion.button>
+                  {!singlePane && (
+                    <motion.button
+                      whileTap={{ scale: 0.86, rotate: -8 }}
+                      whileHover={{ scale: 1.06 }}
+                      transition={snappy}
+                      onClick={() => setShowNewChat(true)}
+                      className="w-10 h-10 rounded-full glass-inset flex items-center justify-center text-foreground press"
+                      title={t("chats.newMessage")}
+                    >
+                      <Edit className="w-[18px] h-[18px]" />
+                    </motion.button>
+                  )}
+                  <FriendRequestBar />
+                </div>
               </div>
             </div>
           </div>
@@ -149,7 +179,28 @@ export default function ChatsPage() {
             isAISelected={showAI}
             loading={loading}
           />
-        </div>
+
+          {/* Start a new chat, within reach of a thumb rather than up in
+              the corner. Floats clear of the tab bar. */}
+          {singlePane && (
+            <AnimatePresence>
+              <motion.button
+                key="compose-fab"
+                initial={{ scale: 0, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0, opacity: 0 }}
+                whileTap={{ scale: 0.86, rotate: -12 }}
+                whileHover={{ scale: 1.07 }}
+                transition={springy}
+                onClick={() => setShowNewChat(true)}
+                aria-label={t("chats.newMessage")}
+                className="fixed right-5 bottom-[118px] z-40 w-[60px] h-[60px] rounded-full bg-primary text-primary-foreground flex items-center justify-center fab-breathe sheen"
+              >
+                <PenLine className="w-6 h-6" />
+              </motion.button>
+            </AnimatePresence>
+          )}
+        </motion.div>
       )}
 
       {/* Chat Area */}
@@ -160,17 +211,28 @@ export default function ChatsPage() {
           conversation={activeConv!}
           conversations={conversations}
           onBack={singlePane ? () => setSelectedConversation(null) : undefined}
+          panel={!singlePane}
         />
       ) : !singlePane ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-center px-8 bg-background">
-          <div className="w-20 h-20 rounded-full flex items-center justify-center mb-4" style={{ background: "var(--messenger-gradient)" }}>
+        <motion.div
+          variants={riseIn}
+          initial="hidden"
+          animate="show"
+          className="flex-1 flex flex-col items-center justify-center text-center px-8 rounded-[28px] glass-tint glass-float"
+        >
+          <motion.div
+            animate={{ y: [0, -10, 0] }}
+            transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+            className="w-20 h-20 rounded-full flex items-center justify-center mb-4 shadow-premium"
+            style={{ background: "var(--messenger-gradient)" }}
+          >
             <MessageCircle className="w-10 h-10 text-white" />
-          </div>
+          </motion.div>
           <h2 className="text-xl font-bold mb-1">{t("chats.emptyTitle")}</h2>
           <p className="text-sm text-muted-foreground max-w-xs">
             {t("chats.emptyBody")}
           </p>
-        </div>
+        </motion.div>
       ) : null}
 
       <NewChatDialog open={showNewChat} onClose={() => setShowNewChat(false)} onSelect={handleSelectFriendById} />

@@ -11,6 +11,7 @@ import { TranslationProvider } from "@/contexts/TranslationContext";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useAppUpdate } from "@/hooks/useAppUpdate";
 import { AndroidUpdateGate } from "@/components/AndroidUpdateGate";
+import { AmbientHalos } from "@/components/AmbientHalos";
 import { usePin } from "@/hooks/usePin";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
@@ -62,9 +63,10 @@ function ProtectedLayout() {
   return (
     <CallProvider>
       <ThemeAmbience />
+      <AmbientHalos />
       <div className="flex h-screen overflow-hidden app-shell">
         <AppSidebar />
-        <main className="flex-1 overflow-hidden flex pb-14 md:pb-0">
+        <main className="flex-1 overflow-hidden flex pb-[104px] md:pb-0">
           <Routes>
             <Route path="/" element={<ChatsPage />} />
             <Route path="/stories" element={<StoriesPage />} />

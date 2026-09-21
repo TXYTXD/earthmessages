@@ -1,4 +1,6 @@
 import { NavLink, useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
+import { springy, snappy } from "@/lib/motion";
 import { MessageCircle, Video, Phone, Settings, User, CircleDot, Bot, CalendarDays, Globe2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useElementStyle } from "@/hooks/useElementStyle";
@@ -36,7 +38,14 @@ function SidebarItem({ item, isActive }: { item: (typeof navItems)[number]; isAc
       )}
       style={{ ...state.style, ...own.style }}
     >
-      <Icon className="w-5 h-5" />
+      <motion.span
+        animate={{ scale: isActive ? 1.1 : 1 }}
+        whileTap={{ scale: 0.82, rotate: -8 }}
+        whileHover={{ scale: isActive ? 1.14 : 1.08 }}
+        transition={snappy}
+      >
+        <Icon className="w-5 h-5" />
+      </motion.span>
       <span className="absolute left-full ml-2 px-2 py-1 rounded-md bg-foreground text-background text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
         {t(item.labelKey)}
       </span>
@@ -54,10 +63,16 @@ export function AppSidebar() {
   const LogoIcon = logo.Icon ?? MessageCircle;
 
   return (
-    <aside
-      className="hidden md:flex w-[72px] h-screen flex-col items-center py-3 glass-nav border-r border-border/60"
-      style={bar.style}
+    <motion.aside
+      initial={{ x: -26, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      transition={springy}
+      className="hidden md:flex w-[84px] h-screen flex-col items-center py-4 pl-3 pr-0"
     >
+      <div
+        className="w-[72px] flex-1 flex flex-col items-center py-4 rounded-[28px] glass-nav glass-float"
+        style={bar.style}
+      >
       {/* Logo */}
       <div
         className={cn("w-10 h-10 rounded-full flex items-center justify-center mb-4", logo.className)}
@@ -73,9 +88,15 @@ export function AppSidebar() {
       </nav>
 
       {/* Avatar at bottom */}
-      <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center">
+      <motion.div
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.9 }}
+        transition={snappy}
+        className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center"
+      >
         <User className="w-4 h-4 text-muted-foreground" />
+      </motion.div>
       </div>
-    </aside>
+    </motion.aside>
   );
 }

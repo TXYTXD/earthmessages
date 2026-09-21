@@ -1011,6 +1011,181 @@
     z-index: -1;
   }
 
+
+  /* ------------------------------------------------------------------
+     Floating frosted surfaces.
+
+     .glass-float carries the blur, the hairline and the lift — never a
+     background, so a surface keeps whatever tint it already had (the
+     bottom bar keeps its themeable --el-nav-bar-bg). .glass-tint is the
+     default tint for surfaces that have none of their own.
+     ------------------------------------------------------------------ */
+  .glass-float {
+    backdrop-filter: blur(28px) saturate(185%);
+    -webkit-backdrop-filter: blur(28px) saturate(185%);
+    border: 1px solid hsl(0 0% 100% / 0.42);
+    box-shadow:
+      0 1px 0 0 hsl(0 0% 100% / 0.55) inset,
+      0 12px 36px -12px hsl(var(--foreground) / 0.28),
+      0 3px 10px -5px hsl(var(--foreground) / 0.16);
+  }
+
+  .dark .glass-float {
+    border-color: hsl(0 0% 100% / 0.10);
+    box-shadow:
+      0 1px 0 0 hsl(0 0% 100% / 0.08) inset,
+      0 14px 40px -12px hsl(0 0% 0% / 0.65),
+      0 3px 10px -5px hsl(0 0% 0% / 0.45);
+  }
+
+  .glass-tint {
+    background-color: hsl(var(--card) / 0.62);
+  }
+
+  .glass-inset {
+    background-color: hsl(var(--background) / 0.55);
+    border: 1px solid hsl(var(--foreground) / 0.06);
+  }
+
+  /* ------------------------------------------------------------------
+     Ambient colour pools. Blur over a flat colour looks like nothing at
+     all, so the glass needs something behind it to actually blur. These
+     sit under the whole app and drift slowly.
+     ------------------------------------------------------------------ */
+  .halo-field {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .halo {
+    position: absolute;
+    border-radius: 999px;
+    filter: blur(80px);
+    opacity: 0.40;
+    will-change: transform;
+  }
+
+  .dark .halo {
+    opacity: 0.26;
+  }
+
+  .halo-drift-a { animation: ums-drift-a calc(24s * var(--motion-scale, 1)) ease-in-out infinite; }
+  .halo-drift-b { animation: ums-drift-b calc(31s * var(--motion-scale, 1)) ease-in-out infinite; }
+  .halo-drift-c { animation: ums-drift-c calc(27s * var(--motion-scale, 1)) ease-in-out infinite; }
+
+  @keyframes ums-drift-a {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50% { transform: translate3d(7%, 9%, 0) scale(1.14); }
+  }
+  @keyframes ums-drift-b {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1.08); }
+    50% { transform: translate3d(-9%, -7%, 0) scale(0.94); }
+  }
+  @keyframes ums-drift-c {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(0.96); }
+    50% { transform: translate3d(5%, -10%, 0) scale(1.12); }
+  }
+
+  /* ------------------------------------------------------------------
+     Press feedback. Everything you can tap answers back.
+     ------------------------------------------------------------------ */
+  .press {
+    transition:
+      transform calc(180ms * var(--motion-scale, 1)) var(--motion-ease),
+      background-color calc(180ms * var(--motion-scale, 1)) ease,
+      box-shadow calc(220ms * var(--motion-scale, 1)) ease;
+  }
+  .press:active { transform: scale(0.90); }
+  .press:hover { background-color: hsl(var(--accent) / 0.75); }
+
+  .press-soft {
+    transition:
+      transform calc(200ms * var(--motion-scale, 1)) var(--motion-ease),
+      background-color calc(200ms * var(--motion-scale, 1)) ease;
+  }
+  .press-soft:active { transform: scale(0.975); }
+
+  .press-lift {
+    transition:
+      transform calc(220ms * var(--motion-scale, 1)) var(--motion-ease),
+      box-shadow calc(220ms * var(--motion-scale, 1)) ease;
+  }
+  .press-lift:hover { transform: translateY(-2px); }
+  .press-lift:active { transform: scale(0.94); }
+
+  /* ------------------------------------------------------------------
+     Entrances
+     ------------------------------------------------------------------ */
+  .rise-in {
+    animation: ums-rise calc(460ms * var(--motion-scale, 1)) var(--motion-ease) both;
+  }
+  .drop-in {
+    animation: ums-drop calc(520ms * var(--motion-scale, 1)) var(--motion-ease) both;
+  }
+  .fade-in {
+    animation: ums-fade calc(380ms * var(--motion-scale, 1)) var(--motion-ease) both;
+  }
+
+  @keyframes ums-rise {
+    from { opacity: 0; transform: translateY(14px) scale(0.985); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes ums-drop {
+    from { opacity: 0; transform: translateY(-16px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes ums-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* ------------------------------------------------------------------
+     Living details
+     ------------------------------------------------------------------ */
+  .fab-breathe {
+    animation: ums-breathe calc(3.6s * var(--motion-scale, 1)) ease-in-out infinite;
+  }
+  @keyframes ums-breathe {
+    0%, 100% { box-shadow: 0 10px 26px -8px hsl(var(--primary) / 0.60), 0 2px 6px -2px hsl(var(--foreground) / 0.20); }
+    50% { box-shadow: 0 16px 38px -8px hsl(var(--primary) / 0.82), 0 2px 6px -2px hsl(var(--foreground) / 0.20); }
+  }
+
+  /* A green dot that quietly announces itself. The dot it is put on is
+     already positioned, so this must not set position of its own. */
+  .online-ping::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    background: hsl(var(--success));
+    animation: ums-ping calc(2.6s * var(--motion-scale, 1)) var(--motion-ease) infinite;
+  }
+  @keyframes ums-ping {
+    0% { transform: scale(1); opacity: 0.55; }
+    70%, 100% { transform: scale(2.4); opacity: 0; }
+  }
+
+  /* The sheen that runs across a freshly pressed primary button */
+  .sheen { position: relative; overflow: hidden; }
+  .sheen::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 40%;
+    background: linear-gradient(100deg, transparent, hsl(0 0% 100% / 0.42), transparent);
+    transform: translateX(-160%);
+  }
+  .sheen:active::after {
+    animation: ums-sheen calc(700ms * var(--motion-scale, 1)) var(--motion-ease);
+  }
+  @keyframes ums-sheen {
+    to { transform: translateX(360%); }
+  }
+
   .text-balance {
     text-wrap: balance;
   }
