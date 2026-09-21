@@ -1,21 +1,21 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { springy, snappy } from "@/lib/motion";
-import { MessageCircle, Video, Phone, Settings, User, CircleDot, Bot, CalendarDays, Globe2 } from "lucide-react";
+import { MessageCircle, Video, Phone, Settings2, CircleUser, Camera, Sparkles, Calendar, UsersRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useElementStyle } from "@/hooks/useElementStyle";
 import { useT } from "@/contexts/LanguageContext";
 
 const navItems = [
   { icon: MessageCircle, labelKey: "nav.chats" as const, path: "/", el: "nav.chats" },
-  { icon: CircleDot, labelKey: "nav.stories" as const, path: "/stories", el: "nav.stories" },
-  { icon: Globe2, labelKey: "nav.communities" as const, path: "/communities", el: "nav.communities" },
+  { icon: Camera, labelKey: "nav.stories" as const, path: "/stories", el: "nav.stories" },
+  { icon: UsersRound, labelKey: "nav.communities" as const, path: "/communities", el: "nav.communities" },
   { icon: Phone, labelKey: "nav.calls" as const, path: "/calls", el: "nav.calls" },
   { icon: Video, labelKey: "nav.video" as const, path: "/video", el: "nav.calls" },
-  { icon: Bot, labelKey: "nav.aiChat" as const, path: "/ai", el: "nav.ai" },
-  { icon: CalendarDays, labelKey: "nav.calendar" as const, path: "/calendar", el: "nav.calendar" },
-  { icon: Settings, labelKey: "nav.settings" as const, path: "/settings", el: "nav.settings" },
-  { icon: User, labelKey: "nav.account" as const, path: "/account", el: "nav.account" },
+  { icon: Sparkles, labelKey: "nav.aiChat" as const, path: "/ai", el: "nav.ai" },
+  { icon: Calendar, labelKey: "nav.calendar" as const, path: "/calendar", el: "nav.calendar" },
+  { icon: Settings2, labelKey: "nav.settings" as const, path: "/settings", el: "nav.settings" },
+  { icon: CircleUser, labelKey: "nav.account" as const, path: "/account", el: "nav.account" },
 ];
 
 // One nav button, wearing whatever the theme says about it
@@ -75,10 +75,13 @@ export function AppSidebar() {
       >
       {/* Logo */}
       <div
-        className={cn("w-10 h-10 rounded-full flex items-center justify-center mb-4", logo.className)}
+        className={cn("w-10 h-10 rounded-full flex items-center justify-center mb-4 shadow-soft", logo.className)}
         style={{ background: "var(--messenger-gradient)" }}
+        aria-label="UMS Messages"
       >
-        <LogoIcon className="w-5 h-5 text-white" />
+        {logo.Icon
+          ? <LogoIcon className="w-5 h-5 text-white" />
+          : <span className="text-white text-[17px] font-bold leading-none tracking-tight">U</span>}
       </div>
 
       <nav className="flex-1 flex flex-col items-center gap-1">
@@ -94,7 +97,7 @@ export function AppSidebar() {
         transition={snappy}
         className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center"
       >
-        <User className="w-4 h-4 text-muted-foreground" />
+        <CircleUser className="w-4 h-4 text-muted-foreground" />
       </motion.div>
       </div>
     </motion.aside>

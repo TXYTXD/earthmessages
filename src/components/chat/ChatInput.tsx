@@ -290,7 +290,7 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply, onSchedule
         <button
           onClick={() => { elAttach.play(); imageInputRef.current?.click(); }}
           disabled={uploading}
-          className={cn("w-10 h-10 rounded-full press flex items-center justify-center text-primary flex-shrink-0", elAttach.className)}
+          className={cn("w-10 h-10 rounded-full press flex items-center justify-center text-muted-foreground flex-shrink-0", elAttach.className)}
           style={elAttach.style}
         >
           <Image className="w-5 h-5" />
@@ -298,27 +298,27 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply, onSchedule
         <button
           onClick={() => { elAttach.play(); fileInputRef.current?.click(); }}
           disabled={uploading}
-          className={cn("w-10 h-10 rounded-full press flex items-center justify-center text-primary flex-shrink-0", elAttach.className)}
+          className={cn("w-10 h-10 rounded-full press flex items-center justify-center text-muted-foreground flex-shrink-0", elAttach.className)}
           style={elAttach.style}
         >
           {elAttach.Icon ? <elAttach.Icon className="w-5 h-5" /> : <Paperclip className="w-5 h-5" />}
         </button>
         <button
           onClick={() => { elEmoji.play(); setShowEmoji(!showEmoji); setShowStickers(false); setShowGifs(false); setShowSchedule(false); }}
-          className={cn("w-10 h-10 rounded-full press flex items-center justify-center text-primary flex-shrink-0", elEmoji.className)}
+          className={cn("w-10 h-10 rounded-full press flex items-center justify-center text-muted-foreground flex-shrink-0", elEmoji.className)}
           style={elEmoji.style}
         >
           {elEmoji.Icon ? <elEmoji.Icon className="w-5 h-5" /> : <Smile className="w-5 h-5" />}
         </button>
         <button
           onClick={() => { setShowStickers(!showStickers); setShowEmoji(false); setShowGifs(false); setShowSchedule(false); }}
-          className="w-10 h-10 rounded-full press flex items-center justify-center text-primary flex-shrink-0"
+          className="w-10 h-10 rounded-full press flex items-center justify-center text-muted-foreground flex-shrink-0"
         >
           <Sticker className="w-5 h-5" />
         </button>
         <button
           onClick={() => { elGif.play(); setShowGifs(!showGifs); setShowEmoji(false); setShowStickers(false); setShowSchedule(false); }}
-          className={cn("w-10 h-10 rounded-full press flex items-center justify-center text-primary flex-shrink-0", elGif.className)}
+          className={cn("w-10 h-10 rounded-full press flex items-center justify-center text-muted-foreground flex-shrink-0", elGif.className)}
           style={elGif.style}
         >
           {elGif.Icon ? <elGif.Icon className="w-5 h-5" /> : <GifIcon className="w-5 h-5" />}
@@ -328,7 +328,7 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply, onSchedule
             onClick={() => { setShowSchedule(!showSchedule); setShowEmoji(false); setShowStickers(false); setShowGifs(false); }}
             className={cn(
               "w-10 h-10 rounded-full press flex items-center justify-center flex-shrink-0",
-              showSchedule ? "text-primary bg-accent" : "text-primary"
+              showSchedule ? "text-primary bg-accent" : "text-muted-foreground"
             )}
           >
             <CalendarClock className="w-5 h-5" />
@@ -369,7 +369,7 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply, onSchedule
             <button
               onClick={() => { elMic.play(); handleStartRecording(); }}
               disabled={uploading}
-              className={cn("w-10 h-10 rounded-full press flex items-center justify-center text-primary flex-shrink-0", elMic.className)}
+              className={cn("w-10 h-10 rounded-full press flex items-center justify-center text-muted-foreground flex-shrink-0", elMic.className)}
               style={elMic.style}
               title={t("composer.recordVoice")}
             >
@@ -377,7 +377,7 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply, onSchedule
             </button>
             <button
               onClick={handleThumbsUp}
-              className="w-10 h-10 rounded-full press flex items-center justify-center text-primary flex-shrink-0"
+              className="w-10 h-10 rounded-full press flex items-center justify-center text-muted-foreground flex-shrink-0"
             >
               <ThumbsUp className="w-5 h-5" />
             </button>

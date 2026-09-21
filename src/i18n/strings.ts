@@ -17,15 +17,6 @@ export const en = {
   "nav.settings": "Settings",
   "nav.account": "Account",
   "nav.assistant": "Assistant",
-  "nav.more": "More",
-  "more.title": "Everything else",
-  "more.themes": "Themes",
-  "more.storiesHint": "Moments that vanish in a day",
-  "more.communitiesHint": "Bigger rooms, shared interests",
-  "more.calendarHint": "Plans you make together",
-  "more.themesHint": "Make the app look like you",
-  "more.settingsHint": "Language, sound, notifications",
-  "more.accountHint": "Your name, photo and privacy",
 
   // Chats
   "chats.title": "Chats",
