@@ -62,7 +62,7 @@ export function MobileBottomNav() {
     <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden safe-bottom pointer-events-none">
       <div className="px-3 pt-1.5 pb-3.5 pointer-events-auto">
         <div
-          className="glass-nav glass-float rounded-full h-[58px] px-1.5 gpu"
+          className="glass-nav glass-float glass-contain rounded-full h-[58px] px-1.5 gpu"
           style={bar.style}
         >
           {/* Eight equal columns that never change size. The highlight is one

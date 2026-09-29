@@ -918,15 +918,15 @@
 
   .glass {
     background-color: var(--el-dialog-bg, hsl(var(--card) / 0.55));
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(28px) saturate(190%);
+    -webkit-backdrop-filter: blur(28px) saturate(190%);
     border: 1px solid hsl(var(--border) / 0.5);
   }
 
   .glass-nav {
     background-color: var(--el-nav-bar-bg, hsl(var(--card) / 0.55));
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(26px) saturate(185%);
+    -webkit-backdrop-filter: blur(26px) saturate(185%);
     border: 1px solid hsl(var(--border) / 0.45);
     box-shadow:
       0 1px 0 0 hsl(var(--foreground) / 0.06) inset,
@@ -1031,26 +1031,50 @@
      default tint for surfaces that have none of their own.
      ------------------------------------------------------------------ */
   .glass-float {
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(26px) saturate(185%);
+    -webkit-backdrop-filter: blur(26px) saturate(185%);
     transform: translateZ(0);
-    border: 1px solid hsl(var(--foreground) / 0.07);
+    border: 1px solid hsl(0 0% 100% / 0.50);
     box-shadow:
-      0 1px 0 0 hsl(0 0% 100% / 0.40) inset,
-      0 6px 20px -10px hsl(var(--foreground) / 0.16),
-      0 1px 3px -1px hsl(var(--foreground) / 0.08);
+      0 1px 0 0 hsl(0 0% 100% / 0.62) inset,
+      0 10px 30px -12px hsl(var(--foreground) / 0.24),
+      0 2px 7px -3px hsl(var(--foreground) / 0.13);
   }
 
   .dark .glass-float {
-    border-color: hsl(0 0% 100% / 0.08);
+    border-color: hsl(0 0% 100% / 0.13);
     box-shadow:
-      0 1px 0 0 hsl(0 0% 100% / 0.06) inset,
-      0 8px 24px -10px hsl(0 0% 0% / 0.55),
-      0 1px 3px -1px hsl(0 0% 0% / 0.40);
+      0 1px 0 0 hsl(0 0% 100% / 0.10) inset,
+      0 12px 32px -12px hsl(0 0% 0% / 0.60),
+      0 2px 7px -3px hsl(0 0% 0% / 0.42);
   }
 
   .glass-tint {
-    background-color: hsl(var(--card) / 0.74);
+    background-color: hsl(var(--card) / 0.64);
+  }
+
+  /* The look of a frosted pill without a blur pass of its own — for small
+     things that repeat down a list. */
+  .chip {
+    background-color: hsl(var(--card) / 0.88);
+    border: 1px solid hsl(0 0% 100% / 0.55);
+    box-shadow:
+      0 1px 0 0 hsl(0 0% 100% / 0.55) inset,
+      0 2px 8px -4px hsl(var(--foreground) / 0.16);
+  }
+
+  .dark .chip {
+    background-color: hsl(var(--card) / 0.92);
+    border-color: hsl(0 0% 100% / 0.12);
+    box-shadow:
+      0 1px 0 0 hsl(0 0% 100% / 0.08) inset,
+      0 2px 8px -4px hsl(0 0% 0% / 0.50);
+  }
+
+  /* Glass surfaces paint only themselves, so a repaint inside one never
+     forces the page behind it to repaint too. */
+  .glass-contain {
+    contain: paint;
   }
 
   .glass-inset {
