@@ -233,7 +233,7 @@ export function ChatArea({ conversation, conversations, onBack, panel }: ChatAre
               >
                 {newDay && label && (
                   <div className="flex justify-center py-2">
-                    <span className="text-[12px] font-semibold text-muted-foreground glass-tint glass-float rounded-full px-3.5 py-1.5">
+                    <span className="text-[12px] font-semibold text-muted-foreground chip rounded-full px-3.5 py-1.5">
                       {label}
                     </span>
                   </div>
