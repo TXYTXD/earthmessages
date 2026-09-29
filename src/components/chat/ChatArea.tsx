@@ -225,10 +225,6 @@ export function ChatArea({ conversation, conversations, onBack, panel }: ChatAre
                 variants={bubbleIn(msg.sender_id === user?.id)}
                 initial="hidden"
                 animate="show"
-                // A `transition` here replaces the variant's spring rather than
-                // adding to it, so the spring is restated alongside the delay.
-                // The cascade is capped: a hundred messages must not mean the
-                // last one lands a second and a half late.
                 transition={{ type: "spring", stiffness: 700, damping: 34, mass: 0.5, delay: Math.min(i * 0.012, 0.1) }}
               >
                 {newDay && label && (

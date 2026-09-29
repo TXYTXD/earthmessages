@@ -1,23 +1,64 @@
+import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { MessageCircle, Camera, UsersRound, Phone, Sparkles, Calendar, Settings2, CircleUser } from "lucide-react";
+import { MessageCircle, Phone, Bot, LayoutGrid } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useElementStyle } from "@/hooks/useElementStyle";
 import { useT } from "@/contexts/LanguageContext";
+import { MoreSheet } from "@/components/MoreSheet";
 import { springy, snappy } from "@/lib/motion";
 
+// Four tabs, not eight. Everything else moved into the More sheet, where a
+// name has room to be read. The bar itself floats clear of the screen edge
+// and the chat list slides underneath it.
 const navItems = [
   { icon: MessageCircle, labelKey: "nav.chats" as const, path: "/", el: "nav.chats" },
-  { icon: Camera, labelKey: "nav.stories" as const, path: "/stories", el: "nav.stories" },
-  { icon: UsersRound, labelKey: "nav.groups" as const, path: "/communities", el: "nav.communities" },
   { icon: Phone, labelKey: "nav.calls" as const, path: "/calls", el: "nav.calls" },
-  { icon: Sparkles, labelKey: "nav.ai" as const, path: "/ai", el: "nav.ai" },
-  { icon: Calendar, labelKey: "nav.plan" as const, path: "/calendar", el: "nav.calendar" },
-  { icon: Settings2, labelKey: "nav.settings" as const, path: "/settings", el: "nav.settings" },
-  { icon: CircleUser, labelKey: "nav.account" as const, path: "/account", el: "nav.account" },
+  { icon: Bot, labelKey: "nav.assistant" as const, path: "/ai", el: "nav.ai" },
 ];
 
-const COLS = navItems.length;
+const MORE_PATHS = ["/stories", "/communities", "/calendar", "/themes", "/settings", "/account"];
+
+const COLS = 4;
+
+function TabPill({ index }: { index: number }) {
+  return (
+    <motion.span
+      aria-hidden="true"
+      className="absolute top-2 bottom-2 left-0 rounded-[20px] pointer-events-none gpu"
+      style={{
+        width: `${100 / COLS}%`,
+        background: "hsl(var(--primary) / 0.13)",
+        boxShadow: "0 0 0 1px hsl(var(--primary) / 0.18) inset",
+      }}
+      initial={false}
+      animate={{ x: `${index * 100}%` }}
+      transition={springy}
+    />
+  );
+}
+
+function TabInner({ Icon, label, active }: { Icon: React.ComponentType<{ className?: string }>; label: string; active: boolean }) {
+  return (
+    <>
+      <motion.span
+        className="relative block"
+        animate={{ scale: active ? 1.12 : 1, y: active ? -1 : 0 }}
+        whileTap={{ scale: 0.82, rotate: -6 }}
+        transition={snappy}
+      >
+        <Icon className={cn("w-[22px] h-[22px]", active ? "[stroke-width:2.2]" : "[stroke-width:1.8]")} />
+      </motion.span>
+      <motion.span
+        className="relative text-[11px] font-semibold"
+        animate={{ opacity: active ? 1 : 0.78 }}
+        transition={springy}
+      >
+        {label}
+      </motion.span>
+    </>
+  );
+}
 
 function BottomNavItem({ item, isActive }: { item: (typeof navItems)[number]; isActive: boolean }) {
   const t = useT();
@@ -26,29 +67,19 @@ function BottomNavItem({ item, isActive }: { item: (typeof navItems)[number]; is
   const idle = useElementStyle("nav.idle");
   const state = isActive ? active : idle;
   const Icon = own.Icon ?? item.icon;
-  const label = t(item.labelKey);
 
   return (
     <NavLink
       to={item.path}
       onClick={() => { own.play(); state.play(); }}
-      aria-label={label}
-      title={label}
       className={cn(
-        "relative h-full flex items-center justify-center rounded-full",
+        "relative flex flex-col items-center justify-center gap-[3px] h-[54px] rounded-[20px]",
         isActive ? "text-primary" : "text-muted-foreground",
         own.className || state.className
       )}
       style={{ ...state.style, ...own.style }}
     >
-      <motion.span
-        className="relative block"
-        whileTap={{ scale: 0.78 }}
-        animate={{ scale: isActive ? 1.1 : 1 }}
-        transition={snappy}
-      >
-        <Icon className={cn("w-[21px] h-[21px]", isActive ? "[stroke-width:2.2]" : "[stroke-width:1.7]")} />
-      </motion.span>
+      <TabInner Icon={Icon} label={t(item.labelKey)} active={isActive} />
     </NavLink>
   );
 }
@@ -56,36 +87,53 @@ function BottomNavItem({ item, isActive }: { item: (typeof navItems)[number]; is
 export function MobileBottomNav() {
   const location = useLocation();
   const bar = useElementStyle("nav.bar");
-  const activeIndex = navItems.findIndex((i) => i.path === location.pathname);
+  const moreEl = useElementStyle("nav.settings");
+  const t = useT();
+  const [showMore, setShowMore] = useState(false);
+
+  const moreActive = showMore || MORE_PATHS.includes(location.pathname);
+  // Which of the four slots the highlight sits on. -1 means none of them.
+  const navIndex = navItems.findIndex((i) => i.path === location.pathname);
+  const activeSlot = moreActive ? COLS - 1 : navIndex;
+  const MoreIcon = moreEl.Icon ?? LayoutGrid;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden safe-bottom pointer-events-none">
-      <div className="px-3 pt-1.5 pb-3.5 pointer-events-auto">
-        <div
-          className="glass-nav glass-float glass-contain rounded-full h-[58px] px-1.5 gpu"
-          style={bar.style}
-        >
-          {/* Eight equal columns that never change size. The highlight is one
-              element sliding across them on a transform — nothing here
-              re-measures or re-lays-out when you switch tab, which is what
-              made jumping from the first tab to the last stutter. */}
-          <div className="relative h-full grid items-center" style={{ gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))` }}>
-            {activeIndex >= 0 && (
-              <motion.span
-                aria-hidden="true"
-                className="absolute top-1.5 bottom-1.5 left-0 rounded-full bg-primary/12 ring-1 ring-inset ring-primary/15 pointer-events-none gpu"
-                style={{ width: `${100 / COLS}%` }}
-                initial={false}
-                animate={{ x: `${activeIndex * 100}%` }}
-                transition={springy}
-              />
-            )}
+    <>
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden safe-bottom pointer-events-none">
+        <div className="px-3.5 pt-2 pb-[18px] pointer-events-auto">
+          <motion.div
+            initial={{ y: 40, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={springy}
+            className="glass-nav glass-float glass-contain rounded-[30px] h-[70px] px-1 gpu"
+            style={bar.style}
+          >
+            <div
+              className="relative h-full grid items-center"
+              style={{ gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))` }}
+            >
+            {activeSlot >= 0 && <TabPill index={activeSlot} />}
             {navItems.map((item) => (
               <BottomNavItem key={item.path} item={item} isActive={location.pathname === item.path} />
             ))}
-          </div>
+
+            <button
+              type="button"
+              onClick={() => { moreEl.play(); setShowMore(true); }}
+              aria-label={t("more.title")}
+              className={cn(
+                "relative flex flex-col items-center justify-center gap-[3px] h-[54px] rounded-[20px]",
+                moreActive ? "text-primary" : "text-muted-foreground"
+              )}
+            >
+              <TabInner Icon={MoreIcon} label={t("nav.more")} active={moreActive} />
+            </button>
+            </div>
+          </motion.div>
         </div>
-      </div>
-    </nav>
+      </nav>
+
+      <MoreSheet open={showMore} onClose={() => setShowMore(false)} />
+    </>
   );
 }

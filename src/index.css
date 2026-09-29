@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 220 16% 96%;
+    --background: 0 0% 100%;
     --foreground: 224 10% 10%;
 
     --card: 0 0% 100%;
@@ -17,20 +17,20 @@
     --primary-foreground: 0 0% 100%;
     --primary-glow: 222 100% 70%;
 
-    --secondary: 220 14% 91%;
+    --secondary: 220 14% 96%;
     --secondary-foreground: 224 10% 20%;
 
-    --muted: 220 14% 93%;
-    --muted-foreground: 220 9% 44%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
 
-    --accent: 220 14% 92%;
+    --accent: 220 14% 96%;
     --accent-foreground: 224 10% 10%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 88%;
-    --input: 220 13% 88%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
     --ring: 214 100% 50%;
 
     --radius: 1rem;
@@ -53,10 +53,10 @@
   }
 
   .dark {
-    --background: 224 20% 5%;
+    --background: 224 20% 4%;
     --foreground: 210 40% 96%;
 
-    --card: 224 16% 10%;
+    --card: 224 18% 8%;
     --card-foreground: 210 40% 96%;
 
     --popover: 224 18% 8%;
@@ -890,7 +890,7 @@
   }
 
   .messenger-bubble-sent {
-    background: var(--bubble-sent-gradient, hsl(var(--primary)));
+    background: var(--bubble-sent-gradient, var(--messenger-gradient));
     color: white;
     box-shadow:
       0 1px 0 0 hsl(0 0% 100% / 0.18) inset,
@@ -918,15 +918,15 @@
 
   .glass {
     background-color: var(--el-dialog-bg, hsl(var(--card) / 0.55));
-    backdrop-filter: blur(28px) saturate(190%);
-    -webkit-backdrop-filter: blur(28px) saturate(190%);
+    backdrop-filter: blur(32px) saturate(200%);
+    -webkit-backdrop-filter: blur(32px) saturate(200%);
     border: 1px solid hsl(var(--border) / 0.5);
   }
 
   .glass-nav {
     background-color: var(--el-nav-bar-bg, hsl(var(--card) / 0.55));
-    backdrop-filter: blur(26px) saturate(185%);
-    -webkit-backdrop-filter: blur(26px) saturate(185%);
+    backdrop-filter: blur(32px) saturate(200%);
+    -webkit-backdrop-filter: blur(32px) saturate(200%);
     border: 1px solid hsl(var(--border) / 0.45);
     box-shadow:
       0 1px 0 0 hsl(var(--foreground) / 0.06) inset,
@@ -1031,30 +1031,116 @@
      default tint for surfaces that have none of their own.
      ------------------------------------------------------------------ */
   .glass-float {
-    backdrop-filter: blur(26px) saturate(185%);
-    -webkit-backdrop-filter: blur(26px) saturate(185%);
+    backdrop-filter: blur(28px) saturate(185%);
+    -webkit-backdrop-filter: blur(28px) saturate(185%);
     transform: translateZ(0);
-    border: 1px solid hsl(0 0% 100% / 0.50);
+    border: 1px solid hsl(0 0% 100% / 0.42);
     box-shadow:
-      0 1px 0 0 hsl(0 0% 100% / 0.62) inset,
-      0 10px 30px -12px hsl(var(--foreground) / 0.24),
-      0 2px 7px -3px hsl(var(--foreground) / 0.13);
+      0 1px 0 0 hsl(0 0% 100% / 0.55) inset,
+      0 12px 36px -12px hsl(var(--foreground) / 0.28),
+      0 3px 10px -5px hsl(var(--foreground) / 0.16);
   }
 
   .dark .glass-float {
-    border-color: hsl(0 0% 100% / 0.13);
+    border-color: hsl(0 0% 100% / 0.10);
     box-shadow:
-      0 1px 0 0 hsl(0 0% 100% / 0.10) inset,
-      0 12px 32px -12px hsl(0 0% 0% / 0.60),
-      0 2px 7px -3px hsl(0 0% 0% / 0.42);
+      0 1px 0 0 hsl(0 0% 100% / 0.08) inset,
+      0 14px 40px -12px hsl(0 0% 0% / 0.65),
+      0 3px 10px -5px hsl(0 0% 0% / 0.45);
   }
 
   .glass-tint {
-    background-color: hsl(var(--card) / 0.64);
+    background-color: hsl(var(--card) / 0.62);
+  }
+
+  .glass-inset {
+    background-color: hsl(var(--background) / 0.55);
+    border: 1px solid hsl(var(--foreground) / 0.06);
+  }
+
+  /* ------------------------------------------------------------------
+     Ambient colour pools. Blur over a flat colour looks like nothing at
+     all, so the glass needs something behind it to actually blur. These
+     sit under the whole app and drift slowly.
+     ------------------------------------------------------------------ */
+  .halo-field {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .halo {
+    position: absolute;
+    border-radius: 999px;
+    filter: blur(80px);
+    opacity: 0.40;
+    will-change: transform;
+  }
+
+  .dark .halo {
+    opacity: 0.26;
+  }
+
+  .halo-drift-a { animation: ums-drift-a calc(24s * var(--motion-scale, 1)) ease-in-out infinite; }
+  .halo-drift-b { animation: ums-drift-b calc(31s * var(--motion-scale, 1)) ease-in-out infinite; }
+  .halo-drift-c { animation: ums-drift-c calc(27s * var(--motion-scale, 1)) ease-in-out infinite; }
+
+  @keyframes ums-drift-a {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50% { transform: translate3d(7%, 9%, 0) scale(1.14); }
+  }
+  @keyframes ums-drift-b {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1.08); }
+    50% { transform: translate3d(-9%, -7%, 0) scale(0.94); }
+  }
+  @keyframes ums-drift-c {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(0.96); }
+    50% { transform: translate3d(5%, -10%, 0) scale(1.12); }
+  }
+
+  /* ------------------------------------------------------------------
+     Press feedback. Everything you can tap answers back.
+     ------------------------------------------------------------------ */
+  .press {
+    transition:
+      transform calc(140ms * var(--motion-scale, 1)) var(--motion-ease),
+      background-color calc(120ms * var(--motion-scale, 1)) ease;
+  }
+  .press:active { transform: scale(0.90); transition-duration: 0ms; }
+  .press:hover { background-color: hsl(var(--accent) / 0.75); }
+
+  .press-soft {
+    transition:
+      transform calc(150ms * var(--motion-scale, 1)) var(--motion-ease),
+      background-color calc(120ms * var(--motion-scale, 1)) ease;
+  }
+  .press-soft:active { transform: scale(0.975); transition-duration: 0ms; }
+
+  .press-lift {
+    transition:
+      transform calc(150ms * var(--motion-scale, 1)) var(--motion-ease),
+      box-shadow calc(150ms * var(--motion-scale, 1)) ease;
+  }
+  .press-lift:hover { transform: translateY(-2px); }
+  .press-lift:active { transform: scale(0.94); transition-duration: 0ms; }
+
+  /* Hand a surface to the compositor so it is not repainted every frame */
+  .gpu {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  /* A glass surface paints only itself, so anything moving inside it never
+     forces the page behind it to repaint too. */
+  .glass-contain {
+    contain: paint;
   }
 
   /* The look of a frosted pill without a blur pass of its own — for small
-     things that repeat down a list. */
+     things that repeat down a list, where a real blur costs far more than
+     it shows. */
   .chip {
     background-color: hsl(var(--card) / 0.88);
     border: 1px solid hsl(0 0% 100% / 0.55);
@@ -1069,49 +1155,6 @@
     box-shadow:
       0 1px 0 0 hsl(0 0% 100% / 0.08) inset,
       0 2px 8px -4px hsl(0 0% 0% / 0.50);
-  }
-
-  /* Glass surfaces paint only themselves, so a repaint inside one never
-     forces the page behind it to repaint too. */
-  .glass-contain {
-    contain: paint;
-  }
-
-  .glass-inset {
-    background-color: hsl(var(--background) / 0.55);
-    border: 1px solid hsl(var(--foreground) / 0.06);
-  }
-
-  /* ------------------------------------------------------------------
-     Press feedback. Everything you can tap answers back.
-     ------------------------------------------------------------------ */
-  .press {
-    transition:
-      transform calc(140ms * var(--motion-scale, 1)) var(--motion-ease),
-      background-color calc(120ms * var(--motion-scale, 1)) ease;
-  }
-  .press:active { transform: scale(0.89); transition-duration: 0ms; }
-  .press:hover { background-color: hsl(var(--accent) / 0.75); }
-
-  .press-soft {
-    transition:
-      transform calc(150ms * var(--motion-scale, 1)) var(--motion-ease),
-      background-color calc(120ms * var(--motion-scale, 1)) ease;
-  }
-  .press-soft:active { transform: scale(0.97); transition-duration: 0ms; }
-
-  .press-lift {
-    transition:
-      transform calc(150ms * var(--motion-scale, 1)) var(--motion-ease),
-      box-shadow calc(150ms * var(--motion-scale, 1)) ease;
-  }
-  .press-lift:hover { transform: translateY(-1px); }
-  .press-lift:active { transform: scale(0.92); transition-duration: 0ms; }
-
-  /* Hand a surface to the compositor so it is not repainted every frame */
-  .gpu {
-    transform: translateZ(0);
-    backface-visibility: hidden;
   }
 
   /* ------------------------------------------------------------------
@@ -1143,6 +1186,14 @@
   /* ------------------------------------------------------------------
      Living details
      ------------------------------------------------------------------ */
+  .fab-breathe {
+    animation: ums-breathe calc(3.6s * var(--motion-scale, 1)) ease-in-out infinite;
+  }
+  @keyframes ums-breathe {
+    0%, 100% { box-shadow: 0 10px 26px -8px hsl(var(--primary) / 0.60), 0 2px 6px -2px hsl(var(--foreground) / 0.20); }
+    50% { box-shadow: 0 16px 38px -8px hsl(var(--primary) / 0.82), 0 2px 6px -2px hsl(var(--foreground) / 0.20); }
+  }
+
   /* A green dot that quietly announces itself. The dot it is put on is
      already positioned, so this must not set position of its own. */
   .online-ping::after {
