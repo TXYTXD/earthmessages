@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useElementStyle } from "@/hooks/useElementStyle";
 import { useT } from "@/contexts/LanguageContext";
-import { Search, UsersRound, Sparkles, BadgeCheck } from "lucide-react";
+import { Search, MessageCircle, Users, Bot, BadgeCheck } from "lucide-react";
 import { motion } from "framer-motion";
-import { springy, snappy, riseIn, stagger } from "@/lib/motion";
+import { springy, snappy, riseIn, stagger, tapSoft } from "@/lib/motion";
 import { type Conversation } from "@/hooks/useConversations";
 import { formatDistanceToNow } from "date-fns";
 
@@ -33,7 +33,7 @@ export function ContactList({ conversations, selectedId, onSelect, onSelectAI, i
   return (
     <div className="flex-1 flex flex-col">
       {/* Search */}
-      <div className="px-3 py-1.5">
+      <div className="px-4 py-2">
         <motion.div
           className="relative"
           whileFocus={{ scale: 1.01 }}
@@ -44,7 +44,7 @@ export function ContactList({ conversations, selectedId, onSelect, onSelectAI, i
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t("chats.search")}
-            className="w-full h-10 pl-11 pr-4 glass-inset rounded-full text-[15px] text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+            className="w-full h-11 pl-11 pr-4 glass-inset rounded-full text-[15px] text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/30 transition-all"
           />
         </motion.div>
       </div>
@@ -54,16 +54,16 @@ export function ContactList({ conversations, selectedId, onSelect, onSelectAI, i
         {/* AI Assistant - Pinned at top */}
         <button
           onClick={onSelectAI}
-          className={`w-full p-2.5 flex items-center gap-3 rounded-[20px] press-soft ${
+          className={`w-full p-3 flex items-center gap-3.5 rounded-[22px] press-soft ${
             isAISelected ? "bg-primary/12 ring-1 ring-primary/20" : "hover:bg-accent/50"
           }`}
         >
           <div className="relative flex-shrink-0">
             <div
-              className="w-12 h-12 rounded-full flex items-center justify-center text-primary-foreground shadow-soft"
-              style={{ background: "hsl(var(--primary))" }}
+              className="w-[52px] h-[52px] rounded-full flex items-center justify-center text-white shadow-premium"
+              style={{ background: "var(--messenger-gradient)" }}
             >
-              <Sparkles className="w-6 h-6" />
+              <Bot className="w-6 h-6" />
             </div>
             <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-success rounded-full border-2 border-card online-ping" />
           </div>
@@ -94,18 +94,18 @@ export function ContactList({ conversations, selectedId, onSelect, onSelectAI, i
               key={conv.id}
               variants={riseIn}
               onClick={() => { elRow.play(); onSelect(conv); }}
-              className={`w-full p-2.5 flex items-center gap-3 rounded-[20px] press-soft ${elRow.className} ${
+              className={`w-full p-3 flex items-center gap-3.5 rounded-[22px] press-soft ${elRow.className} ${
                 selectedId === conv.id ? "bg-primary/12 ring-1 ring-primary/20" : "hover:bg-accent/50"
               }`}
               style={selectedId === conv.id ? undefined : elRow.style}
             >
               <div className="relative flex-shrink-0">
                 <div
-                  className={`w-12 h-12 rounded-full bg-secondary flex items-center justify-center text-[15px] font-semibold text-foreground ring-1 ring-border/60 ${elAvatar.className}`}
+                  className={`w-[52px] h-[52px] rounded-full bg-secondary flex items-center justify-center text-[15px] font-semibold text-foreground ring-1 ring-border/60 ${elAvatar.className}`}
                   style={elAvatar.style}
                 >
                   {conv.type === "group" ? (
-                    <UsersRound className="w-5 h-5 text-muted-foreground" />
+                    <Users className="w-5 h-5 text-muted-foreground" />
                   ) : (
                     conv.display_avatar
                   )}
