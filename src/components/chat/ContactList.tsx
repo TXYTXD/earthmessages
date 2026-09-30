@@ -100,7 +100,7 @@ export function ContactList({ search = "", conversations, selectedId, onSelect, 
               </div>
               <div className="flex-1 text-left min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                  <span className={`text-[16px] tracking-tight truncate flex items-center gap-1 ${conv.unread_count > 0 ? "font-bold" : "font-semibold"}`}>
+                  <span className={`text-[16px] tracking-tight min-w-0 flex items-center gap-1 ${conv.unread_count > 0 ? "font-bold" : "font-semibold"}`}>
                     <span className="truncate">{conv.display_name}</span>
                     {conv.display_verified && (
                       <BadgeCheck className="w-4 h-4 text-primary flex-shrink-0" />
@@ -113,7 +113,7 @@ export function ContactList({ search = "", conversations, selectedId, onSelect, 
                   )}
                 </div>
                 <div className="flex items-center justify-between gap-2 mt-0.5">
-                  <p className={`text-[14px] truncate ${conv.unread_count > 0 ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                  <p className={`text-[14px] truncate min-w-0 flex-1 ${conv.unread_count > 0 ? "text-foreground font-medium" : "text-muted-foreground"}`}>
                     {conv.last_message || t("chats.noMessages")}
                   </p>
                   {conv.unread_count > 0 && (

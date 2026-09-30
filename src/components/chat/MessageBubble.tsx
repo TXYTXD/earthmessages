@@ -107,7 +107,7 @@ export function MessageBubble({ message, onReact, onReply, onEdit, onDelete, onF
       )}
       {!isMe && !showAvatar && isGroup && <div className="w-7 mr-1.5 flex-shrink-0" />}
 
-      <div className="max-w-[65%] relative">
+      <div className="max-w-[min(65%,34rem)] min-w-0 relative">
         {/* Sender name for groups */}
         {!isMe && showAvatar && isGroup && (
           <span className="text-[11px] text-muted-foreground ml-3 mb-0.5 flex items-center gap-1">{message.sender_name}<VerifiedBadge verified={message.sender_verified} className="w-3 h-3 text-primary" /></span>
@@ -124,7 +124,7 @@ export function MessageBubble({ message, onReact, onReply, onEdit, onDelete, onF
         {/* Bubble */}
         <div
           style={bubble.style}
-          className={`px-3.5 py-2.5 rounded-[20px] text-[15px] leading-relaxed relative ${bubble.className} ${
+          className={`px-3.5 py-2.5 rounded-[20px] text-[15px] leading-relaxed relative break-words ${bubble.className} ${
             message.sending ? "opacity-60" : ""
           } ${message.failed ? "ring-1 ring-destructive" : ""} ${
             isDeleted

@@ -129,7 +129,9 @@ export default function ChatsPage() {
           transition={springy}
           className={
             singlePane
-              ? "w-full flex flex-col relative"
+              // Centred and capped, so a wide screen does not stretch a
+              // phone-shaped row across 800 pixels of nothing.
+              ? "w-full max-w-[44rem] mx-auto flex flex-col relative"
               : "w-[320px] xl:w-[368px] flex-shrink-0 flex flex-col rounded-[28px] overflow-hidden glass-tint glass-float"
           }
         >
