@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { MessageCircle, Edit, Users, PenLine } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { MessageCircle, Edit, Users, Search } from "lucide-react";
+import { motion } from "framer-motion";
 import { springy, snappy, riseIn } from "@/lib/motion";
 import { FriendRequestBar } from "@/components/FriendRequestBar";
 import { ContactList } from "@/components/chat/ContactList";
@@ -22,6 +22,9 @@ export default function ChatsPage() {
   const [showAI, setShowAI] = useState(false);
   const [showNewChat, setShowNewChat] = useState(false);
   const [showNewGroup, setShowNewGroup] = useState(false);
+  // Held here rather than inside the list, because the field that drives it
+  // now lives in the header.
+  const [search, setSearch] = useState("");
   // On a narrow window the list and the chat take turns rather than share
   const singlePane = useIsSinglePane();
   const t = useT();
@@ -142,6 +145,7 @@ export default function ChatsPage() {
                   {t("chats.title")}
                 </motion.h1>
                 <div className="flex items-center gap-1.5">
+                  <FriendRequestBar />
                   <motion.button
                     whileTap={{ scale: 0.86, rotate: -8 }}
                     whileHover={{ scale: 1.06 }}
@@ -149,29 +153,43 @@ export default function ChatsPage() {
                     onClick={() => setShowNewGroup(true)}
                     className="w-10 h-10 rounded-full glass-inset flex items-center justify-center text-foreground press"
                     title={t("chats.newGroup")}
+                    aria-label={t("chats.newGroup")}
                   >
                     <Users className="w-[18px] h-[18px]" />
                   </motion.button>
-                  {!singlePane && (
-                    <motion.button
-                      whileTap={{ scale: 0.86, rotate: -8 }}
-                      whileHover={{ scale: 1.06 }}
-                      transition={snappy}
-                      onClick={() => setShowNewChat(true)}
-                      className="w-10 h-10 rounded-full glass-inset flex items-center justify-center text-foreground press"
-                      title={t("chats.newMessage")}
-                    >
-                      <Edit className="w-[18px] h-[18px]" />
-                    </motion.button>
-                  )}
-                  <FriendRequestBar />
+                  <motion.button
+                    whileTap={{ scale: 0.86, rotate: -8 }}
+                    whileHover={{ scale: 1.06 }}
+                    transition={snappy}
+                    onClick={() => setShowNewChat(true)}
+                    className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center press-lift shadow-soft"
+                    title={t("chats.newMessage")}
+                    aria-label={t("chats.newMessage")}
+                  >
+                    <Edit className="w-[18px] h-[18px]" />
+                  </motion.button>
                 </div>
+              </div>
+
+              {/* Search belongs up here with the title, not on a row of its
+                  own below the stories — it was costing a whole band of the
+                  screen for one field. */}
+              <div className="relative mt-2.5">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-muted-foreground pointer-events-none" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={t("chats.search")}
+                  aria-label={t("chats.search")}
+                  className="w-full h-11 pl-11 pr-4 glass-inset rounded-full text-[15px] text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                />
               </div>
             </div>
           </div>
           <StoriesBar />
           <FriendsList onSelect={handleSelectFriend} />
           <ContactList
+            search={search}
             conversations={conversations}
             selectedId={activeConv?.id || null}
             onSelect={(conv) => { setShowAI(false); setSelectedConversation(conv); }}
@@ -180,26 +198,6 @@ export default function ChatsPage() {
             loading={loading}
           />
 
-          {/* Start a new chat, within reach of a thumb rather than up in
-              the corner. Floats clear of the tab bar. */}
-          {singlePane && (
-            <AnimatePresence>
-              <motion.button
-                key="compose-fab"
-                initial={{ scale: 0, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0, opacity: 0 }}
-                whileTap={{ scale: 0.86, rotate: -12 }}
-                whileHover={{ scale: 1.07 }}
-                transition={springy}
-                onClick={() => setShowNewChat(true)}
-                aria-label={t("chats.newMessage")}
-                className="fixed right-5 bottom-[118px] z-40 w-[60px] h-[60px] rounded-full bg-primary text-primary-foreground flex items-center justify-center fab-breathe sheen"
-              >
-                <PenLine className="w-6 h-6" />
-              </motion.button>
-            </AnimatePresence>
-          )}
         </motion.div>
       )}
 

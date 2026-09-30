@@ -1,13 +1,14 @@
-import { useState } from "react";
 import { useElementStyle } from "@/hooks/useElementStyle";
 import { useT } from "@/contexts/LanguageContext";
-import { Search, MessageCircle, Users, Bot, BadgeCheck } from "lucide-react";
+import { MessageCircle, Users, Bot, BadgeCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import { springy, snappy, riseIn, stagger, tapSoft } from "@/lib/motion";
 import { type Conversation } from "@/hooks/useConversations";
 import { formatDistanceToNow } from "date-fns";
 
 interface ContactListProps {
+  /** What to filter by. The field itself lives in the page header. */
+  search?: string;
   conversations: Conversation[];
   selectedId: string | null;
   onSelect: (conversation: Conversation) => void;
@@ -16,39 +17,19 @@ interface ContactListProps {
   loading: boolean;
 }
 
-export function ContactList({ conversations, selectedId, onSelect, onSelectAI, isAISelected, loading }: ContactListProps) {
+export function ContactList({ search = "", conversations, selectedId, onSelect, onSelectAI, isAISelected, loading }: ContactListProps) {
   const t = useT();
   const elRow = useElementStyle("list.row");
   const elUnread = useElementStyle("list.unread");
   const elOnline = useElementStyle("list.online");
   const elAvatar = useElementStyle("avatar.ring");
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const filtered = searchQuery
-    ? conversations.filter((c) =>
-        c.display_name.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+  const query = search.trim().toLowerCase();
+  const filtered = query
+    ? conversations.filter((c) => c.display_name.toLowerCase().includes(query))
     : conversations;
 
   return (
     <div className="flex-1 flex flex-col">
-      {/* Search */}
-      <div className="px-4 py-2">
-        <motion.div
-          className="relative"
-          whileFocus={{ scale: 1.01 }}
-          transition={snappy}
-        >
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-muted-foreground" />
-          <input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t("chats.search")}
-            className="w-full h-11 pl-11 pr-4 glass-inset rounded-full text-[15px] text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/30 transition-all"
-          />
-        </motion.div>
-      </div>
-
       {/* Conversations */}
       <div className="flex-1 overflow-y-auto px-2 py-1 space-y-0.5">
         {/* AI Assistant - Pinned at top */}
@@ -83,9 +64,9 @@ export function ContactList({ conversations, selectedId, onSelect, onSelectAI, i
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-center px-6 py-8">
             <p className="text-sm text-muted-foreground">
-              {searchQuery ? "No conversations found" : "No other conversations yet"}
+              {query ? t("chats.noneFound") : t("chats.noMessages")}
             </p>
-            <p className="text-xs text-muted-foreground mt-1">Add friends to start chatting</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("chats.emptyBody")}</p>
           </div>
         ) : (
           <motion.div variants={stagger(0.016)} initial="hidden" animate="show" className="space-y-0.5">
