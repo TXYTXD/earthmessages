@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { CircleDot, Globe2, CalendarDays, Palette, Settings, User } from "lucide-react";
+import { CircleDot, Globe2, CalendarDays, Palette, Settings, User, Video } from "lucide-react";
 import { useT } from "@/contexts/LanguageContext";
 import { useElementStyle } from "@/hooks/useElementStyle";
 import { backdrop, sheetUp, springy, stagger, riseIn, tapSoft } from "@/lib/motion";
@@ -10,6 +10,7 @@ import { backdrop, sheetUp, springy, stagger, riseIn, tapSoft } from "@/lib/moti
 // a phone's width left each one about a fingernail wide with a nine-pixel
 // label; here each has room for its name and a line saying what it does.
 const ITEMS = [
+  { icon: Video, path: "/meetings", el: "nav.calls", labelKey: "nav.meetings" as const, hintKey: "meet.newHint" as const },
   { icon: CircleDot, path: "/stories", el: "nav.stories", labelKey: "nav.stories" as const, hintKey: "more.storiesHint" as const },
   { icon: Globe2, path: "/communities", el: "nav.communities", labelKey: "nav.communities" as const, hintKey: "more.communitiesHint" as const },
   { icon: CalendarDays, path: "/calendar", el: "nav.calendar", labelKey: "nav.calendar" as const, hintKey: "more.calendarHint" as const },

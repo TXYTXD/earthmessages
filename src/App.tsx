@@ -2,7 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { CallProvider } from "@/contexts/CallContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -11,6 +12,8 @@ import { TranslationProvider } from "@/contexts/TranslationContext";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useAppUpdate } from "@/hooks/useAppUpdate";
 import { AndroidUpdateGate } from "@/components/AndroidUpdateGate";
+import MeetingsPage from "@/pages/MeetingsPage";
+import MeetingRoomPage from "@/pages/MeetingRoomPage";
 import { AmbientHalos } from "@/components/AmbientHalos";
 import { usePin } from "@/hooks/usePin";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -53,6 +56,16 @@ function ProtectedLayout() {
   }
 
   if (!session) {
+    // The whole point of a meeting link is that you can send it to anyone.
+    // Someone who follows one without an account has to sign up first, and
+    // they should land in the meeting afterwards rather than on the home
+    // page wondering where it went.
+    try {
+      const path = window.location.pathname;
+      if (path.startsWith("/meet/")) sessionStorage.setItem(PENDING_PATH_KEY, path);
+    } catch {
+      /* private browsing */
+    }
     return <Navigate to="/welcome" replace />;
   }
 
@@ -62,6 +75,7 @@ function ProtectedLayout() {
 
   return (
     <CallProvider>
+      <ResumeAfterSignIn />
       <ThemeAmbience />
       <AmbientHalos />
       <div className="flex h-screen overflow-hidden app-shell">
@@ -72,6 +86,8 @@ function ProtectedLayout() {
             <Route path="/stories" element={<StoriesPage />} />
             <Route path="/video" element={<VideoCallPage />} />
             <Route path="/calls" element={<CallsPage />} />
+            <Route path="/meetings" element={<MeetingsPage />} />
+            <Route path="/meet/:code" element={<MeetingRoomPage />} />
             <Route path="/ai" element={<AIChatPage />} />
             <Route path="/communities" element={<CommunitiesPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
@@ -87,6 +103,27 @@ function ProtectedLayout() {
       </div>
     </CallProvider>
   );
+}
+
+const PENDING_PATH_KEY = "ums-after-signin";
+
+// Takes someone to wherever they were headed before they had to sign in.
+function ResumeAfterSignIn() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    let path: string | null = null;
+    try {
+      path = sessionStorage.getItem(PENDING_PATH_KEY);
+      if (path) sessionStorage.removeItem(PENDING_PATH_KEY);
+    } catch {
+      /* private browsing */
+    }
+    // Only ever an in-app path, never something a link could point elsewhere.
+    if (path && path.startsWith("/") && !path.startsWith("//")) {
+      navigate(path, { replace: true });
+    }
+  }, [navigate]);
+  return null;
 }
 
 function AuthGuard() {

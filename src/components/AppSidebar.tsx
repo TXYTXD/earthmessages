@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { springy, snappy } from "@/lib/motion";
-import { MessageCircle, Video, Phone, Settings, User, CircleDot, Bot, CalendarDays, Globe2 } from "lucide-react";
+import { MessageCircle, Video, Phone, Settings, User, CircleDot, Bot, CalendarDays, Globe2, Users2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useElementStyle } from "@/hooks/useElementStyle";
 import { useT } from "@/contexts/LanguageContext";
@@ -11,6 +11,7 @@ const navItems = [
   { icon: CircleDot, labelKey: "nav.stories" as const, path: "/stories", el: "nav.stories" },
   { icon: Globe2, labelKey: "nav.communities" as const, path: "/communities", el: "nav.communities" },
   { icon: Phone, labelKey: "nav.calls" as const, path: "/calls", el: "nav.calls" },
+  { icon: Users2, labelKey: "nav.meetings" as const, path: "/meetings", el: "nav.calls" },
   { icon: Video, labelKey: "nav.video" as const, path: "/video", el: "nav.calls" },
   { icon: Bot, labelKey: "nav.aiChat" as const, path: "/ai", el: "nav.ai" },
   { icon: CalendarDays, labelKey: "nav.calendar" as const, path: "/calendar", el: "nav.calendar" },

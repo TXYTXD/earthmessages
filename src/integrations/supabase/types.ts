@@ -364,6 +364,93 @@ export type Database = {
           },
         ]
       }
+      meeting_participants: {
+        Row: {
+          id: string
+          joined_at: string
+          last_seen: string
+          left_at: string | null
+          meeting_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          last_seen?: string
+          left_at?: string | null
+          meeting_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          last_seen?: string
+          left_at?: string | null
+          meeting_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      meeting_signals: {
+        Row: {
+          created_at: string
+          id: string
+          meeting_id: string
+          payload: Json
+          receiver_id: string
+          sender_id: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meeting_id: string
+          payload: Json
+          receiver_id: string
+          sender_id: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meeting_id?: string
+          payload?: Json
+          receiver_id?: string
+          sender_id?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      meetings: {
+        Row: {
+          code: string
+          created_at: string
+          ended_at: string | null
+          host_id: string
+          id: string
+          starts_at: string | null
+          title: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          ended_at?: string | null
+          host_id: string
+          id?: string
+          starts_at?: string | null
+          title: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          ended_at?: string | null
+          host_id?: string
+          id?: string
+          starts_at?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string | null
@@ -771,6 +858,14 @@ export type Database = {
       is_conversation_member: {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
+      }
+      is_in_meeting: {
+        Args: { p_meeting: string; p_user: string }
+        Returns: boolean
+      }
+      join_meeting: {
+        Args: { p_code: string }
+        Returns: Database["public"]["Tables"]["meetings"]["Row"]
       }
       is_friend_or_self: {
         Args: { _target_user_id: string; _viewer_id: string }
