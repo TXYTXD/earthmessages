@@ -17,7 +17,7 @@ const navItems = [
   { icon: Bot, labelKey: "nav.assistant" as const, path: "/ai", el: "nav.ai" },
 ];
 
-const MORE_PATHS = ["/stories", "/communities", "/calendar", "/themes", "/settings", "/account"];
+const MORE_PATHS = ["/meetings", "/stories", "/communities", "/calendar", "/themes", "/settings", "/account"];
 
 const COLS = 4;
 
