@@ -83,7 +83,7 @@ export function ChatArea({ conversation, conversations, onBack, panel }: ChatAre
   return (
     <div
       className={`flex-1 flex flex-col relative overflow-hidden ${
-        panel ? "rounded-[28px] glass-tint glass-float" : ""
+        panel ? "rounded-[28px] glass-tint glass-float" : "w-full max-w-[48rem] mx-auto"
       }`}
     >
       {/* The header floats above the messages, which slide underneath it */}
@@ -93,7 +93,7 @@ export function ChatArea({ conversation, conversations, onBack, panel }: ChatAre
         transition={springy}
         className="absolute left-3 right-3 top-3 z-20 rounded-[26px] glass-tint glass-float px-2 py-2 flex items-center justify-between gap-2"
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           {onBack && (
             <button
               onClick={onBack}
@@ -102,7 +102,7 @@ export function ChatArea({ conversation, conversations, onBack, panel }: ChatAre
               <ArrowLeft className="w-5 h-5" />
             </button>
           )}
-          <div className="relative">
+          <div className="relative flex-shrink-0">
             <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center text-sm font-semibold">
               {conversation.display_avatar}
             </div>
@@ -110,22 +110,22 @@ export function ChatArea({ conversation, conversations, onBack, panel }: ChatAre
               <span className="absolute bottom-0 right-0 w-3 h-3 bg-success rounded-full border-2 border-card online-ping" />
             )}
           </div>
-          <div>
-            <h3 className="text-[15px] font-semibold leading-tight flex items-center gap-1">
-              {conversation.display_name}
+          <div className="min-w-0">
+            <h3 className="text-[15px] font-semibold leading-tight flex items-center gap-1 min-w-0">
+              <span className="truncate">{conversation.display_name}</span>
               {conversation.display_verified && (
                 <BadgeCheck className="w-4 h-4 text-primary flex-shrink-0" />
               )}
             </h3>
-            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-              <Lock className="w-2.5 h-2.5" />
+            <span className="text-[11px] text-muted-foreground flex items-center gap-1 min-w-0">
+              <Lock className="w-2.5 h-2.5 flex-shrink-0" />
               {conversation.type === "direct"
                 ? `${t("presence.encrypted")} · ${conversation.is_online ? t("presence.activeNow") : t("presence.offline")}`
                 : `${t("presence.encrypted")} · ${t("presence.members", { count: String(conversation.members.length) })}`}
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 flex-shrink-0">
           <button
             onClick={() => setShowSearch(!showSearch)}
             className="w-10 h-10 rounded-full press flex items-center justify-center text-primary"
