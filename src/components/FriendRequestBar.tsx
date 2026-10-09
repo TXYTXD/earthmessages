@@ -21,8 +21,7 @@ export function FriendRequestBar({ compact = false }: { compact?: boolean } = {}
   const [searching, setSearching] = useState(false);
   const [showRequests, setShowRequests] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
-  const searchRef = useRef<HTMLDivElement>(null);
-  const requestsRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (query.trim().length < 2) {
@@ -40,8 +39,10 @@ export function FriendRequestBar({ compact = false }: { compact?: boolean } = {}
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setShowSearch(false);
-      if (requestsRef.current && !requestsRef.current.contains(e.target as Node)) setShowRequests(false);
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        setShowSearch(false);
+        setShowRequests(false);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -50,11 +51,11 @@ export function FriendRequestBar({ compact = false }: { compact?: boolean } = {}
   const sentIds = new Set(sentRequests.map((r) => r.receiver_id));
 
   return (
-    <div className={`flex items-center ${compact ? "gap-1 xl:gap-1.5" : "gap-1 xs:gap-1.5"}`}>
+    <div ref={rootRef} className={`flex items-center ${compact ? "gap-1 xl:gap-1.5" : "gap-1 xs:gap-1.5"}`}>
       {/* Search */}
-      <div ref={searchRef} className="relative">
+      <div>
         <button
-          onClick={() => setShowSearch(!showSearch)}
+          onClick={() => { setShowRequests(false); setShowSearch(!showSearch); }}
           aria-label={t("friends.add")}
           title={t("friends.add")}
           className={`rounded-full glass-inset press tap-pad flex items-center justify-center text-foreground ${compact ? "w-9 h-9 xl:w-10 xl:h-10" : "w-[38px] h-[38px] xs:w-10 xs:h-10"}`}
@@ -62,13 +63,36 @@ export function FriendRequestBar({ compact = false }: { compact?: boolean } = {}
           <UserPlus className="w-[18px] h-[18px]" />
         </button>
 
+      </div>
+
+      {/* Requests bell */}
+      <div>
+        <button
+          onClick={() => { setShowSearch(false); setShowRequests(!showRequests); }}
+          aria-label={t("friends.requests")}
+          title={t("friends.requests")}
+          className={`relative rounded-full glass-inset press tap-pad flex items-center justify-center text-foreground ${compact ? "w-9 h-9 xl:w-10 xl:h-10" : "w-[38px] h-[38px] xs:w-10 xs:h-10"}`}
+        >
+          <Bell className="w-[18px] h-[18px]" />
+          {incomingRequests.length > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 min-w-[18px] rounded-full bg-destructive flex items-center justify-center text-[10px] font-bold text-white">
+              {incomingRequests.length}
+            </span>
+          )}
+        </button>
+
+      </div>
+
+      {/* Both panels open directly under the header, as wide as the header,
+          rather than hanging off a 36px button and out past the edge of
+          the screen. The header card is their positioned ancestor. */}
         <AnimatePresence>
           {showSearch && (
             <motion.div
               initial={{ opacity: 0, y: -4, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -4, scale: 0.95 }}
-              className="absolute top-full mt-2 right-0 w-[min(20rem,calc(100vw-1.5rem))] glass-solid glass-float rounded-[20px] overflow-hidden z-50"
+              className="absolute left-0 right-0 top-full mt-2 glass-solid glass-float rounded-[20px] overflow-hidden z-50"
             >
               <div className="p-3">
                 <div className="relative">
@@ -124,23 +148,6 @@ export function FriendRequestBar({ compact = false }: { compact?: boolean } = {}
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
-
-      {/* Requests bell */}
-      <div ref={requestsRef} className="relative">
-        <button
-          onClick={() => setShowRequests(!showRequests)}
-          aria-label={t("friends.requests")}
-          title={t("friends.requests")}
-          className={`relative rounded-full glass-inset press tap-pad flex items-center justify-center text-foreground ${compact ? "w-9 h-9 xl:w-10 xl:h-10" : "w-[38px] h-[38px] xs:w-10 xs:h-10"}`}
-        >
-          <Bell className="w-[18px] h-[18px]" />
-          {incomingRequests.length > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 min-w-[18px] rounded-full bg-destructive flex items-center justify-center text-[10px] font-bold text-white">
-              {incomingRequests.length}
-            </span>
-          )}
-        </button>
 
         <AnimatePresence>
           {showRequests && (
@@ -148,7 +155,7 @@ export function FriendRequestBar({ compact = false }: { compact?: boolean } = {}
               initial={{ opacity: 0, y: -4, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -4, scale: 0.95 }}
-              className="absolute top-full mt-2 right-0 w-[min(20rem,calc(100vw-1.5rem))] glass-solid glass-float rounded-[20px] overflow-hidden z-50"
+              className="absolute left-0 right-0 top-full mt-2 glass-solid glass-float rounded-[20px] overflow-hidden z-50"
             >
               <div className="p-3 border-b border-border">
                 <h3 className="text-[15px] font-semibold text-foreground">{t("friends.requests")}</h3>
@@ -222,7 +229,6 @@ export function FriendRequestBar({ compact = false }: { compact?: boolean } = {}
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
     </div>
   );
 }

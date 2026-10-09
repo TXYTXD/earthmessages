@@ -136,7 +136,7 @@ export default function ChatsPage() {
           }
         >
           <div className={singlePane ? "px-3.5 pt-3.5 pb-2 sticky top-0 z-20" : "px-4 pt-4 pb-2"}>
-            <div className={singlePane ? "rounded-[28px] glass-tint glass-float px-3 xs:px-4 pt-3.5 pb-3.5" : ""}>
+            <div className={singlePane ? "relative rounded-[28px] glass-tint glass-float px-3 xs:px-4 pt-3.5 pb-3.5" : "relative"}>
               <div className="flex items-center justify-between">
                 <motion.h1
                   initial={{ opacity: 0, y: -8 }}
