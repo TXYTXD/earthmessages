@@ -1053,6 +1053,11 @@
     background-color: hsl(var(--card) / 0.62);
   }
 
+  /* A menu or popover: frosted, but opaque enough to read over text. */
+  .glass-solid {
+    background-color: hsl(var(--popover));
+  }
+
   .glass-inset {
     background-color: hsl(var(--background) / 0.55);
     border: 1px solid hsl(var(--foreground) / 0.06);

@@ -91,7 +91,7 @@ export function ForwardDialog({ open, onClose, message, conversations }: Forward
               <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center text-sm font-semibold flex-shrink-0">
                 {conv.display_avatar}
               </div>
-              <span className="text-sm font-medium truncate flex-1">{conv.display_name}</span>
+              <span className="text-sm font-medium truncate min-w-0 flex-1">{conv.display_name}</span>
               {sending === conv.id && (
                 <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
               )}

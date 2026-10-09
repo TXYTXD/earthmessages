@@ -183,7 +183,7 @@ export default function ChatsPage() {
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder={t("chats.search")}
                   aria-label={t("chats.search")}
-                  className="w-full h-11 pl-11 pr-4 glass-inset rounded-full text-[15px] text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                  className="w-full h-11 pl-11 pr-4 glass-inset rounded-full text-[16px] text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/30 transition-all"
                 />
               </div>
             </div>

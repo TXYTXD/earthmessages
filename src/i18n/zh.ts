@@ -98,4 +98,13 @@ export const zh: Strings = {
   "meet.backToMeetings": "返回会议",
   "meet.peopleHere": "{count} / {max} 人",
   "meet.aloneHint": "目前只有你一个人。把链接发出去，他们就能直接进来。",
+  "composer.attach": "添加内容",
+  "composer.photo": "照片",
+  "composer.file": "文件",
+  "composer.sticker": "贴纸",
+  "composer.gif": "GIF",
+  "composer.schedule": "稍后发送",
+  "composer.emoji": "表情",
+  "composer.send": "发送",
+  "composer.thumbsUp": "发个赞",
 };

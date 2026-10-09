@@ -91,4 +91,13 @@ export const es: Strings = {
   "meet.backToMeetings": "Volver a reuniones",
   "meet.peopleHere": "{count} de {max} personas",
   "meet.aloneHint": "Estás solo aquí. Envía el enlace y podrán entrar directamente.",
+  "composer.attach": "Añadir algo",
+  "composer.photo": "Foto",
+  "composer.file": "Archivo",
+  "composer.sticker": "Pegatina",
+  "composer.gif": "GIF",
+  "composer.schedule": "Enviar más tarde",
+  "composer.emoji": "Emoji",
+  "composer.send": "Enviar",
+  "composer.thumbsUp": "Enviar un pulgar arriba",
 };

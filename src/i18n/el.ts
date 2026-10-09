@@ -142,4 +142,13 @@ export const el: Strings = {
   "meet.backToMeetings": "Πίσω στις συναντήσεις",
   "meet.peopleHere": "{count} από {max} άτομα",
   "meet.aloneHint": "Είσαι μόνος σου εδώ. Στείλε τον σύνδεσμο και θα μπουν κατευθείαν.",
+  "composer.attach": "Πρόσθεσε κάτι",
+  "composer.photo": "Φωτογραφία",
+  "composer.file": "Αρχείο",
+  "composer.sticker": "Αυτοκόλλητο",
+  "composer.gif": "GIF",
+  "composer.schedule": "Στείλε αργότερα",
+  "composer.emoji": "Emoji",
+  "composer.send": "Αποστολή",
+  "composer.thumbsUp": "Στείλε ένα μπράβο",
 };
