@@ -131,8 +131,8 @@ export default function ChatsPage() {
             singlePane
               // Centred and capped, so a wide screen does not stretch a
               // phone-shaped row across 800 pixels of nothing.
-              ? "w-full max-w-[44rem] mx-auto flex flex-col relative"
-              : "w-[320px] xl:w-[368px] flex-shrink-0 flex flex-col rounded-[28px] overflow-hidden glass-tint glass-float"
+              ? "w-full max-w-[44rem] mx-auto flex flex-col relative overflow-x-clip"
+              : "w-[320px] xl:w-[368px] flex-shrink-0 flex flex-col rounded-[28px] overflow-hidden overflow-x-clip glass-tint glass-float"
           }
         >
           <div className={singlePane ? "px-3.5 pt-3.5 pb-2 sticky top-0 z-20" : "px-4 pt-4 pb-2"}>
@@ -142,18 +142,26 @@ export default function ChatsPage() {
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={springy}
-                  className="text-[17px] xs:text-[26px] sm:text-[28px] font-bold tracking-tight min-w-0 truncate"
+                  className={`font-bold tracking-tight min-w-0 truncate ${
+                    singlePane
+                      ? "text-[17px] xs:text-[26px] sm:text-[28px]"
+                      // The side panel is 320px until xl, whatever the window
+                      // is doing, and four buttons leave about 130px of it.
+                      : "text-[20px] xl:text-[24px]"
+                  }`}
                 >
                   {t("chats.title")}
                 </motion.h1>
-                <div className="flex items-center gap-1 xs:gap-1.5 flex-shrink-0">
-                  <FriendRequestBar />
+                <div className={`flex items-center flex-shrink-0 ${singlePane ? "gap-1 xs:gap-1.5" : "gap-1 xl:gap-1.5"}`}>
+                  <FriendRequestBar compact={!singlePane} />
                   <motion.button
                     whileTap={{ scale: 0.86, rotate: -8 }}
                     whileHover={{ scale: 1.06 }}
                     transition={snappy}
                     onClick={() => setShowNewGroup(true)}
-                    className="w-[38px] h-[38px] xs:w-10 xs:h-10 rounded-full glass-inset flex items-center justify-center text-foreground press"
+                    className={`rounded-full glass-inset flex items-center justify-center text-foreground press tap-pad ${
+                      singlePane ? "w-[38px] h-[38px] xs:w-10 xs:h-10" : "w-9 h-9 xl:w-10 xl:h-10"
+                    }`}
                     title={t("chats.newGroup")}
                     aria-label={t("chats.newGroup")}
                   >
@@ -164,7 +172,9 @@ export default function ChatsPage() {
                     whileHover={{ scale: 1.06 }}
                     transition={snappy}
                     onClick={() => setShowNewChat(true)}
-                    className="w-[38px] h-[38px] xs:w-10 xs:h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center press-lift shadow-soft"
+                    className={`rounded-full bg-primary text-primary-foreground flex items-center justify-center press-lift shadow-soft tap-pad ${
+                      singlePane ? "w-[38px] h-[38px] xs:w-10 xs:h-10" : "w-9 h-9 xl:w-10 xl:h-10"
+                    }`}
                     title={t("chats.newMessage")}
                     aria-label={t("chats.newMessage")}
                   >

@@ -5,7 +5,7 @@ import { useFriendRequests, type SearchedUser } from "@/hooks/useFriendRequests"
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useT } from "@/contexts/LanguageContext";
 
-export function FriendRequestBar() {
+export function FriendRequestBar({ compact = false }: { compact?: boolean } = {}) {
   const t = useT();
   const {
     incomingRequests,
@@ -50,14 +50,14 @@ export function FriendRequestBar() {
   const sentIds = new Set(sentRequests.map((r) => r.receiver_id));
 
   return (
-    <div className="flex items-center gap-1 xs:gap-1.5">
+    <div className={`flex items-center ${compact ? "gap-1 xl:gap-1.5" : "gap-1 xs:gap-1.5"}`}>
       {/* Search */}
       <div ref={searchRef} className="relative">
         <button
           onClick={() => setShowSearch(!showSearch)}
           aria-label={t("friends.add")}
           title={t("friends.add")}
-          className="w-[38px] h-[38px] xs:w-10 xs:h-10 rounded-full glass-inset press flex items-center justify-center text-foreground"
+          className={`rounded-full glass-inset press tap-pad flex items-center justify-center text-foreground ${compact ? "w-9 h-9 xl:w-10 xl:h-10" : "w-[38px] h-[38px] xs:w-10 xs:h-10"}`}
         >
           <UserPlus className="w-[18px] h-[18px]" />
         </button>
@@ -132,7 +132,7 @@ export function FriendRequestBar() {
           onClick={() => setShowRequests(!showRequests)}
           aria-label={t("friends.requests")}
           title={t("friends.requests")}
-          className="relative w-[38px] h-[38px] xs:w-10 xs:h-10 rounded-full glass-inset press flex items-center justify-center text-foreground"
+          className={`relative rounded-full glass-inset press tap-pad flex items-center justify-center text-foreground ${compact ? "w-9 h-9 xl:w-10 xl:h-10" : "w-[38px] h-[38px] xs:w-10 xs:h-10"}`}
         >
           <Bell className="w-[18px] h-[18px]" />
           {incomingRequests.length > 0 && (

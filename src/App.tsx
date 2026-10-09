@@ -80,7 +80,7 @@ function ProtectedLayout() {
       <AmbientHalos />
       <div className="flex h-screen overflow-hidden app-shell">
         <AppSidebar />
-        <main className="flex-1 overflow-hidden flex pb-[104px] md:pb-0">
+        <main className="flex-1 overflow-y-hidden overflow-x-clip flex pb-[104px] md:pb-0 min-w-0">
           <Routes>
             <Route path="/" element={<ChatsPage />} />
             <Route path="/stories" element={<StoriesPage />} />
