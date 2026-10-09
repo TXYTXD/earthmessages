@@ -276,7 +276,7 @@ export default function SettingsPage() {
             </div>
             <button
               onClick={toggleColorMode}
-              className={`w-11 h-6 rounded-full transition-colors relative ${colorMode === "dark" ? "bg-primary" : "bg-muted"}`}
+              className={`w-11 h-6 flex-shrink-0 tap-pad rounded-full transition-colors relative ${colorMode === "dark" ? "bg-primary" : "bg-muted"}`}
             >
               <motion.div
                 animate={{ x: colorMode === "dark" ? 20 : 2 }}
@@ -304,7 +304,7 @@ export default function SettingsPage() {
             </div>
             <button
               onClick={() => handleDiscordToggle(!discordEnabled)}
-              className={`w-11 h-6 rounded-full transition-colors relative ${discordEnabled ? "bg-[#5865F2]" : "bg-muted"}`}
+              className={`w-11 h-6 flex-shrink-0 tap-pad rounded-full transition-colors relative ${discordEnabled ? "bg-[#5865F2]" : "bg-muted"}`}
             >
               <motion.div
                 animate={{ x: discordEnabled ? 20 : 2 }}
@@ -590,7 +590,7 @@ function ToggleRow({ icon, title, desc, value, onChange }: { icon: React.ReactNo
       </div>
       <button
         onClick={() => onChange(!value)}
-        className={`w-11 h-6 rounded-full transition-colors relative ${value ? "bg-primary" : "bg-muted"}`}
+        className={`w-11 h-6 flex-shrink-0 tap-pad rounded-full transition-colors relative ${value ? "bg-primary" : "bg-muted"}`}
       >
         <motion.div
           animate={{ x: value ? 20 : 2 }}

@@ -118,7 +118,7 @@ export default function ChatsPage() {
   const showSidebar = !singlePane || (!activeConv && !showAI);
 
   return (
-    <div className={`flex flex-1 h-screen ${singlePane ? "" : "gap-3 p-3"}`}>
+    <div className={`flex flex-1 h-full min-h-0 ${singlePane ? "" : "gap-3 p-3"}`}>
       {/* The chat list. On a wide screen it is a panel floating on the
           ambient background; on a phone it fills the screen and the header
           floats above it. */}

@@ -53,12 +53,12 @@ export default function DownloadPage() {
                   video calls in its own window. Updates automatically.
                 </p>
                 <div className="flex flex-wrap gap-3">
-                  <Button asChild className="rounded-full gap-2">
+                  <Button asChild className="rounded-full gap-2 h-auto min-h-10 py-2 max-w-full whitespace-normal text-center">
                     <a href={SETUP_URL}>
                       <Download className="w-4 h-4" /> Download for Windows
                     </a>
                   </Button>
-                  <Button asChild variant="outline" className="rounded-full gap-2">
+                  <Button asChild variant="outline" className="rounded-full gap-2 h-auto min-h-10 py-2 max-w-full whitespace-normal text-center">
                     <a href={PORTABLE_URL}>
                       <Download className="w-4 h-4" /> Portable version
                     </a>
@@ -85,17 +85,17 @@ export default function DownloadPage() {
                   yours — AppImage works everywhere without installing.
                 </p>
                 <div className="flex flex-wrap gap-3">
-                  <Button asChild className="rounded-full gap-2">
+                  <Button asChild className="rounded-full gap-2 h-auto min-h-10 py-2 max-w-full whitespace-normal text-center">
                     <a href={LINUX_APPIMAGE_URL}>
                       <Download className="w-4 h-4" /> AppImage (any distro)
                     </a>
                   </Button>
-                  <Button asChild variant="outline" className="rounded-full gap-2">
+                  <Button asChild variant="outline" className="rounded-full gap-2 h-auto min-h-10 py-2 max-w-full whitespace-normal text-center">
                     <a href={LINUX_DEB_URL}>
                       <Download className="w-4 h-4" /> .deb — Ubuntu / Debian / Mint
                     </a>
                   </Button>
-                  <Button asChild variant="outline" className="rounded-full gap-2">
+                  <Button asChild variant="outline" className="rounded-full gap-2 h-auto min-h-10 py-2 max-w-full whitespace-normal text-center">
                     <a href={LINUX_RPM_URL}>
                       <Download className="w-4 h-4" /> .rpm — Fedora / openSUSE
                     </a>
@@ -105,11 +105,11 @@ export default function DownloadPage() {
                   <p className="flex items-start gap-1.5">
                     <ShieldCheck className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
                     AppImage: right-click → Properties → allow executing, then double-click.
-                    Or in a terminal: <code className="px-1 rounded bg-muted">chmod +x UMS-Messages.AppImage && ./UMS-Messages.AppImage</code>
+                    Or in a terminal: <code className="px-1 rounded bg-muted break-all">chmod +x UMS-Messages.AppImage && ./UMS-Messages.AppImage</code>
                   </p>
                   <p className="pl-5">
-                    .deb: <code className="px-1 rounded bg-muted">sudo apt install ./UMS-Messages.deb</code> ·
-                    .rpm: <code className="px-1 rounded bg-muted">sudo dnf install ./UMS-Messages.rpm</code>
+                    .deb: <code className="px-1 rounded bg-muted break-all">sudo apt install ./UMS-Messages.deb</code> ·
+                    .rpm: <code className="px-1 rounded bg-muted break-all">sudo dnf install ./UMS-Messages.rpm</code>
                   </p>
                 </div>
               </div>
@@ -151,7 +151,7 @@ export default function DownloadPage() {
                 </p>
                 <Button
                   variant="outline"
-                  className="rounded-full gap-2"
+                  className="rounded-full gap-2 h-auto min-h-10 py-2 max-w-full whitespace-normal text-center"
                   onClick={() => navigate("/install")}
                 >
                   How to install on iPhone &amp; iPad

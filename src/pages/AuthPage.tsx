@@ -231,7 +231,7 @@ export default function AuthPage() {
                       required
                       minLength={6}
                     />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 p-2 -m-2 tap-pad text-muted-foreground hover:text-foreground transition-colors">
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
@@ -283,13 +283,13 @@ export default function AuthPage() {
                         required
                         minLength={6}
                       />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 p-2 -m-2 tap-pad text-muted-foreground hover:text-foreground transition-colors">
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                     {view === "login" && (
                       <div className="text-right">
-                        <button type="button" onClick={() => setView("forgot")} className="text-xs text-primary hover:underline">Forgot password?</button>
+                        <button type="button" onClick={() => setView("forgot")} className="text-xs text-primary hover:underline inline-block py-2">Forgot password?</button>
                       </div>
                     )}
                     <SubmitButton loading={loading} text={view === "login" ? "Sign In" : "Create Account"} />
@@ -315,7 +315,7 @@ export default function AuthPage() {
                   </div>
 
                   <div className="mt-6 text-center">
-                    <button onClick={() => setView(view === "login" ? "signup" : "login")} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    <button onClick={() => setView(view === "login" ? "signup" : "login")} className="text-sm text-muted-foreground hover:text-foreground inline-block py-2 transition-colors">
                       {view === "login" ? "Don't have an account? " : "Already have an account? "}
                       <span className="text-primary font-medium">{view === "login" ? "Sign up" : "Sign in"}</span>
                     </button>
@@ -329,7 +329,7 @@ export default function AuthPage() {
           <div className="mt-8 text-center">
             <button
               onClick={() => navigate("/welcome")}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
+              className="text-xs text-muted-foreground hover:text-foreground inline-block py-2 transition-colors inline-flex items-center gap-1"
             >
               <ArrowLeft className="w-3 h-3" />
               Back to homepage

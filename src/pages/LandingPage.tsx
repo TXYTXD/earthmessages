@@ -196,7 +196,7 @@ export default function LandingPage() {
               <button
                 key={link.id}
                 onClick={() => document.getElementById(link.id)?.scrollIntoView({ behavior: "smooth" })}
-                className="hover:text-foreground transition-colors duration-200"
+                className="hover:text-foreground transition-colors duration-200 inline-block py-2"
               >
                 {link.label}
               </button>
@@ -613,15 +613,15 @@ export default function LandingPage() {
             <div className="flex items-center gap-6 text-[12px] text-muted-foreground">
               {["Features", "Security", "How it works", "Compare", "Contact"].map((label) => (
                 <button key={label} onClick={() => document.getElementById(label.toLowerCase().replace(/ /g, "-"))?.scrollIntoView({ behavior: "smooth" })}
-                  className="hover:text-foreground transition-colors">{label}</button>
+                  className="hover:text-foreground transition-colors inline-block py-2">{label}</button>
               ))}
             </div>
             <div className="flex items-center gap-4 text-[12px] text-muted-foreground">
-              <a href="https://github.com/TXYTXD/earthmessages" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors flex items-center gap-1"><Github className="w-3.5 h-3.5" /> GitHub</a>
-              <a href="/news" className="hover:text-foreground transition-colors">News</a>
-              <a href="/download" className="hover:text-foreground transition-colors">Download</a>
-              <a href="/privacy" className="hover:text-foreground transition-colors">Privacy</a>
-              <a href="/terms" className="hover:text-foreground transition-colors">Terms</a>
+              <a href="https://github.com/TXYTXD/earthmessages" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors inline-flex items-center gap-1 py-2"><Github className="w-3.5 h-3.5" /> GitHub</a>
+              <a href="/news" className="hover:text-foreground transition-colors inline-block py-2">News</a>
+              <a href="/download" className="hover:text-foreground transition-colors inline-block py-2">Download</a>
+              <a href="/privacy" className="hover:text-foreground transition-colors inline-block py-2">Privacy</a>
+              <a href="/terms" className="hover:text-foreground transition-colors inline-block py-2">Terms</a>
               <p className="text-[11px]">© {new Date().getFullYear()} UMS Messages. All rights reserved.</p>
             </div>
           </div>

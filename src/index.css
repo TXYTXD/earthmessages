@@ -838,6 +838,17 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  /* Safari zooms the whole page in when a field smaller than 16px takes
+     focus. Nothing in the app is worth that, so on a phone every field is
+     at least 16px however it was written. */
+  @media (max-width: 767px) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    textarea,
+    select {
+      font-size: 16px !important;
+    }
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
@@ -1056,6 +1067,14 @@
   /* A menu or popover: frosted, but opaque enough to read over text. */
   .glass-solid {
     background-color: hsl(var(--popover));
+  }
+
+  /* Grows what a finger can hit without changing what the eye sees. */
+  .tap-pad { position: relative; }
+  .tap-pad::after {
+    content: "";
+    position: absolute;
+    inset: -11px;
   }
 
   .glass-inset {
