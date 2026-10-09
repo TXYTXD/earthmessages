@@ -183,7 +183,7 @@ export function ChatArea({ conversation, conversations, onBack, panel }: ChatAre
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t("chats.searchIn")}
-            className="w-full px-4 py-2 glass-inset rounded-full text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/25"
+            className="w-full px-4 py-2.5 glass-inset rounded-full text-[16px] text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/25"
             autoFocus
           />
         </motion.div>

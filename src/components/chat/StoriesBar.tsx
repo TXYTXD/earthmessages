@@ -115,7 +115,7 @@ export function StoriesBar() {
                   </div>
                 </div>
               </div>
-              <span className="text-[10px] text-muted-foreground max-w-[56px] truncate">{group.user_name}</span>
+              <span className="text-[10px] text-muted-foreground max-w-[56px] truncate min-w-0">{group.user_name}</span>
             </button>
           ))}
         </div>

@@ -149,7 +149,7 @@ export function ManageCommunityDialog({
                   const isOwner = m.user_id === community.owner_id;
                   return (
                     <div key={m.user_id} className="flex items-center gap-2 py-1.5">
-                      <span className="flex-1 text-sm font-medium truncate flex items-center gap-1.5">
+                      <span className="flex-1 text-sm font-medium truncate min-w-0 flex items-center gap-1.5">
                         {m.display_name}
                         {isOwner && <Crown className="w-3.5 h-3.5 text-yellow-500" />}
                         {m.muted && <MicOff className="w-3.5 h-3.5 text-orange-500" />}
@@ -191,7 +191,7 @@ export function ManageCommunityDialog({
                 <div className="space-y-1">
                   {banned.map((b) => (
                     <div key={b.user_id} className="flex items-center gap-2 py-1.5">
-                      <span className="flex-1 text-sm font-medium truncate text-muted-foreground">{b.display_name}</span>
+                      <span className="flex-1 text-sm font-medium truncate min-w-0 text-muted-foreground">{b.display_name}</span>
                       <button
                         disabled={busy === b.user_id}
                         onClick={() => unban(b.user_id, b.display_name)}

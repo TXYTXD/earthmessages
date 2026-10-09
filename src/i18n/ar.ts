@@ -91,4 +91,13 @@ export const ar: Strings = {
   "meet.backToMeetings": "العودة إلى الاجتماعات",
   "meet.peopleHere": "{count} من {max} أشخاص",
   "meet.aloneHint": "أنت وحدك هنا. أرسل الرابط وسيدخلون مباشرة.",
+  "composer.attach": "أضف شيئًا",
+  "composer.photo": "صورة",
+  "composer.file": "ملف",
+  "composer.sticker": "ملصق",
+  "composer.gif": "صورة متحركة",
+  "composer.schedule": "أرسل لاحقًا",
+  "composer.emoji": "إيموجي",
+  "composer.send": "إرسال",
+  "composer.thumbsUp": "أرسل إعجابًا",
 };

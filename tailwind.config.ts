@@ -13,6 +13,11 @@ export default {
       },
     },
     extend: {
+      // Smallest phones still in use. Below this there is not room for
+      // every optional control, so some step aside.
+      screens: {
+        xs: "380px",
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

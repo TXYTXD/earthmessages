@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { prefetchTrendingGifs } from "@/lib/gifs";
-import { Send, Smile, Image, Paperclip, Mic, ThumbsUp, X, Sticker, Clock, CalendarClock } from "lucide-react";
+import { Send, Smile, Image, Paperclip, Mic, ThumbsUp, X, Sticker, Clock, CalendarClock, Plus } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { type Message } from "@/hooks/useMessages";
 import { useMediaUpload } from "@/hooks/useMediaUpload";
@@ -15,6 +15,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { springy, snappy } from "@/lib/motion";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 
@@ -38,6 +39,9 @@ interface ChatInputProps {
 
 export function ChatInput({ onSend, onTyping, replyTo, onCancelReply, onSchedule }: ChatInputProps) {
   const [message, setMessage] = useState("");
+  // Six icons in a row left about ninety pixels to type in on a phone.
+  // They live behind one + now.
+  const [showAttach, setShowAttach] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const [showStickers, setShowStickers] = useState(false);
   // What the theme says about each control in this bar
@@ -152,7 +156,23 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply, onSchedule
     setShowEmoji(false);
     setShowStickers(false);
     setShowGifs(false);
+    setShowSchedule(false);
   };
+
+  const attachItems: { key: string; label: string; icon: JSX.Element; run: () => void }[] = [
+    { key: "photo", label: t("composer.photo"), icon: <Image className="w-[18px] h-[18px]" />,
+      run: () => { elAttach.play(); closeAllPickers(); imageInputRef.current?.click(); } },
+    { key: "file", label: t("composer.file"), icon: elAttach.Icon ? <elAttach.Icon className="w-[18px] h-[18px]" /> : <Paperclip className="w-[18px] h-[18px]" />,
+      run: () => { elAttach.play(); closeAllPickers(); fileInputRef.current?.click(); } },
+    { key: "sticker", label: t("composer.sticker"), icon: <Sticker className="w-[18px] h-[18px]" />,
+      run: () => { closeAllPickers(); setShowStickers(true); } },
+    { key: "gif", label: t("composer.gif"), icon: elGif.Icon ? <elGif.Icon className="w-[18px] h-[18px]" /> : <GifIcon className="w-[18px] h-[18px]" />,
+      run: () => { elGif.play(); closeAllPickers(); setShowGifs(true); } },
+    ...(onSchedule
+      ? [{ key: "schedule", label: t("composer.schedule"), icon: <CalendarClock className="w-[18px] h-[18px]" />,
+          run: () => { closeAllPickers(); setShowSchedule(true); } }]
+      : []),
+  ];
 
   return (
     <div className="relative px-2.5 py-2 rounded-[28px] glass-tint glass-float">
@@ -272,7 +292,7 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply, onSchedule
           </button>
         </div>
       ) : (
-      <div className="flex items-center gap-2">
+      <div className="flex items-end gap-2">
         <input
           ref={imageInputRef}
           type="file"
@@ -287,55 +307,56 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply, onSchedule
           onChange={(e) => handleFileUpload(e, "file")}
         />
 
-        <button
-          onClick={() => { elAttach.play(); imageInputRef.current?.click(); }}
-          disabled={uploading}
-          className={cn("w-10 h-10 rounded-full press flex items-center justify-center text-primary flex-shrink-0", elAttach.className)}
-          style={elAttach.style}
-        >
-          <Image className="w-5 h-5" />
-        </button>
-        <button
-          onClick={() => { elAttach.play(); fileInputRef.current?.click(); }}
-          disabled={uploading}
-          className={cn("w-10 h-10 rounded-full press flex items-center justify-center text-primary flex-shrink-0", elAttach.className)}
-          style={elAttach.style}
-        >
-          {elAttach.Icon ? <elAttach.Icon className="w-5 h-5" /> : <Paperclip className="w-5 h-5" />}
-        </button>
-        <button
-          onClick={() => { elEmoji.play(); setShowEmoji(!showEmoji); setShowStickers(false); setShowGifs(false); setShowSchedule(false); }}
-          className={cn("w-10 h-10 rounded-full press flex items-center justify-center text-primary flex-shrink-0", elEmoji.className)}
-          style={elEmoji.style}
-        >
-          {elEmoji.Icon ? <elEmoji.Icon className="w-5 h-5" /> : <Smile className="w-5 h-5" />}
-        </button>
-        <button
-          onClick={() => { setShowStickers(!showStickers); setShowEmoji(false); setShowGifs(false); setShowSchedule(false); }}
-          className="w-10 h-10 rounded-full press flex items-center justify-center text-primary flex-shrink-0"
-        >
-          <Sticker className="w-5 h-5" />
-        </button>
-        <button
-          onClick={() => { elGif.play(); setShowGifs(!showGifs); setShowEmoji(false); setShowStickers(false); setShowSchedule(false); }}
-          className={cn("w-10 h-10 rounded-full press flex items-center justify-center text-primary flex-shrink-0", elGif.className)}
-          style={elGif.style}
-        >
-          {elGif.Icon ? <elGif.Icon className="w-5 h-5" /> : <GifIcon className="w-5 h-5" />}
-        </button>
-        {onSchedule && (
-          <button
-            onClick={() => { setShowSchedule(!showSchedule); setShowEmoji(false); setShowStickers(false); setShowGifs(false); }}
-            className={cn(
-              "w-10 h-10 rounded-full press flex items-center justify-center flex-shrink-0",
-              showSchedule ? "text-primary bg-accent" : "text-primary"
+        {/* Everything you can attach, behind one button */}
+        <div className="relative flex-shrink-0">
+          <AnimatePresence>
+            {showAttach && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowAttach(false)} />
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.94 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.94 }}
+                  transition={springy}
+                  style={{ originY: 1, originX: 0 }}
+                  className="absolute bottom-full left-0 mb-2 z-50 w-[212px] p-1.5 rounded-[20px] glass-solid glass-float"
+                >
+                  {attachItems.map((item) => (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => { setShowAttach(false); item.run(); }}
+                      className="w-full flex items-center gap-3 px-2.5 py-2 rounded-[14px] press-soft hover:bg-accent/70 text-left"
+                    >
+                      <span className="w-9 h-9 rounded-xl bg-primary/12 flex items-center justify-center flex-shrink-0 text-primary">
+                        {item.icon}
+                      </span>
+                      <span className="text-[15px] font-medium min-w-0 truncate">{item.label}</span>
+                    </button>
+                  ))}
+                </motion.div>
+              </>
             )}
-          >
-            <CalendarClock className="w-5 h-5" />
-          </button>
-        )}
+          </AnimatePresence>
 
-        <div className="flex-1 relative">
+          <motion.button
+            type="button"
+            onClick={() => { elAttach.play(); setShowAttach((v) => !v); }}
+            disabled={uploading}
+            whileTap={{ scale: 0.86 }}
+            animate={{ rotate: showAttach ? 45 : 0 }}
+            transition={snappy}
+            aria-label={t("composer.attach")}
+            title={t("composer.attach")}
+            className={cn("w-11 h-11 rounded-full glass-inset flex items-center justify-center text-foreground flex-shrink-0", elAttach.className)}
+            style={elAttach.style}
+          >
+            <Plus className="w-[22px] h-[22px]" />
+          </motion.button>
+        </div>
+
+        {/* The typing area, which is now most of the bar */}
+        <div className="flex-1 min-w-0 relative">
           <input
             value={message}
             onChange={(e) => {
@@ -345,9 +366,22 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply, onSchedule
             onKeyDown={handleKeyDown}
             placeholder={uploading ? t("composer.uploading") : t("composer.placeholder")}
             disabled={uploading}
-            className="w-full px-4 py-2.5 glass-inset rounded-full text-[15px] text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/25 transition-all"
+            // 16px is the threshold below which Safari zooms the whole page
+            // in when you focus a field. Anything smaller here and the app
+            // jumps every time someone taps to type.
+            className="w-full h-11 pl-4 pr-12 glass-inset rounded-full text-[16px] text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/25 transition-all"
             style={elInput.style}
           />
+          <button
+            type="button"
+            onClick={() => { elEmoji.play(); setShowEmoji(!showEmoji); setShowStickers(false); setShowGifs(false); setShowSchedule(false); setShowAttach(false); }}
+            aria-label={t("composer.emoji")}
+            title={t("composer.emoji")}
+            className={cn("absolute right-1.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full press flex items-center justify-center text-muted-foreground", elEmoji.className)}
+            style={elEmoji.style}
+          >
+            {elEmoji.Icon ? <elEmoji.Icon className="w-5 h-5" /> : <Smile className="w-5 h-5" />}
+          </button>
         </div>
 
         {message.trim() ? (
@@ -356,9 +390,9 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply, onSchedule
             initial={{ scale: 0.3, opacity: 0, rotate: -40 }}
             animate={{ scale: 1, opacity: 1, rotate: 0 }}
             whileTap={{ scale: 0.84 }}
-            whileHover={{ scale: 1.07 }}
-            transition={{ type: "spring", stiffness: 480, damping: 24, mass: 0.6 }}
+            transition={snappy}
             onClick={() => { elSend.play(); handleSend(); }}
+            aria-label={t("composer.send")}
             className={cn("w-11 h-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 sheen shadow-premium", elSend.className)}
             style={elSend.style}
           >
@@ -367,17 +401,22 @@ export function ChatInput({ onSend, onTyping, replyTo, onCancelReply, onSchedule
         ) : (
           <>
             <button
+              type="button"
               onClick={() => { elMic.play(); handleStartRecording(); }}
               disabled={uploading}
-              className={cn("w-10 h-10 rounded-full press flex items-center justify-center text-primary flex-shrink-0", elMic.className)}
+              className={cn("w-11 h-11 rounded-full press flex items-center justify-center text-muted-foreground flex-shrink-0", elMic.className)}
               style={elMic.style}
               title={t("composer.recordVoice")}
+              aria-label={t("composer.recordVoice")}
             >
               {elMic.Icon ? <elMic.Icon className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
             </button>
             <button
+              type="button"
               onClick={handleThumbsUp}
-              className="w-10 h-10 rounded-full press flex items-center justify-center text-primary flex-shrink-0"
+              aria-label={t("composer.thumbsUp")}
+              title={t("composer.thumbsUp")}
+              className="w-11 h-11 rounded-full press items-center justify-center text-muted-foreground flex-shrink-0 hidden xs:flex"
             >
               <ThumbsUp className="w-5 h-5" />
             </button>

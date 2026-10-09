@@ -342,7 +342,7 @@ function SoundLibraryPicker({
       {chosen && (
         <div className="flex items-center gap-1.5 text-[11px] bg-primary/10 rounded-md px-2 py-1">
           <Check className="w-3 h-3 text-primary flex-shrink-0" />
-          <span className="truncate flex-1">{decodeURIComponent(soundRefUrl(chosen)?.split("/").pop() ?? "")}</span>
+          <span className="truncate min-w-0 flex-1">{decodeURIComponent(soundRefUrl(chosen)?.split("/").pop() ?? "")}</span>
           <button type="button" onClick={() => void playLibrarySound(chosen)} className="text-primary">
             <Play className="w-3 h-3" />
           </button>
@@ -388,7 +388,7 @@ function SoundLibraryPicker({
                 >
                   <Play className="w-3 h-3" />
                 </button>
-                <span className="text-[11px] truncate flex-1" title={snd.title}>{snd.title}</span>
+                <span className="text-[11px] truncate min-w-0 flex-1" title={snd.title}>{snd.title}</span>
                 {snd.seconds > 0 && <span className="text-[10px] text-muted-foreground">{snd.seconds}s</span>}
                 <button
                   type="button"

@@ -78,6 +78,15 @@ export const en = {
   "composer.recordVoice": "Record a voice message",
   "composer.searchGifs": "Search GIFs…",
   "composer.trending": "Trending",
+  "composer.attach": "Add something",
+  "composer.photo": "Photo",
+  "composer.file": "File",
+  "composer.sticker": "Sticker",
+  "composer.gif": "GIF",
+  "composer.schedule": "Send later",
+  "composer.emoji": "Emoji",
+  "composer.send": "Send",
+  "composer.thumbsUp": "Send a thumbs up",
 
   // Presence
   "presence.activeNow": "Active now",
