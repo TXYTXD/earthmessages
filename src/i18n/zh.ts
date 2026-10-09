@@ -107,4 +107,13 @@ export const zh: Strings = {
   "composer.emoji": "表情",
   "composer.send": "发送",
   "composer.thumbsUp": "发个赞",
+  "friends.add": "添加好友",
+  "friends.searchPeople": "搜索某人…",
+  "friends.searching": "查找中…",
+  "friends.noneFound": "没有这个名字的人",
+  "friends.requests": "好友请求",
+  "friends.noRequests": "没有待处理的请求",
+  "friends.wantsToConnect": "想加你为好友",
+  "friends.pending": "等待中",
+  "friends.sent": "已发送",
 };

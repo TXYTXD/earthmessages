@@ -100,4 +100,13 @@ export const es: Strings = {
   "composer.emoji": "Emoji",
   "composer.send": "Enviar",
   "composer.thumbsUp": "Enviar un pulgar arriba",
+  "friends.add": "Añadir un amigo",
+  "friends.searchPeople": "Busca a alguien…",
+  "friends.searching": "Buscando…",
+  "friends.noneFound": "Nadie con ese nombre",
+  "friends.requests": "Solicitudes de amistad",
+  "friends.noRequests": "Nada pendiente",
+  "friends.wantsToConnect": "Quiere ser tu amigo",
+  "friends.pending": "En espera",
+  "friends.sent": "ENVIADAS",
 };
