@@ -81,7 +81,7 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-screen overflow-hidden">
+    <div className="flex-1 flex flex-col h-full overflow-hidden">
       {/* Header */}
       <div className="px-6 pt-6 pb-4 border-b border-border flex items-center justify-between">
         <div>

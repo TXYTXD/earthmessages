@@ -49,14 +49,14 @@ export default function CommunitiesPage() {
   // Community chat opens inside this tab, not in Chats
   if (activeCommunity) {
     return (
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
         <CommunityChat community={activeCommunity} onBack={() => setActiveCommunity(null)} />
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col h-screen overflow-hidden">
+    <div className="flex-1 flex flex-col h-full overflow-hidden">
       {/* Header */}
       <div className="px-6 pt-6 pb-4 border-b border-border flex items-center justify-between">
         <div>

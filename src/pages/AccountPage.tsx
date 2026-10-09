@@ -239,7 +239,7 @@ export default function AccountPage() {
                     setNameInput(profile.display_name);
                     setEditingName(true);
                   }}
-                  className="w-7 h-7 rounded-full hover:bg-accent flex items-center justify-center transition-colors"
+                  className="w-9 h-9 tap-pad rounded-full hover:bg-accent flex items-center justify-center transition-colors"
                 >
                   <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
                 </button>

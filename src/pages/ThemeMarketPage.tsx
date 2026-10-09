@@ -95,7 +95,7 @@ export default function ThemeMarketPage() {
               <button
                 key={s}
                 onClick={() => market.setSort(s)}
-                className={`px-3 py-1.5 rounded-full text-[12px] font-medium flex items-center gap-1 transition-colors ${
+                className={`px-3.5 py-2 rounded-full text-[12px] font-medium flex items-center gap-1 transition-colors ${
                   market.sort === s ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
