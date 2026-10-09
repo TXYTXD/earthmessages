@@ -100,4 +100,13 @@ export const ar: Strings = {
   "composer.emoji": "إيموجي",
   "composer.send": "إرسال",
   "composer.thumbsUp": "أرسل إعجابًا",
+  "friends.add": "أضف صديقًا",
+  "friends.searchPeople": "ابحث عن شخص…",
+  "friends.searching": "جارٍ البحث…",
+  "friends.noneFound": "لا أحد بهذا الاسم",
+  "friends.requests": "طلبات الصداقة",
+  "friends.noRequests": "لا شيء في الانتظار",
+  "friends.wantsToConnect": "يريد أن يكون صديقك",
+  "friends.pending": "في الانتظار",
+  "friends.sent": "المُرسَلة",
 };

@@ -151,4 +151,13 @@ export const el: Strings = {
   "composer.emoji": "Emoji",
   "composer.send": "Αποστολή",
   "composer.thumbsUp": "Στείλε ένα μπράβο",
+  "friends.add": "Πρόσθεσε φίλο",
+  "friends.searchPeople": "Ψάξε κάποιον…",
+  "friends.searching": "Ψάχνω…",
+  "friends.noneFound": "Κανείς με αυτό το όνομα",
+  "friends.requests": "Αιτήματα φιλίας",
+  "friends.noRequests": "Τίποτα σε αναμονή",
+  "friends.wantsToConnect": "Θέλει να γίνετε φίλοι",
+  "friends.pending": "Σε αναμονή",
+  "friends.sent": "ΕΣΤΑΛΗΣΑΝ",
 };

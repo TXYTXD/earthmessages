@@ -136,24 +136,24 @@ export default function ChatsPage() {
           }
         >
           <div className={singlePane ? "px-3.5 pt-3.5 pb-2 sticky top-0 z-20" : "px-4 pt-4 pb-2"}>
-            <div className={singlePane ? "rounded-[28px] glass-tint glass-float px-4 pt-3.5 pb-3.5" : ""}>
+            <div className={singlePane ? "rounded-[28px] glass-tint glass-float px-3 xs:px-4 pt-3.5 pb-3.5" : ""}>
               <div className="flex items-center justify-between">
                 <motion.h1
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={springy}
-                  className="text-[28px] font-bold tracking-tight"
+                  className="text-[17px] xs:text-[26px] sm:text-[28px] font-bold tracking-tight min-w-0 truncate"
                 >
                   {t("chats.title")}
                 </motion.h1>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1 xs:gap-1.5 flex-shrink-0">
                   <FriendRequestBar />
                   <motion.button
                     whileTap={{ scale: 0.86, rotate: -8 }}
                     whileHover={{ scale: 1.06 }}
                     transition={snappy}
                     onClick={() => setShowNewGroup(true)}
-                    className="w-10 h-10 rounded-full glass-inset flex items-center justify-center text-foreground press"
+                    className="w-[38px] h-[38px] xs:w-10 xs:h-10 rounded-full glass-inset flex items-center justify-center text-foreground press"
                     title={t("chats.newGroup")}
                     aria-label={t("chats.newGroup")}
                   >
@@ -164,7 +164,7 @@ export default function ChatsPage() {
                     whileHover={{ scale: 1.06 }}
                     transition={snappy}
                     onClick={() => setShowNewChat(true)}
-                    className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center press-lift shadow-soft"
+                    className="w-[38px] h-[38px] xs:w-10 xs:h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center press-lift shadow-soft"
                     title={t("chats.newMessage")}
                     aria-label={t("chats.newMessage")}
                   >
