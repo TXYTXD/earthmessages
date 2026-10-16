@@ -1069,6 +1069,10 @@
     background-color: hsl(var(--popover));
   }
 
+  /* A row of chips that scrolls sideways without a bar under it. */
+  .scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+
   /* Grows what a finger can hit without changing what the eye sees. */
   .tap-pad { position: relative; }
   .tap-pad::after {

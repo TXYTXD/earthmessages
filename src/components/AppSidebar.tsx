@@ -1,10 +1,11 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { springy, snappy } from "@/lib/motion";
-import { MessageCircle, Video, Phone, Settings, User, CircleDot, Bot, CalendarDays, Globe2, Users2 } from "lucide-react";
+import { MessageCircle, Video, Phone, Settings, User, CircleDot, Bot, CalendarDays, Globe2, Users2, Newspaper } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useElementStyle } from "@/hooks/useElementStyle";
 import { useT } from "@/contexts/LanguageContext";
+import { useNewsUnread } from "@/hooks/useNews";
 
 const navItems = [
   { icon: MessageCircle, labelKey: "nav.chats" as const, path: "/", el: "nav.chats" },
@@ -15,12 +16,13 @@ const navItems = [
   { icon: Video, labelKey: "nav.video" as const, path: "/video", el: "nav.calls" },
   { icon: Bot, labelKey: "nav.aiChat" as const, path: "/ai", el: "nav.ai" },
   { icon: CalendarDays, labelKey: "nav.calendar" as const, path: "/calendar", el: "nav.calendar" },
+  { icon: Newspaper, labelKey: "nav.news" as const, path: "/news", el: "nav.news" },
   { icon: Settings, labelKey: "nav.settings" as const, path: "/settings", el: "nav.settings" },
   { icon: User, labelKey: "nav.account" as const, path: "/account", el: "nav.account" },
 ];
 
 // One nav button, wearing whatever the theme says about it
-function SidebarItem({ item, isActive }: { item: (typeof navItems)[number]; isActive: boolean }) {
+function SidebarItem({ item, isActive, dot }: { item: (typeof navItems)[number]; isActive: boolean; dot?: boolean }) {
   const t = useT();
   const own = useElementStyle(item.el);
   const active = useElementStyle("nav.active");
@@ -47,6 +49,7 @@ function SidebarItem({ item, isActive }: { item: (typeof navItems)[number]; isAc
       >
         <Icon className="w-5 h-5" />
       </motion.span>
+      {dot && <span className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-primary ring-2 ring-background" />}
       <span className="absolute left-full ml-2 px-2 py-1 rounded-md bg-foreground text-background text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
         {t(item.labelKey)}
       </span>
@@ -62,6 +65,7 @@ export function AppSidebar() {
   const bar = useElementStyle("nav.bar");
   const logo = useElementStyle("nav.logo");
   const LogoIcon = logo.Icon ?? MessageCircle;
+  const newsUnread = useNewsUnread();
 
   return (
     <motion.aside
@@ -84,7 +88,7 @@ export function AppSidebar() {
 
       <nav className="flex-1 flex flex-col items-center gap-1">
         {navItems.map((item) => (
-          <SidebarItem key={item.path} item={item} isActive={location.pathname === item.path} />
+          <SidebarItem key={item.path} item={item} isActive={location.pathname === item.path} dot={item.path === "/news" && newsUnread} />
         ))}
       </nav>
 

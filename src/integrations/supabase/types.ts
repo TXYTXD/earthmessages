@@ -510,22 +510,61 @@ export type Database = {
       }
       news_posts: {
         Row: {
+          author_id: string | null
+          category: string
           content: string
           created_at: string
+          emoji: string
           id: string
+          kids_ok: boolean
           title: string
+          updated_at: string
         }
         Insert: {
+          author_id?: string | null
+          category?: string
           content: string
           created_at?: string
+          emoji?: string
           id?: string
+          kids_ok?: boolean
           title: string
+          updated_at?: string
         }
         Update: {
+          author_id?: string | null
+          category?: string
           content?: string
           created_at?: string
+          emoji?: string
           id?: string
+          kids_ok?: boolean
           title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      news_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          post_id?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -859,6 +898,7 @@ export type Database = {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
       }
+      is_verified_user: { Args: { p_user: string }; Returns: boolean }
       is_in_meeting: {
         Args: { p_meeting: string; p_user: string }
         Returns: boolean
