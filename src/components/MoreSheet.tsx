@@ -1,9 +1,10 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { CircleDot, Globe2, CalendarDays, Palette, Settings, User, Video } from "lucide-react";
+import { CircleDot, Globe2, CalendarDays, Palette, Settings, User, Video, Newspaper } from "lucide-react";
 import { useT } from "@/contexts/LanguageContext";
 import { useElementStyle } from "@/hooks/useElementStyle";
+import { useNewsUnread } from "@/hooks/useNews";
 import { backdrop, sheetUp, springy, stagger, riseIn, tapSoft } from "@/lib/motion";
 
 // Everything that used to be crammed into the bottom bar. Eight tabs sharing
@@ -11,6 +12,7 @@ import { backdrop, sheetUp, springy, stagger, riseIn, tapSoft } from "@/lib/moti
 // label; here each has room for its name and a line saying what it does.
 const ITEMS = [
   { icon: Video, path: "/meetings", el: "nav.calls", labelKey: "nav.meetings" as const, hintKey: "meet.newHint" as const },
+  { icon: Newspaper, path: "/news", el: "nav.news", labelKey: "nav.news" as const, hintKey: "news.subtitle" as const },
   { icon: CircleDot, path: "/stories", el: "nav.stories", labelKey: "nav.stories" as const, hintKey: "more.storiesHint" as const },
   { icon: Globe2, path: "/communities", el: "nav.communities", labelKey: "nav.communities" as const, hintKey: "more.communitiesHint" as const },
   { icon: CalendarDays, path: "/calendar", el: "nav.calendar", labelKey: "nav.calendar" as const, hintKey: "more.calendarHint" as const },
@@ -19,7 +21,7 @@ const ITEMS = [
   { icon: User, path: "/account", el: "nav.account", labelKey: "nav.account" as const, hintKey: "more.accountHint" as const },
 ];
 
-function MoreRow({ item, onGo }: { item: (typeof ITEMS)[number]; onGo: (path: string) => void }) {
+function MoreRow({ item, onGo, dot }: { item: (typeof ITEMS)[number]; onGo: (path: string) => void; dot?: boolean }) {
   const t = useT();
   const own = useElementStyle(item.el);
   const Icon = own.Icon ?? item.icon;
@@ -33,8 +35,9 @@ function MoreRow({ item, onGo }: { item: (typeof ITEMS)[number]; onGo: (path: st
       className={`w-full flex items-center gap-3.5 p-3.5 rounded-[22px] text-left glass-tint glass-float press-soft ${own.className}`}
       style={own.style}
     >
-      <span className="w-11 h-11 rounded-2xl bg-primary/12 flex items-center justify-center flex-shrink-0">
+      <span className="w-11 h-11 rounded-2xl bg-primary/12 flex items-center justify-center flex-shrink-0 relative">
         <Icon className="w-5 h-5 text-primary" />
+        {dot && <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-primary ring-2 ring-background" />}
       </span>
       <span className="flex-1 min-w-0">
         <span className="block text-[16px] font-semibold leading-tight">{t(item.labelKey)}</span>
@@ -47,6 +50,7 @@ function MoreRow({ item, onGo }: { item: (typeof ITEMS)[number]; onGo: (path: st
 export function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const navigate = useNavigate();
   const t = useT();
+  const newsUnread = useNewsUnread();
 
   // A sheet that stays open while the page behind it scrolls feels broken.
   useEffect(() => {
@@ -102,7 +106,7 @@ export function MoreSheet({ open, onClose }: { open: boolean; onClose: () => voi
               className="flex flex-col gap-2"
             >
               {ITEMS.map((item) => (
-                <MoreRow key={item.path} item={item} onGo={go} />
+                <MoreRow key={item.path} item={item} onGo={go} dot={item.path === "/news" && newsUnread} />
               ))}
             </motion.div>
           </motion.div>
