@@ -118,7 +118,10 @@ export default function ChatsPage() {
   const showSidebar = !singlePane || (!activeConv && !showAI);
 
   return (
-    <div className={`flex flex-1 h-full min-h-0 ${singlePane ? "" : "gap-3 p-3"}`}>
+    // min-w-0: without it one unbreakable preview (a link, a long word)
+    // makes this whole page wider than the phone and pushes the header's
+    // buttons off the right-hand edge.
+    <div className={`flex flex-1 h-full min-h-0 min-w-0 ${singlePane ? "" : "gap-3 p-3"}`}>
       {/* The chat list. On a wide screen it is a panel floating on the
           ambient background; on a phone it fills the screen and the header
           floats above it. */}
@@ -198,8 +201,6 @@ export default function ChatsPage() {
               </div>
             </div>
           </div>
-          <StoriesBar />
-          <FriendsList onSelect={handleSelectFriend} />
           <ContactList
             search={search}
             conversations={conversations}
@@ -208,7 +209,11 @@ export default function ChatsPage() {
             onSelectAI={() => { setSelectedConversation(null); setShowAI(true); }}
             isAISelected={showAI}
             loading={loading}
-          />
+          >
+            {/* Inside the list so they scroll away with it; the header stays. */}
+            <StoriesBar />
+            <FriendsList onSelect={handleSelectFriend} />
+          </ContactList>
 
         </motion.div>
       )}

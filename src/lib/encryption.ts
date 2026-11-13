@@ -104,15 +104,15 @@ function rememberKeyForNotifications(conversationId: string, key: string) {
   }
 }
 
-// Get or create the encryption key for a conversation
-export async function getConversationKey(
+// The key for a conversation if one exists, or null. Never creates one —
+// right for anything that merely reads, such as the previews in the chat
+// list, which should not be minting keys for every conversation it shows.
+export async function peekConversationKey(
   conversationId: string
-): Promise<string> {
-  // Check cache
+): Promise<string | null> {
   const cached = keyCache.get(conversationId);
   if (cached) return cached;
 
-  // Try to fetch from DB
   const { data } = await (supabase.from("conversation_keys") as any)
     .select("encryption_key")
     .eq("conversation_id", conversationId)
@@ -123,6 +123,15 @@ export async function getConversationKey(
     rememberKeyForNotifications(conversationId, data.encryption_key);
     return data.encryption_key;
   }
+  return null;
+}
+
+// Get or create the encryption key for a conversation
+export async function getConversationKey(
+  conversationId: string
+): Promise<string> {
+  const existing = await peekConversationKey(conversationId);
+  if (existing) return existing;
 
   // Generate a new key and store it
   const newKey = await generateKey();

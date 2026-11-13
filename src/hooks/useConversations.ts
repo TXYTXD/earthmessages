@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { PRESENCE_WINDOW_MS, isOnline } from "@/lib/presence";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { decryptMessage, isEncrypted, peekConversationKey } from "@/lib/encryption";
 
 export interface Conversation {
   id: string;
@@ -107,6 +108,17 @@ export function useConversations() {
         .limit(1);
       if (msgs && msgs.length > 0) lastMessages[convId] = msgs[0];
     }
+
+    // Messages are stored encrypted, so a preview taken straight from the
+    // row is a line of base64. Unlock each one with its conversation's key,
+    // all at once; a conversation with no key yet simply says so.
+    await Promise.all(
+      Object.entries(lastMessages).map(async ([convId, msg]) => {
+        if (msg.type !== "text" || !isEncrypted(msg.content)) return;
+        const key = await peekConversationKey(convId);
+        msg.content = key ? await decryptMessage(msg.content, key) : "🔒 Encrypted message";
+      })
+    );
 
     // Fetch read receipts
     const { data: receipts } = await supabase

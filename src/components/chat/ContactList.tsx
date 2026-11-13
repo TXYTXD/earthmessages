@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useElementStyle } from "@/hooks/useElementStyle";
 import { useT } from "@/contexts/LanguageContext";
 import { MessageCircle, Users, Bot, BadgeCheck } from "lucide-react";
@@ -15,9 +16,11 @@ interface ContactListProps {
   onSelectAI?: () => void;
   isAISelected?: boolean;
   loading: boolean;
+  /** Anything that should scroll away with the list: the stories and friends strips. */
+  children?: ReactNode;
 }
 
-export function ContactList({ search = "", conversations, selectedId, onSelect, onSelectAI, isAISelected, loading }: ContactListProps) {
+export function ContactList({ search = "", conversations, selectedId, onSelect, onSelectAI, isAISelected, loading, children }: ContactListProps) {
   const t = useT();
   const elRow = useElementStyle("list.row");
   const elUnread = useElementStyle("list.unread");
@@ -29,9 +32,13 @@ export function ContactList({ search = "", conversations, selectedId, onSelect, 
     : conversations;
 
   return (
-    <div className="flex-1 flex flex-col">
+    // min-h-0 on both: a flex child will not shrink below its content
+    // otherwise, so a long list would simply run off the bottom of the
+    // screen with nothing to scroll.
+    <div className="flex-1 flex flex-col min-h-0">
       {/* Conversations */}
-      <div className="flex-1 overflow-y-auto px-2 py-1 space-y-0.5">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain px-2 py-1 space-y-0.5">
+        {children}
         {/* AI Assistant - Pinned at top */}
         <button
           onClick={onSelectAI}

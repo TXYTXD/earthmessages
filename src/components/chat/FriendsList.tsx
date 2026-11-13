@@ -13,14 +13,14 @@ export function FriendsList({ onSelect }: FriendsListProps) {
   const sorted = [...friends].sort((a, b) => Number(b.is_online) - Number(a.is_online));
 
   return (
-    <div className="px-4 py-2 border-b border-border">
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Friends</p>
-      <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+    <div className="px-2 pt-1 pb-1.5">
+      <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 px-1">Friends</p>
+      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
         {sorted.map((friend) => (
           <button
             key={friend.user_id}
             onClick={() => onSelect(friend)}
-            className="flex flex-col items-center gap-1 min-w-[56px] group"
+            className="flex flex-col items-center gap-1 min-w-[56px] group press-soft rounded-2xl px-1 py-0.5"
           >
             <div className="relative">
               <div className="w-11 h-11 rounded-full bg-secondary flex items-center justify-center text-xs font-semibold text-foreground group-hover:ring-2 group-hover:ring-primary/40 transition-all">
@@ -36,6 +36,8 @@ export function FriendsList({ onSelect }: FriendsListProps) {
           </button>
         ))}
       </div>
+      {/* A hairline, not a bar, between the people and the conversations */}
+      <div className="mx-2 mt-1 h-px bg-border/50" />
     </div>
   );
 }

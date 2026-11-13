@@ -42,17 +42,17 @@ export function StoriesBar() {
 
   if (storyGroups.length === 0 && myStories.length === 0) {
     return (
-      <div className="px-4 py-3 border-b border-border">
+      <div className="px-2 pt-1.5 pb-1">
         <div className="flex items-center gap-3">
           <input ref={fileInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleAddStory} />
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="flex flex-col items-center gap-1"
+            className="flex flex-col items-center gap-1 press-soft rounded-2xl px-1 py-0.5"
           >
             <div className="w-14 h-14 rounded-full border-2 border-dashed border-primary/40 flex items-center justify-center">
               <Plus className="w-5 h-5 text-primary" />
             </div>
-            <span className="text-[10px] text-muted-foreground">Your story</span>
+            <span className="text-[11px] text-muted-foreground">Your story</span>
           </button>
         </div>
       </div>
@@ -61,11 +61,11 @@ export function StoriesBar() {
 
   return (
     <>
-      <div className="px-4 py-3 border-b border-border">
+      <div className="px-2 pt-1.5 pb-1">
         <div className="flex items-center gap-3 overflow-x-auto scrollbar-none">
           {/* Add story */}
           <input ref={fileInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleAddStory} />
-          <button onClick={() => fileInputRef.current?.click()} className="flex flex-col items-center gap-1 flex-shrink-0">
+          <button onClick={() => fileInputRef.current?.click()} className="flex flex-col items-center gap-1 flex-shrink-0 press-soft rounded-2xl px-1 py-0.5">
             <div className="w-14 h-14 rounded-full border-2 border-dashed border-primary/40 flex items-center justify-center relative">
               {myStories.length > 0 ? (
                 <>
@@ -80,7 +80,7 @@ export function StoriesBar() {
                 <Plus className="w-5 h-5 text-primary" />
               )}
             </div>
-            <span className="text-[10px] text-muted-foreground">Your story</span>
+            <span className="text-[11px] text-muted-foreground">Your story</span>
           </button>
 
           {/* Friend stories */}
@@ -88,7 +88,7 @@ export function StoriesBar() {
             <button
               key={group.user_id}
               onClick={() => openStory(group)}
-              className="flex flex-col items-center gap-1 flex-shrink-0"
+              className="flex flex-col items-center gap-1 flex-shrink-0 press-soft rounded-2xl px-1 py-0.5"
             >
               <div className={`w-14 h-14 rounded-full p-[2px] ${group.all_viewed ? "bg-muted" : "bg-gradient-to-tr from-primary to-purple-500"}`}>
                 <div className="w-full h-full rounded-full bg-card p-[2px]">
@@ -115,7 +115,7 @@ export function StoriesBar() {
                   </div>
                 </div>
               </div>
-              <span className="text-[10px] text-muted-foreground max-w-[56px] truncate min-w-0">{group.user_name}</span>
+              <span className="text-[11px] text-muted-foreground max-w-[56px] truncate min-w-0">{group.user_name}</span>
             </button>
           ))}
         </div>
