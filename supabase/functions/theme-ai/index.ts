@@ -1,9 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk";
 
-// The smart half of UMS Theme AI. It takes an instruction about a theme and
-// returns a patch describing what to change. A real model does the
-// understanding; this function decides what is allowed to be changed.
+// UMS Theme AI. A conversation about a theme: the person talks, the model
+// talks back, and whenever it changes something it also returns a patch
+// describing what to change. A real model does the understanding; this
+// function decides what is allowed to be changed.
 //
 // Claude is used when ANTHROPIC_API_KEY is set — the same key the AI tab and
 // translation use, so one key covers every AI feature in the app. A
@@ -201,6 +202,25 @@ interface Patch {
   palette?: Record<string, unknown>;
   effects?: Record<string, unknown>;
   reply?: string;
+  name?: string;
+  alternatives?: { name: string; palette: Record<string, unknown> }[];
+}
+
+// A palette as the app stores it, or nothing if no colour in it was valid.
+function cleanPalette(raw: unknown): Record<string, unknown> | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const pal = raw as Record<string, unknown>;
+  const clean: Record<string, unknown> = {};
+  for (const k of ["primary", "tint", "received", "sidebar", "surface"]) {
+    if (typeof pal[k] === "string" && HEX.test(pal[k] as string)) clean[k] = pal[k];
+  }
+  if (Array.isArray(pal.gradient) && pal.gradient.length === 3 && pal.gradient.every((c) => typeof c === "string" && HEX.test(c))) {
+    clean.gradient = pal.gradient;
+  }
+  if (Array.isArray(pal.bubble) && pal.bubble.length === 2 && pal.bubble.every((c) => typeof c === "string" && HEX.test(c))) {
+    clean.bubble = pal.bubble;
+  }
+  return Object.keys(clean).length ? clean : undefined;
 }
 
 function sanitize(raw: unknown): { patch: Patch; changed: number } {
@@ -248,23 +268,25 @@ function sanitize(raw: unknown): { patch: Patch; changed: number } {
   }
 
   // The colour palette
-  if (p.palette && typeof p.palette === "object") {
-    const pal = p.palette as Record<string, unknown>;
-    const clean: Record<string, unknown> = {};
-    for (const k of ["primary", "tint", "received", "sidebar", "surface"]) {
-      if (typeof pal[k] === "string" && HEX.test(pal[k] as string)) clean[k] = pal[k];
-    }
-    if (Array.isArray(pal.gradient) && pal.gradient.length === 3 && pal.gradient.every((c) => typeof c === "string" && HEX.test(c))) {
-      clean.gradient = pal.gradient;
-    }
-    if (Array.isArray(pal.bubble) && pal.bubble.length === 2 && pal.bubble.every((c) => typeof c === "string" && HEX.test(c))) {
-      clean.bubble = pal.bubble;
-    }
-    if (Object.keys(clean).length) {
-      out.palette = clean;
-      changed += Object.keys(clean).length;
-    }
+  const palette = cleanPalette(p.palette);
+  if (palette) {
+    out.palette = palette;
+    changed += Object.keys(palette).length;
   }
+
+  // Other looks to pick from, shown as a small grid next to the main one
+  if (Array.isArray(p.alternatives)) {
+    const alts: { name: string; palette: Record<string, unknown> }[] = [];
+    for (const entry of p.alternatives.slice(0, 2)) {
+      const a = entry as { name?: unknown; palette?: unknown };
+      const pal = cleanPalette(a?.palette);
+      if (!pal) continue;
+      alts.push({ name: typeof a.name === "string" ? a.name.slice(0, 40) : "Another idea", palette: pal });
+    }
+    if (alts.length) out.alternatives = alts;
+  }
+
+  if (typeof p.name === "string" && p.name.trim()) out.name = p.name.trim().slice(0, 40);
 
   // Motion, background animation and ambience
   if (p.effects && typeof p.effects === "object") {
@@ -283,7 +305,7 @@ function sanitize(raw: unknown): { patch: Patch; changed: number } {
     }
   }
 
-  if (typeof p.reply === "string") out.reply = p.reply.slice(0, 600);
+  if (typeof p.reply === "string") out.reply = p.reply.trim().slice(0, 1200);
   return { patch: out, changed };
 }
 
@@ -293,7 +315,42 @@ function sanitize(raw: unknown): { patch: Patch; changed: number } {
 const RESPONSE_SCHEMA = {
   type: "object",
   properties: {
-    reply: { type: "string", description: "One short friendly sentence saying what you changed." },
+    reply: {
+      type: "string",
+      description:
+        "What you say to the person, in their language. Talk like a friendly designer: say what you changed and why in one to three short sentences, answer any question they asked, and if their request is unclear ask one short question instead of guessing. Never empty.",
+    },
+    name: {
+      type: "string",
+      description: "A short, catchy name for the theme (max 40 characters). Include it when you design a new look from scratch or when they ask for a name; leave it out for small edits.",
+    },
+    alternatives: {
+      type: "array",
+      maxItems: 2,
+      description: "When you design a whole new look, up to two other complete palettes that take the idea in a different direction, so they can pick. Leave out for small edits.",
+      items: {
+        type: "object",
+        properties: {
+          name: { type: "string" },
+          palette: {
+            type: "object",
+            properties: {
+              primary: { type: "string" },
+              gradient: { type: "array", items: { type: "string" }, minItems: 3, maxItems: 3 },
+              bubble: { type: "array", items: { type: "string" }, minItems: 2, maxItems: 2 },
+              received: { type: "string" },
+              sidebar: { type: "string" },
+              surface: { type: "string" },
+              tint: { type: "string" },
+            },
+            required: ["primary", "gradient", "bubble", "received", "sidebar", "surface", "tint"],
+            additionalProperties: false,
+          },
+        },
+        required: ["name", "palette"],
+        additionalProperties: false,
+      },
+    },
     elements: {
       type: "array",
       description: "Per-element changes. Include only elements you are changing.",
@@ -405,9 +462,21 @@ const RESPONSE_SCHEMA = {
   additionalProperties: false,
 } as const;
 
-function systemPrompt(): string {
+function systemPrompt(state: unknown): string {
   return [
-    "You design themes for UMS Messages, a messaging app. Someone tells you what they want changed and you return the change.",
+    "You are UMS Theme AI, the theme designer inside UMS Messages, a messaging app used by families and kids as well as adults.",
+    "You are having a conversation with the person making a theme. Every turn you answer them in `reply`, and when they want something changed you also return the change.",
+    "You remember the whole conversation: 'a bit darker', 'no, the other one', 'same but green' all refer to what came before.",
+    "Be warm, playful and brief. Explain what you did in plain words, offer one idea of your own now and then, and ask one short question when a request could mean two different things.",
+    "If they just chat or ask a question (what does this colour do, which looks better, what can you change), answer it in `reply` and change nothing.",
+    "Never say you cannot change something that is in the list below; never claim to have changed something you did not return.",
+    "",
+    "The theme as it stands right now (colours are #rrggbb; the person sees this live):",
+    JSON.stringify(state).slice(0, 4000),
+    "",
+    "When they describe a whole mood or a new look ('dark purple cyberpunk', 'warm sunset by the sea'):",
+    "- set the full palette and fitting effects, give it a `name`, and offer two `alternatives` so they can pick.",
+    "- palette.tint is the dark background colour; sidebar and surface should be a little lighter than it; received is the bubble for messages they receive.",
     "",
     "What each element accepts — never set a property an element does not list:",
     ...Object.entries(ELEMENTS).map(([id, traits]) => `  ${id}: ${traits.join(", ")}`),
@@ -419,7 +488,8 @@ function systemPrompt(): string {
     "- When they describe a mood rather than a part ('make it feel like the sea'), set the palette and the effects.",
     "- When they name a part ('the send button'), change just that part.",
     "- 'everything' means give the whole app a coherent treatment, not one flat colour on every element.",
-    "- Reply in the language they wrote in.",
+    "- Reply in the language they wrote in (Greek in Greek, English in English).",
+    "- Keep it suitable for children: no scary, rude or adult content in names, sounds or replies.",
     "",
     "Sounds and animations — you are not limited to the lists:",
     "- generatedSound lets you compose a sound from layers of tones and noise. A tone is pitched (a chime, a blip); noise is unpitched (a click, a whoosh, rain). Layer two or three for something richer, using delay to stagger them.",
@@ -429,14 +499,26 @@ function systemPrompt(): string {
   ].join("\n");
 }
 
-function userPrompt(instruction: string, state: unknown): string {
-  return [
-    "The theme as it stands:",
-    JSON.stringify(state).slice(0, 4000),
-    "",
-    "What they asked for:",
-    instruction.slice(0, 1000),
-  ].join("\n");
+type Turn = { role: "user" | "assistant"; content: string };
+
+// The conversation so far, in the shape every provider accepts: only
+// user/assistant turns with text, same-role turns merged, starting with the
+// person, and never more than the last dozen so the request stays small.
+function cleanHistory(raw: unknown): Turn[] {
+  const turns: Turn[] = (Array.isArray(raw) ? raw : [])
+    .filter((m) =>
+      m && (m.role === "user" || m.role === "assistant") &&
+      typeof m.content === "string" && m.content.trim().length > 0
+    )
+    .map((m) => ({ role: m.role as Turn["role"], content: String(m.content).slice(0, 2000) }));
+  const merged: Turn[] = [];
+  for (const t of turns) {
+    const last = merged[merged.length - 1];
+    if (last && last.role === t.role) last.content += "\n\n" + t.content;
+    else merged.push({ ...t });
+  }
+  while (merged.length > 0 && merged[0].role !== "user") merged.shift();
+  return merged.slice(-12);
 }
 
 // The model answers with a list of element changes; the rest of this
@@ -470,19 +552,19 @@ function extractJson(text: string): unknown {
   return JSON.parse(body.slice(start, end + 1));
 }
 
-async function askClaude(key: string, instruction: string, state: unknown): Promise<unknown> {
+async function askClaude(key: string, history: Turn[], state: unknown): Promise<unknown> {
   const anthropic = new Anthropic({ apiKey: key });
   const response = await anthropic.messages.create({
     model: "claude-opus-5",
     max_tokens: 4096,
-    // Theme edits are quick judgement calls, not deep reasoning; low effort
-    // keeps the editor feeling instant.
+    // Enough thought to hold a conversation and design a coherent palette,
+    // not so much that the editor feels slow.
     output_config: {
-      effort: "low",
+      effort: "medium",
       format: { type: "json_schema", schema: RESPONSE_SCHEMA },
     },
-    system: systemPrompt(),
-    messages: [{ role: "user", content: userPrompt(instruction, state) }],
+    system: systemPrompt(state),
+    messages: history,
   });
 
   if (response.stop_reason === "refusal") {
@@ -497,7 +579,7 @@ async function askClaude(key: string, instruction: string, state: unknown): Prom
 
 // Any chat-completions service — GLM, Groq, Mistral, DeepSeek, OpenRouter,
 // or a model the owner hosts themselves.
-async function askOpenCompat(instruction: string, state: unknown): Promise<unknown> {
+async function askOpenCompat(history: Turn[], state: unknown): Promise<unknown> {
   const rawBase = env("OPEN_AI_BASE_URL")!;
   if (!/^https?:\/\//i.test(rawBase)) {
     throw new Error(
@@ -522,8 +604,8 @@ async function askOpenCompat(instruction: string, state: unknown): Promise<unkno
       // return JSON because the prompt asks for it, and extractJson copes.
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: `${systemPrompt()}\n\nAnswer with a JSON object matching this schema:\n${JSON.stringify(RESPONSE_SCHEMA)}` },
-        { role: "user", content: userPrompt(instruction, state) },
+        { role: "system", content: `${systemPrompt(state)}\n\nAnswer with a JSON object matching this schema:\n${JSON.stringify(RESPONSE_SCHEMA)}` },
+        ...history,
       ],
     }),
   });
@@ -532,15 +614,18 @@ async function askOpenCompat(instruction: string, state: unknown): Promise<unkno
   return extractJson(data?.choices?.[0]?.message?.content ?? "");
 }
 
-async function askGemini(key: string, instruction: string, state: unknown): Promise<unknown> {
+async function askGemini(key: string, history: Turn[], state: unknown): Promise<unknown> {
   const resp = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        systemInstruction: { parts: [{ text: systemPrompt() }] },
-        contents: [{ role: "user", parts: [{ text: userPrompt(instruction, state) }] }],
+        systemInstruction: { parts: [{ text: systemPrompt(state) }] },
+        contents: history.map((t) => ({
+          role: t.role === "assistant" ? "model" : "user",
+          parts: [{ text: t.content }],
+        })),
         generationConfig: {
           temperature: 0.7,
           maxOutputTokens: 4096,
@@ -571,8 +656,11 @@ Deno.serve(async (req) => {
     if (userErr || !userData?.user) return json({ error: "Unauthorized" }, 401);
 
     const body = await req.json().catch(() => ({}));
-    const instruction = String(body?.instruction ?? "").trim();
-    if (!instruction) return json({ error: "Nothing to do" }, 400);
+    // Either a whole conversation, or (older app versions) one instruction
+    const history = Array.isArray(body?.messages)
+      ? cleanHistory(body.messages)
+      : cleanHistory([{ role: "user", content: String(body?.instruction ?? "") }]);
+    if (history.length === 0) return json({ error: "Nothing to do" }, 400);
     const state = body?.state ?? {};
 
     const claude = env("ANTHROPIC_API_KEY");
@@ -600,9 +688,9 @@ Deno.serve(async (req) => {
     let lastError: unknown;
     for (const candidate of chain) {
       try {
-        if (candidate === "claude") raw = await askClaude(claude!, instruction, state);
-        else if (candidate === "gemini") raw = await askGemini(gemini!, instruction, state);
-        else raw = await askOpenCompat(instruction, state);
+        if (candidate === "claude") raw = await askClaude(claude!, history, state);
+        else if (candidate === "gemini") raw = await askGemini(gemini!, history, state);
+        else raw = await askOpenCompat(history, state);
         provider = candidate;
         lastError = undefined;
         break;

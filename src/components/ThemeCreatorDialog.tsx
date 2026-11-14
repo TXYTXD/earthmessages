@@ -1,15 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { Sparkles, Upload, Lock, Loader2, Wand2, RefreshCw, ChevronDown, Palette, Play, Volume2, SlidersHorizontal, CornerDownLeft } from "lucide-react";
+import { Sparkles, Upload, Lock, Loader2, Wand2, ChevronDown, Palette, Play, Volume2, SlidersHorizontal } from "lucide-react";
 import {
   BACKGROUNDS, DEFAULT_EFFECTS, MOTION_STYLES, SOUNDS, normalizeEffects, type ThemeEffects,
 } from "@/lib/themeEffects";
 import { ThemeBackground } from "@/components/ThemeBackground";
 import { ThemeAdvancedEditor } from "@/components/ThemeAdvancedEditor";
-import { applyInstruction, ASSISTANT_EXAMPLES } from "@/lib/themeAssistant";
-import { askThemeAI } from "@/lib/themeAiRemote";
+import { ThemeAIChat, type ThemePatch } from "@/components/ThemeAIChat";
 import { countCustomizations, type ThemeCustomization } from "@/lib/themeCustomization";
 import { useAmbientSound } from "@/hooks/useAmbientSound";
-import { designThemes, THEME_AI_EXAMPLES, type ThemeSuggestion } from "@/lib/themeAI";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -114,85 +112,18 @@ export function ThemeCreatorDialog({ open, onClose, onCreated, editing }: Props)
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<"colours" | "effects" | "advanced">("colours");
   const [customization, setCustomization] = useState<ThemeCustomization>({});
-  const [instruction, setInstruction] = useState("");
-  const [assistantLog, setAssistantLog] = useState<{ text: string; ok: boolean }[]>([]);
-  const [working, setWorking] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [effects, setEffects] = useState<ThemeEffects>(DEFAULT_EFFECTS);
   const [previewSound, setPreviewSound] = useState(false);
-  const [prompt, setPrompt] = useState("");
-  const [variant, setVariant] = useState(0);
-  const [suggestions, setSuggestions] = useState<ThemeSuggestion[]>([]);
-  const [thinking, setThinking] = useState(false);
+  // Resets the Theme AI conversation each time the dialog opens
+  const [chatKey, setChatKey] = useState(0);
 
-  // UMS Theme AI: runs entirely on the device
-  const generate = (text: string, nextVariant = variant) => {
-    const q = text.trim();
-    if (!q) return;
-    setThinking(true);
-    // A short pause so the result feels considered and the UI can animate
-    setTimeout(() => {
-      const ideas = designThemes(q, nextVariant);
-      setSuggestions(ideas);
-      setThinking(false);
-      if (ideas[0]) {
-        setDef(ideas[0].definition);
-        if (ideas[0].effects) setEffects(ideas[0].effects);
-        if (!name.trim()) setName(ideas[0].name);
-      }
-    }, 350);
-  };
-  // The advanced assistant edits this theme from an instruction. A real model
-  // handles it when one is configured; otherwise the on-device assistant does,
-  // so the feature works either way.
-  const runInstruction = async (text: string) => {
-    const q = text.trim();
-    if (!q || working) return;
-    setWorking(true);
-    setAssistantLog((prev) => [...prev.slice(-6), { text: `You: ${q}`, ok: true }]);
-
-    try {
-      const remote = await askThemeAI(q, { customization, definition: def, effects });
-
-      // Say when the smart assistant could not answer, rather than quietly
-      // handing over to the simpler built-in one and looking dim.
-      if (remote?.failure) {
-        setAssistantLog((prev) => [
-          ...prev.slice(-6),
-          { text: `The AI couldn't answer (${remote.failure}). Using the built-in assistant instead.`, ok: false },
-        ]);
-      }
-
-      if (remote?.configured && !remote.failure && (remote.changed > 0 || remote.reply)) {
-        if (remote.customization) setCustomization(remote.customization);
-        if (remote.effects) setEffects(remote.effects);
-        if (remote.definition) setDef(remote.definition);
-        setAssistantLog((prev) => [
-          ...prev.slice(-6),
-          { text: remote.reply || `Done — ${remote.changed} change${remote.changed === 1 ? "" : "s"}.`, ok: true },
-        ]);
-        setInstruction("");
-        return;
-      }
-
-      const result = applyInstruction(q, { customization, definition: def, effects });
-      if (result.customization) setCustomization(result.customization);
-      if (result.effects) setEffects(result.effects);
-      if (result.definition) setDef(result.definition);
-      setAssistantLog((prev) => [
-        ...prev.slice(-6),
-        ...result.summary.map((line) => ({ text: line, ok: result.understood })),
-      ]);
-      if (result.understood) setInstruction("");
-    } finally {
-      setWorking(false);
-    }
-  };
-
-  const generateAgain = () => {
-    const v = variant + 1;
-    setVariant(v);
-    generate(prompt, v);
+  // Whatever the Theme AI changes lands on the preview straight away
+  const applyPatch = (patch: ThemePatch) => {
+    if (patch.definition) setDef(patch.definition);
+    if (patch.effects) setEffects(patch.effects);
+    if (patch.customization) setCustomization(patch.customization);
+    if (patch.name) setName(patch.name.slice(0, 40));
   };
 
   // Load whatever is being edited each time the dialog opens
@@ -209,8 +140,7 @@ export function ThemeCreatorDialog({ open, onClose, onCreated, editing }: Props)
       setEffects(DEFAULT_EFFECTS);
       setCustomization({});
     }
-    setAssistantLog([]);
-    setInstruction("");
+    setChatKey((k) => k + 1);
   }, [open, editing]);
 
   const previewMode = useMemo(() => colorMode, [colorMode]);
@@ -296,65 +226,19 @@ export function ThemeCreatorDialog({ open, onClose, onCreated, editing }: Props)
         </DialogHeader>
 
         <div className="space-y-3">
-          {/* UMS Theme AI */}
-          <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 space-y-2">
-            <div className="flex items-center gap-2 text-[13px] font-semibold">
-              <Wand2 className="w-4 h-4 text-primary" /> UMS Theme AI
-              <span className="text-[10px] font-medium text-muted-foreground ml-auto">runs on your device</span>
-            </div>
-            <div className="flex gap-2">
-              <Input
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); generate(prompt); } }}
-                placeholder="Describe it… e.g. dark purple cyberpunk"
-                className="rounded-lg"
-              />
-              <Button type="button" onClick={() => generate(prompt)} disabled={!prompt.trim() || thinking} className="rounded-lg gap-1.5 flex-shrink-0">
-                {thinking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />} Design
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {THEME_AI_EXAMPLES.slice(0, 6).map((ex) => (
-                <button
-                  key={ex}
-                  type="button"
-                  onClick={() => { setPrompt(ex); generate(ex, 0); setVariant(0); }}
-                  className="text-[11px] px-2 py-1 rounded-full bg-accent hover:bg-accent/70 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {ex}
-                </button>
-              ))}
-            </div>
-            {suggestions.length > 0 && (
-              <div className="space-y-1.5">
-                <div className="grid grid-cols-3 gap-1.5">
-                  {suggestions.map((sg, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => { setDef(sg.definition); setName(sg.name); if (sg.effects) setEffects(sg.effects); }}
-                      title={sg.reason}
-                      className={`rounded-lg p-1.5 text-left transition-all ${def === sg.definition ? "ring-2 ring-primary bg-primary/10" : "bg-accent/60 hover:bg-accent"}`}
-                    >
-                      <div className="h-5 rounded-md mb-1" style={{ background: gradientCss(sg.definition) }} />
-                      <div className="text-[11px] font-medium truncate">{sg.name}</div>
-                    </button>
-                  ))}
-                </div>
-                <button type="button" onClick={generateAgain} className="text-[12px] text-primary hover:underline flex items-center gap-1">
-                  <RefreshCw className="w-3 h-3" /> Try different ideas
-                </button>
-              </div>
-            )}
-          </div>
+          {/* UMS Theme AI — one conversation that designs and edits */}
+          <ThemeAIChat
+            key={chatKey}
+            state={{ customization, definition: def, effects, name }}
+            onApply={applyPatch}
+          />
 
           <Input value={name} onChange={(e) => setName(e.target.value.slice(0, 40))} placeholder="Theme name" className="rounded-lg" />
 
           <div className="relative rounded-xl overflow-hidden">
             {effects.background !== "none" && (
               <div className="absolute inset-0 rounded-xl overflow-hidden">
-                <ThemeBackground kind={effects.background} intensity={effects.backgroundIntensity} colors={effectColors} />
+                <ThemeBackground kind={effects.background} intensity={effects.backgroundIntensity} colors={effectColors} fill="parent" />
               </div>
             )}
             <div className="relative">
@@ -384,55 +268,10 @@ export function ThemeCreatorDialog({ open, onClose, onCreated, editing }: Props)
 
           {tab === "advanced" ? (
             <div className="space-y-3">
-              {/* The assistant that edits this theme for you */}
-              <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 space-y-2">
-                <div className="flex items-center gap-2 text-[13px] font-semibold">
-                  <Wand2 className="w-4 h-4 text-primary" /> Tell me what to change
-                  <span className="text-[10px] font-medium text-muted-foreground ml-auto">runs on your device</span>
-                </div>
-                <div className="flex gap-2">
-                  <Input
-                    value={instruction}
-                    onChange={(e) => setInstruction(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void runInstruction(instruction); } }}
-                    placeholder="Tell it anything — e.g. make it feel like a thunderstorm"
-                    className="rounded-lg"
-                  />
-                  <Button type="button" onClick={() => runInstruction(instruction)} disabled={!instruction.trim() || working} className="rounded-lg gap-1.5 flex-shrink-0">
-                    {working ? <Loader2 className="w-4 h-4 animate-spin" /> : <CornerDownLeft className="w-4 h-4" />} Do it
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {ASSISTANT_EXAMPLES.slice(0, 5).map((ex) => (
-                    <button
-                      key={ex}
-                      type="button"
-                      onClick={() => void runInstruction(ex)}
-                      className="text-[11px] px-2 py-1 rounded-full bg-accent hover:bg-accent/70 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {ex}
-                    </button>
-                  ))}
-                </div>
-                {assistantLog.length > 0 && (
-                  <div className="space-y-1 max-h-32 overflow-y-auto">
-                    {assistantLog.map((line, i) => (
-                      <p
-                        key={i}
-                        className={`text-[11px] leading-snug ${
-                          line.text.startsWith("You: ")
-                            ? "text-muted-foreground"
-                            : line.ok
-                              ? "text-foreground"
-                              : "text-orange-500"
-                        }`}
-                      >
-                        {line.text}
-                      </p>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <p className="text-[12px] text-muted-foreground leading-relaxed flex items-start gap-1.5 px-1">
+                <Wand2 className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" />
+                <span>Anything here can also be changed by talking to the Theme AI above — "make the send button red with a pop sound", "give every tab a bounce".</span>
+              </p>
 
               <ThemeAdvancedEditor
                 customization={customization}
