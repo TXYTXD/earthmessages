@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Shield } from "lucide-react";
+import { Shield, Mail, Loader2 } from "lucide-react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Button } from "@/components/ui/button";
+import { requestPinReset, maskEmail } from "@/lib/pinReset";
 
 interface PinVerifyDialogProps {
   open: boolean;
@@ -16,8 +17,19 @@ export function PinVerifyDialog({ open, onVerified, onCancel, verifyPin, title =
   const [pin, setPin] = useState("");
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [reset, setReset] = useState<{ state: "idle" | "sending" | "sent" | "failed"; text?: string }>({ state: "idle" });
 
   if (!open) return null;
+
+  const forgot = async () => {
+    setReset({ state: "sending" });
+    const r = await requestPinReset();
+    if (r.ok === true) {
+      setReset({ state: "sent", text: `We emailed a link to ${maskEmail(r.email)}. Open it to choose a new PIN. It works for 30 minutes.` });
+    } else {
+      setReset({ state: "failed", text: r.error });
+    }
+  };
 
   const handleVerify = async () => {
     setLoading(true);
@@ -68,10 +80,29 @@ export function PinVerifyDialog({ open, onVerified, onCancel, verifyPin, title =
           <p className="text-sm text-destructive font-medium">Incorrect PIN. Try again.</p>
         )}
 
+        {reset.state === "sent" || reset.state === "failed" ? (
+          <p className={`text-[13px] leading-snug flex items-start gap-2 text-left rounded-xl px-3 py-2 ${
+            reset.state === "sent" ? "bg-primary/10 text-foreground" : "bg-destructive/10 text-destructive"
+          }`}>
+            <Mail className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <span>{reset.text}</span>
+          </p>
+        ) : (
+          <button
+            type="button"
+            onClick={() => void forgot()}
+            disabled={reset.state === "sending"}
+            className="text-sm text-primary hover:underline inline-flex items-center gap-1.5 py-1 disabled:opacity-60"
+          >
+            {reset.state === "sending" && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            Forgot PIN?
+          </button>
+        )}
+
         <div className="flex gap-2">
           <Button
             variant="outline"
-            onClick={() => { setPin(""); setError(false); onCancel(); }}
+            onClick={() => { setPin(""); setError(false); setReset({ state: "idle" }); onCancel(); }}
             className="flex-1 rounded-xl"
           >
             Cancel
