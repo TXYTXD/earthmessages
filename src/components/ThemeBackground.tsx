@@ -6,6 +6,8 @@ interface Props {
   intensity: number; // 0..100
   colors: string[]; // theme colours to paint with
   paused?: boolean;
+  /** "screen" sits behind the whole app; "parent" fills the box it is placed in */
+  fill?: "screen" | "parent";
 }
 
 interface Particle {
@@ -17,7 +19,7 @@ const TAU = Math.PI * 2;
 // A soft animated layer painted behind the whole app in the theme's own
 // colours. Everything is drawn on one canvas so it stays cheap, and it
 // stops completely when the tab is hidden or the effect is "none".
-export function ThemeBackground({ kind, intensity, colors, paused }: Props) {
+export function ThemeBackground({ kind, intensity, colors, paused, fill = "screen" }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frame = useRef<number>();
 
@@ -250,7 +252,9 @@ export function ThemeBackground({ kind, intensity, colors, paused }: Props) {
     <canvas
       ref={canvasRef}
       aria-hidden
-      className="fixed inset-0 w-full h-full pointer-events-none z-0"
+      // Behind the whole app it covers the screen; inside a preview box it
+      // fills that box instead, since "fixed" would escape the box's edges.
+      className={`${fill === "parent" ? "absolute" : "fixed"} inset-0 w-full h-full pointer-events-none z-0`}
       style={{ opacity: 1 }}
     />
   );
