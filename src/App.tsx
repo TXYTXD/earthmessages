@@ -36,6 +36,8 @@ import DownloadPage from "@/pages/DownloadPage";
 import PrivacyPage from "@/pages/PrivacyPage";
 import TermsPage from "@/pages/TermsPage";
 import NewsPage from "@/pages/NewsPage";
+import PinResetPage from "@/pages/PinResetPage";
+import { PIN_RESET_PATH } from "@/lib/pinReset";
 import AIChatPage from "@/pages/AIChatPage";
 import CalendarPage from "@/pages/CalendarPage";
 import CommunitiesPage from "@/pages/CommunitiesPage";
@@ -172,6 +174,7 @@ const App = () => (
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/news" element={<NewsPage />} />
+              <Route path={PIN_RESET_PATH} element={<PinResetPage />} />
               <Route path="/*" element={<ProtectedLayout />} />
             </Routes>
           </BrowserRouter>
